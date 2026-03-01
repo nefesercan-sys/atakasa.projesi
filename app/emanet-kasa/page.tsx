@@ -1,78 +1,78 @@
-'use client';
+"use client";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
-import React, { useState } from 'react';
+export default function AramaSonuclari() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get("q") || ""; 
 
-export default function EmanetKasa() {
-  const [status, setStatus] = useState('beklemede'); // beklemede, yatirildi, kargoda, tamamlandi
-  const depositAmount = 5000; // Örnek depozito bedeli
-  const commission = depositAmount * 0.05;
-  const refundAmount = depositAmount - commission;
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/listings')
+      .then(res => res.json())
+      .then(data => {
+        let ilanListesi = Array.isArray(data) ? data : (data?.data || data?.ilanlar || []);
+        const filtered = ilanListesi.filter(item => {
+          const searchStr = `${item.title || ''} ${item.description || ''} ${item.category || ''}`.toLowerCase();
+          return searchStr.includes(query.toLowerCase());
+        });
+        setResults(filtered.reverse());
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [query]);
+
+  // 🚨 SİBER MAYMUNCUK
+  const getResim = (item) => {
+    if (!item) return "https://placehold.co/400x300/030712/00f260?text=GORSEL+YOK";
+    const gorsel = item.image || item.imageSrc || item.imageUrl || item.resimUrl || item.fotograf || item.resim || (Array.isArray(item.images) && item.images[0]) || (Array.isArray(item.imageUrls) && item.imageUrls[0]);
+    return gorsel ? gorsel : "https://placehold.co/400x300/030712/00f260?text=GORSEL+YOK";
+  };
 
   return (
-    <div style={{ backgroundColor: '#0f172a', color: 'white', minHeight: '100vh', padding: '20px', fontFamily: 'sans-serif' }}>
-      <header style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '2px solid #38bdf8', paddingBottom: '10px' }}>
-        <h2 style={{ color: '#38bdf8' }}>🛡️ ATAKASA EMANET SİSTEMİ</h2>
-        <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>Güvenli Takas Takip Ekranı</p>
-      </header>
-
-      {/* SÜREÇ ÇİZGİSİ */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', fontSize: '0.7rem', textAlign: 'center' }}>
-        <div style={{ color: status === 'beklemede' ? '#38bdf8' : '#10b981' }}>●<br/>Teminat</div>
-        <div style={{ color: status === 'yatirildi' ? '#38bdf8' : status === 'kargoda' || status === 'tamamlandi' ? '#10b981' : '#334155' }}>●<br/>Kargo</div>
-        <div style={{ color: status === 'kargoda' ? '#38bdf8' : status === 'tamamlandi' ? '#10b981' : '#334155' }}>●<br/>Onay</div>
-        <div style={{ color: status === 'tamamlandi' ? '#10b981' : '#334155' }}>●<br/>İade</div>
+    <div className="min-h-screen bg-[#030712] py-32 px-4 md:px-8 max-w-6xl mx-auto">
+      <div className="mb-12 border-b border-white/5 pb-8 text-center md:text-left">
+        <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase text-white">
+          ARAMA <span className="text-[#00f260]">SONUÇLARI.</span>
+        </h1>
+        <p className="text-slate-400 text-xs tracking-widest uppercase mt-4">
+          Aranan Kelime: <span className="text-[#00f260] font-bold">"{query}"</span>
+        </p>
       </div>
 
-      {/* FİNANSAL ÖZET */}
-      <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '20px', marginBottom: '20px', border: '1px solid #334155' }}>
-        <h3 style={{ marginBottom: '15px', fontSize: '1.1rem' }}>İşlem Özeti</h3>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-          <span>Yatırılacak Teminat:</span>
-          <span style={{ fontWeight: 'bold' }}>{depositAmount.toLocaleString()} TL</span>
+      {loading ? (
+        <div className="text-center text-[#00f260] animate-pulse font-black uppercase tracking-widest">Siber Ağ Taranıyor... 📡</div>
+      ) : results.length === 0 ? (
+        <div className="text-center py-20 bg-[#0b0f19] border border-white/5 rounded-[3rem]">
+          <span className="text-6xl opacity-50 mb-4 block">🔍</span>
+          <p className="text-slate-400 font-bold uppercase tracking-widest">Bu koda ait varlık bulunamadı.</p>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#fb7185' }}>
-          <span>Atakasa Hizmet Bedeli (%5):</span>
-          <span>-{commission.toLocaleString()} TL</span>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          {results.map((item, idx) => (
+            <Link key={idx} href={`/ilan/${item._id || item.id}`} className="bg-[#0b0f19] border border-white/10 rounded-3xl p-4 hover:border-[#00f260]/50 transition-all group flex flex-col h-full shadow-lg">
+              <div className="relative mb-4 overflow-hidden rounded-2xl h-40 md:h-48 bg-[#030712]">
+                <img 
+                  src={getResim(item)} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                  alt={item.title}
+                  onError={(e) => { e.target.src = "https://placehold.co/400x300/030712/00f260?text=GORSEL+HATA"; }}
+                />
+              </div>
+              <div className="text-[9px] text-slate-500 uppercase tracking-widest mb-1">{item.category || "Genel"}</div>
+              <h3 className="text-white font-black uppercase tracking-wide truncate">{item.title}</h3>
+              
+              <div className="mt-auto pt-4 flex items-center justify-between border-t border-white/5">
+                 <div className="text-[#00f260] font-black text-lg md:text-xl">{item.price?.toLocaleString("tr-TR")} ₺</div>
+                 <div className="bg-white/5 text-white p-2 rounded-lg transition-colors group-hover:bg-[#00f260] group-hover:text-black">➔</div>
+              </div>
+            </Link>
+          ))}
         </div>
-        <hr style={{ border: '0.5px solid #334155' }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', color: '#10b981', fontWeight: 'bold', fontSize: '1.2rem' }}>
-          <span>İade Edilecek Tutar:</span>
-          <span>{refundAmount.toLocaleString()} TL</span>
-        </div>
-      </div>
-
-      {/* AKSİYON BUTONLARI */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        {status === 'beklemede' && (
-          <button onClick={() => setStatus('yatirildi')} style={{ backgroundColor: '#38bdf8', color: '#0f172a', border: 'none', padding: '18px', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem' }}>
-            DEPOZİTO TEMİNATI YATIR 💳
-          </button>
-        )}
-        
-        {status === 'yatirildi' && (
-          <button onClick={() => setStatus('kargoda')} style={{ backgroundColor: '#f59e0b', color: 'white', border: 'none', padding: '18px', borderRadius: '12px', fontWeight: 'bold' }}>
-            ÜRÜNÜ KARGOYA VERDİM / TESLİM ETTİM 📦
-          </button>
-        )}
-
-        {status === 'kargoda' && (
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setStatus('tamamlandi')} style={{ flex: 2, backgroundColor: '#10b981', color: 'white', border: 'none', padding: '18px', borderRadius: '12px', fontWeight: 'bold' }}>
-              TESLİM ALDIM, ONAYLIYORUM ✅
-            </button>
-            <button style={{ flex: 1, backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '18px', borderRadius: '12px', fontWeight: 'bold' }}>
-              İADE ET 🚩
-            </button>
-          </div>
-        )}
-
-        {status === 'tamamlandi' && (
-          <div style={{ textAlign: 'center', padding: '20px', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: '15px', border: '1px solid #10b981' }}>
-            <p style={{ color: '#10b981', fontWeight: 'bold' }}>🎉 İşlem Başarıyla Tamamlandı!</p>
-            <p style={{ fontSize: '0.8rem', marginTop: '5px' }}>Teminatınız %5 komisyon kesilerek hesabınıza aktarılmıştır.</p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
