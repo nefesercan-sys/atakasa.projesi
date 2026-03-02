@@ -1,86 +1,151 @@
 "use client";
-import React, { useState } from "react";
+
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function IlanVerPage() {
-  const [step, setStep] = useState(1);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
-    title: "", category: "Elektronik", price: 0, type: "takas_satis", description: ""
-  });
+export default function IlanVerSayfasi() {
+  const router = useRouter();
+  
+  // Form verilerini tutacağımız stateler
+  const [baslik, setBaslik] = useState("");
+  const [aciklama, setAciklama] = useState("");
+  const [fiyat, setFiyat] = useState("");
+  const [sehir, setSehir] = useState("");
+  const [kategori, setKategori] = useState("");
+  const [yukleniyor, setYukleniyor] = useState(false);
 
-  // 📸 SİBER KAMERA VE MEDYA
-  const triggerCamera = () => {
-    // Mobil cihazda doğrudan kamerayı tetikler
-    setStep(2);
-  };
+  // Türkiye'nin büyük illeri (Listeyi dilediğin gibi uzatabilirsin)
+  const sehirler = [
+    "Adana", "Ankara", "Antalya", "Bursa", "Diyarbakır", 
+    "Erzurum", "Eskişehir", "Gaziantep", "İstanbul", "İzmir", 
+    "Kayseri", "Kocaeli", "Konya", "Mersin", "Samsun", "Trabzon", "Şanlıurfa"
+  ];
 
-  const handlePublish = async () => {
-    if (formData.price <= 0) {
-       setError("Siber Uyarı: Geçerli bir takas fiyatı girilmelidir!");
-       return;
-    }
-    alert("İlanınız Siber Ağda Yayına Alınıyor...");
+  // Hizmet ve Meslek Grupları
+  const kategoriler = [
+    "Web & Yazılım Geliştirme",
+    "Grafik & Tasarım",
+    "Ev Temizliği",
+    "Nakliyat & Lojistik",
+    "Tadilat & Dekorasyon",
+    "Özel Ders & Eğitim",
+    "Danışmanlık Hizmetleri",
+    "Tamir & Teknik Servis",
+    "Diğer Hizmetler"
+  ];
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setYukleniyor(true);
+    
+    // API bağlantısı yapılana kadar simülasyon (Render burada hata vermez)
+    setTimeout(() => {
+      alert("Harika! İlanınız başarıyla sisteme gönderildi.");
+      setYukleniyor(false);
+      router.push("/"); // İşlem bitince ana sayfaya yollar
+    }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white p-6 pt-24 font-sans">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-4xl font-black italic mb-2 tracking-tighter">ATAKASA <span className="text-[#38bdf8] text-xl">TERMINAL</span></h1>
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.4em] mb-12">Güvenli Varlık Tanımlama Merkezi</p>
-
-        {/* 1. ADIM: MEDYA ENJEKSİYONU */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <div onClick={triggerCamera} className="h-48 bg-[#0b0f19] border-2 border-dashed border-[#38bdf8]/30 rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer hover:bg-[#38bdf8]/5 transition-all">
-            <span className="text-4xl mb-2">📸</span>
-            <span className="text-[10px] font-black uppercase tracking-widest">Resim / Video Çek</span>
-          </div>
-          <div className="h-48 bg-[#0b0f19] border border-white/5 rounded-[2.5rem] p-6 flex items-center justify-center text-center">
-            <p className="text-[10px] text-slate-500 font-bold leading-relaxed uppercase">
-              Lütfen ürünün net fotoğraflarını ve <br/> çalışır durumdaki videosunu yükleyin.
-            </p>
-          </div>
+    <div className="min-h-screen bg-slate-950 py-24 px-4 sm:px-6 lg:px-8 text-white">
+      <div className="max-w-3xl mx-auto">
+        
+        {/* Başlık Alanı */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-black italic mb-4">Yeni İlan <span className="text-cyan-500">Oluştur</span>.</h1>
+          <p className="text-gray-400 text-sm">Hizmetinizi veya talebinizi binlerce kişiye ulaştırmak için aşağıdaki formu eksiksiz doldurun.</p>
         </div>
 
-        {/* 2. ADIM: AKILLI FORM SENTEZİ */}
-        <div className="space-y-6 bg-[#0b0f19] p-10 rounded-[3rem] border border-white/5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-[#38bdf8] uppercase pl-2">Kategori</label>
-              <select className="w-full bg-[#030712] border border-white/10 p-5 rounded-2xl outline-none focus:border-[#38bdf8]" 
-                onChange={(e) => setFormData({...formData, category: e.target.value})}>
-                <option value="Elektronik">Elektronik Eşya</option>
-                <option value="Mobilya">Mobilya / Ev</option>
-                <option value="Vasıta">Oto / Vasıta</option>
-                <option value="Oyuncak">Oyuncak / Hobi</option>
-              </select>
+        {/* Form Alanı */}
+        <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+          {/* Arka plan parlama efekti */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+
+          <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+            
+            {/* İlan Başlığı */}
+            <div>
+              <label className="block text-gray-400 text-xs font-black uppercase tracking-widest mb-2">İlan Başlığı</label>
+              <input 
+                type="text" 
+                required 
+                value={baslik} 
+                onChange={(e) => setBaslik(e.target.value)} 
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white focus:outline-none focus:border-cyan-500 transition-colors" 
+                placeholder="Örn: E-Ticaret Sitesi Yaptırılacak" 
+              />
             </div>
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-[#38bdf8] uppercase pl-2">Varlık Değeri (₺)</label>
-              <input type="number" placeholder="0.00" className="w-full bg-[#030712] border border-white/10 p-5 rounded-2xl outline-none focus:border-[#38bdf8] font-bold text-xl"
-                onChange={(e) => setFormData({...formData, price: Number(e.target.value)})}/>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Kategori Seçimi */}
+              <div>
+                <label className="block text-gray-400 text-xs font-black uppercase tracking-widest mb-2">Hizmet Kategorisi</label>
+                <select 
+                  required 
+                  value={kategori} 
+                  onChange={(e) => setKategori(e.target.value)}
+                  className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-gray-300 focus:outline-none focus:border-cyan-500 transition-colors appearance-none"
+                >
+                  <option value="" disabled>Kategori Seçin</option>
+                  {kategoriler.map((kat, index) => (
+                    <option key={index} value={kat}>{kat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Şehir Seçimi */}
+              <div>
+                <label className="block text-gray-400 text-xs font-black uppercase tracking-widest mb-2">Bulunduğunuz İl</label>
+                <select 
+                  required 
+                  value={sehir} 
+                  onChange={(e) => setSehir(e.target.value)}
+                  className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-gray-300 focus:outline-none focus:border-cyan-500 transition-colors appearance-none"
+                >
+                  <option value="" disabled>Şehir Seçin</option>
+                  {sehirler.map((il, index) => (
+                    <option key={index} value={il}>{il}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-             <label className="text-[9px] font-black text-[#38bdf8] uppercase pl-2">İşlem Modu</label>
-             <div className="flex gap-3">
-               {['takas', 'satis', 'ikisi'].map((type) => (
-                 <button key={type} onClick={() => setFormData({...formData, type})}
-                   className={`flex-1 py-4 rounded-2xl border text-[9px] font-black uppercase transition-all ${formData.type === type ? 'bg-[#38bdf8] text-black border-[#38bdf8]' : 'border-white/10 hover:border-white/30'}`}>
-                   {type === 'ikisi' ? 'Takas & Satış' : type}
-                 </button>
-               ))}
-             </div>
-          </div>
+            {/* Fiyat / Bütçe */}
+            <div>
+              <label className="block text-gray-400 text-xs font-black uppercase tracking-widest mb-2">Bütçe veya Fiyat (₺)</label>
+              <input 
+                type="number" 
+                required 
+                value={fiyat} 
+                onChange={(e) => setFiyat(e.target.value)} 
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white focus:outline-none focus:border-cyan-500 transition-colors" 
+                placeholder="Örn: 5000" 
+              />
+            </div>
 
-          <textarea placeholder="Ürün açıklaması ve teknik özellikler..." rows={4} className="w-full bg-[#030712] border border-white/10 p-6 rounded-[2rem] outline-none focus:border-[#38bdf8] text-sm"/>
+            {/* Detaylı Açıklama */}
+            <div>
+              <label className="block text-gray-400 text-xs font-black uppercase tracking-widest mb-2">İlan Detayları</label>
+              <textarea 
+                required 
+                value={aciklama} 
+                onChange={(e) => setAciklama(e.target.value)} 
+                rows={5} 
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white focus:outline-none focus:border-cyan-500 transition-colors" 
+                placeholder="İşin veya hizmetin tüm detaylarını buraya yazın..."
+              ></textarea>
+            </div>
 
-          {error && <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl text-red-500 text-[9px] font-black uppercase text-center">{error}</div>}
+            {/* Gönder Butonu */}
+            <button 
+              type="submit" 
+              disabled={yukleniyor}
+              className={`w-full text-slate-950 text-sm font-black uppercase tracking-widest p-5 rounded-xl transition-all shadow-lg mt-4 ${yukleniyor ? 'bg-cyan-700 cursor-not-allowed' : 'bg-cyan-500 hover:bg-cyan-400 shadow-cyan-500/20'}`}
+            >
+              {yukleniyor ? 'Sisteme Yükleniyor...' : 'İlanı Yayına Al'}
+            </button>
 
-          <button onClick={handlePublish} className="w-full bg-[#38bdf8] text-black py-6 rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs shadow-[0_15px_30px_rgba(56,189,248,0.2)] hover:scale-[1.02] transition-all">
-            İLANINIZI SİBER AĞDA YAYINLAYIN
-          </button>
+          </form>
         </div>
       </div>
     </div>
