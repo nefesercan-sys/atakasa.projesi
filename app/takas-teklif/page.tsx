@@ -7,21 +7,18 @@ export default function TakasTeklifPage() {
 
   const handleTeklifGonder = (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Takas teklifiniz siber ağa gönderildi!');
-    // İleride buraya API kayıt kodlarımızı ekleyeceğiz
+    alert('Takas teklifiniz sisteme iletildi!');
   };
 
   return (
-    // HATA VEREN 14. SATIR DÜZELTİLDİ: div etiketi düzgünce kapatıldı
+    // Vercel'de hata veren 14. satırdaki yarım kalan kod düzeltildi ve kapatıldı
     <div style={{ backgroundColor: '#0f172a', color: 'white', minHeight: '100vh', padding: '2rem' }}>
       
-      {/* HATA VEREN 15. ve 16. SATIR DÜZELTİLDİ: header ve h2 etiketleri tamamlandı */}
       <header style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h2 style={{ color: '#38bdf8', fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>TAKAS TEKLİFİ</h2>
         <p style={{ color: '#94a3b8', marginTop: '0.5rem' }}>İki ürün arasındaki takas şartlarını belirleyin.</p>
       </header>
 
-      {/* HATA VEREN 17. SATIR DÜZELTİLDİ: İçerik kutusunun div'i kapatıldı */}
       <div style={{ backgroundColor: '#1e293b', padding: '2rem', borderRadius: '1rem', maxWidth: '600px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}>
         <form onSubmit={handleTeklifGonder} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
