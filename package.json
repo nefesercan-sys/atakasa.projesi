@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "latest",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.0.0",
     "lucide-react": "^0.344.0",
