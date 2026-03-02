@@ -6,8 +6,9 @@ import bcrypt from "bcryptjs";
 // 🚨 VERİTABANI BAĞLANTISI
 const connectDB = async () => {
   if (mongoose.connection.readyState >= 1) return;
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(process.env.MONGODB_URI as string);
 };
+
 
 // 🧬 KULLANICI ŞEMASI
 const UserSchema = new mongoose.Schema({
