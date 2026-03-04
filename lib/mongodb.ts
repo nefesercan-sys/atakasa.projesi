@@ -1,30 +1,24 @@
-import { MongoClient } from 'mongodb';
+import mongoose from "mongoose";
 
-const uri = process.env.MONGODB_URI as string;
-const options = {};
+const MONGODB_URI = process.env.MONGODB_URI!;
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
-if (!process.env.MONGODB_URI) {
-  throw new Error('Lütfen .env.local dosyasına MONGODB_URI ekleyin');
+if (!MONGODB_URI) {
+  throw new Error("MONGODB_URI missing");
 }
 
-if (process.env.NODE_ENV === 'development') {
-  // Geliştirme modunda bağlantının kopmaması için global değişken kullanılır
-  let globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>;
-  };
+let cached = (global as any).mongoose;
 
-  if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    globalWithMongo._mongoClientPromise = client.connect();
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
+
+export async function dbConnect() {
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
   }
-  clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-  // Canlı (Production) modunda normal bağlantı kullanılır
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
-}
 
-export default clientPromise;
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
