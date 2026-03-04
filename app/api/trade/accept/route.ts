@@ -1,3 +1,5 @@
+// app/api/trade/accept/route.ts
+
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import Trade from "@/models/Trade";
@@ -14,7 +16,10 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json({ success: true, trade });
-  } catch (error) {
-    return NextResponse.json({ success: false, error });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, message: error.message },
+      { status: 500 }
+    );
   }
 }
