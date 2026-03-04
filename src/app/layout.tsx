@@ -10,7 +10,7 @@ export const metadata = {
   description: "Yeni nesil güvenli siber pazar yeri ve takas platformu.",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr">
       <body className={`${inter.className} bg-[#030712] text-white antialiased pb-24 md:pb-0`}>
