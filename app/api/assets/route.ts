@@ -1,16 +1,29 @@
-import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb"; 
+import mongoose from 'mongoose';
 
-export async function POST(request) {
-  try {
-    await connectDB();
-    const body = await request.json();
-    
-    // Varlık kayıt işlemleri burada devam eder...
-    
-    return NextResponse.json({ success: true, message: "Siber varlık kaydedildi." });
-  } catch (error) {
-    console.error("Kayıt Hatası:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+const MONGODB_URI = process.env.MONGODB_URI!;
+
+if (!MONGODB_URI) {
+  throw new Error('Lütfen .env.local dosyasında MONGODB_URI tanımlayın');
 }
+
+let cached = (global as any).mongoose;
+
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
+
+async function connectDB() {
+  if (cached.conn) {
+    return cached.conn;
+  }
+  if (!cached.promise) {
+    const opts = { bufferCommands: false };
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      return mongoose;
+    });
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+
+export default connectDB;
