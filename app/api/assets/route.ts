@@ -1,29 +1,24 @@
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import Asset from '@/models/Asset';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-
-if (!MONGODB_URI) {
-  throw new Error('Lütfen .env.local dosyasında MONGODB_URI tanımlayın');
-}
-
-let cached = (global as any).mongoose;
-
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
-
-async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
+export async function GET() {
+  try {
+    await connectDB();
+    const assets = await Asset.find({}).sort({ createdAt: -1 });
+    return NextResponse.json({ success: true, data: assets });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: 'Veriler getirilemedi' }, { status: 500 });
   }
-  if (!cached.promise) {
-    const opts = { bufferCommands: false };
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
 }
 
-export default connectDB;
+export async function POST(request: Request) {
+  try {
+    await connectDB();
+    const body = await request.json();
+    const newAsset = await Asset.create(body);
+    return NextResponse.json({ success: true, data: newAsset }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: 'Varlık eklenemedi' }, { status: 400 });
+  }
+}
