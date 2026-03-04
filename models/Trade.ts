@@ -1,3 +1,5 @@
+// models/Trade.ts
+
 import mongoose, { Schema, models, model } from "mongoose";
 
 const TradeSchema = new Schema(
@@ -28,7 +30,6 @@ const TradeSchema = new Schema(
         "pending",
         "accepted",
         "rejected",
-        "escrow_pending",
         "shipping",
         "completed",
         "cancelled",
