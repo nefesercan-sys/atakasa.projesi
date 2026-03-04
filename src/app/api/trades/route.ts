@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import Trade from "@/models/Trade";
-
-export const dynamic = "force-dynamic";
+import { connectDB } from "../../../lib/mongodb";
+import Trade from "../../../models/Trade";
 
 // 📥 GET: Kullanıcıya Gelen ve Giden Takas Tekliflerini Çek
 export async function GET(req: Request) {
