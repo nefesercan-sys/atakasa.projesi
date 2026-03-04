@@ -1,71 +1,72 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { Search, Sparkles, ArrowRight, ShieldCheck, Zap, LayoutGrid, ArrowLeftRight, User } from "lucide-react";
+import { Search, ArrowRight, ShieldCheck, Zap, LayoutGrid, ArrowLeftRight, User } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#000000] text-white font-sans selection:bg-[#00f260] selection:text-black pb-28 relative overflow-hidden">
+    <div className="min-h-screen bg-black text-zinc-100 font-sans pb-28 selection:bg-emerald-500 selection:text-black">
       
-      {/* 🌌 ARKAPLAN SİBER PARLAMALARI (Derinlik Katar) */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#00f260]/10 blur-[150px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 blur-[150px] rounded-full pointer-events-none"></div>
-
       {/* 🚀 ÜST BAR: Akıllı Arama ve Karşılama (Glassmorphism) */}
-      <div className="sticky top-0 z-50 bg-[#000000]/60 backdrop-blur-2xl border-b border-white/5 pt-6 pb-4 px-5">
-        <div className="flex justify-between items-center mb-5">
-          <h1 className="text-2xl font-black uppercase tracking-tighter text-white">
-            ATA<span className="text-[#00f260]">KASA.</span>
-          </h1>
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#00f260] to-blue-500 p-[2px]">
-            <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
-              <span className="text-xs font-bold">NEX</span>
-            </div>
-          </div>
+      <div className="sticky top-0 z-50 bg-black/70 backdrop-blur-xl border-b border-white/10 px-4 pt-6 pb-4">
+        <div className="flex justify-between items-center mb-6">
+           <h1 className="text-2xl font-black tracking-tighter text-white">
+             ATA<span className="text-emerald-500">KASA.</span>
+           </h1>
+           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 p-[1px]">
+             <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
+               <User size={18} className="text-emerald-500"/>
+             </div>
+           </div>
         </div>
         
+        {/* Lüks Arama Çubuğu */}
         <div className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search size={18} className="text-slate-500 group-focus-within:text-[#00f260] transition-colors" />
-          </div>
-          <input 
-            type="text" 
-            placeholder="Ne arıyorsun? (Örn: iPhone 13 Pro)" 
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white outline-none focus:border-[#00f260]/50 focus:bg-white/10 transition-all placeholder:text-slate-500 font-medium shadow-inner"
-          />
+           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+             <Search size={18} className="text-zinc-500" />
+           </div>
+           <input
+             type="text"
+             placeholder="Varlık, kategori veya kod ara..."
+             className="w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-zinc-200 outline-none focus:border-emerald-500/50 focus:bg-zinc-900 transition-all placeholder:text-zinc-600 shadow-inner"
+           />
         </div>
       </div>
 
       {/* 🚀 HERO BÖLÜMÜ: Premium Vizyon Kartı */}
-      <div className="px-5 mt-6 relative z-10">
-        <div className="bg-gradient-to-br from-[#0a0f18] to-[#050505] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden shadow-2xl">
-          <Sparkles className="absolute top-4 right-4 text-[#00f260]/30 w-24 h-24 blur-md" />
-          <div className="inline-flex items-center gap-1.5 bg-[#00f260]/10 text-[#00f260] px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border border-[#00f260]/20">
-            <ShieldCheck size={12} /> Siber Güvenli Ticaret
-          </div>
-          <h2 className="text-3xl font-black leading-tight mb-3">
-            Geleceğin <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-teal-400">Takas Ağına</span><br />
-            Hoş Geldin.
-          </h2>
-          <p className="text-slate-400 text-xs font-medium w-4/5 leading-relaxed mb-6">
-            Eski eşyalarını çöpe atma. Premium siber borsada değerinde takasla veya anında nakde çevir.
-          </p>
-          <Link href="/urun-ekle" className="inline-flex items-center gap-2 bg-[#00f260] text-black px-6 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,242,96,0.3)]">
-            Hemen Varlık Ekle <ArrowRight size={16} />
-          </Link>
+      <div className="px-4 mt-6">
+        <div className="relative bg-gradient-to-b from-zinc-900 to-black border border-zinc-800 rounded-3xl p-6 overflow-hidden shadow-2xl">
+           {/* Gizli Parlama Efekti */}
+           <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none"></div>
+           
+           <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-5 border border-emerald-500/20">
+             <ShieldCheck size={14} /> Siber Güvenli Takas
+           </div>
+           
+           <h2 className="text-3xl font-bold tracking-tight mb-3 text-white leading-snug">
+             Değerini <br/>
+             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Keşfet & Takasla.</span>
+           </h2>
+           
+           <p className="text-zinc-400 text-sm mb-8 leading-relaxed font-medium">
+             Kullanmadığın varlıkları premium ekosistemde değerlendir. Gerçek değerinde, güvenle takasla.
+           </p>
+           
+           <Link href="/urun-ekle" className="inline-flex items-center justify-center gap-2 w-full bg-emerald-500 text-black px-6 py-4 rounded-2xl text-sm font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all">
+             Sisteme Varlık Ekle <ArrowRight size={18} />
+           </Link>
         </div>
       </div>
 
-      {/* 🚀 LÜKS KATEGORİLER (Pill Design) */}
-      <div className="mt-8 relative z-10">
-        <div className="flex justify-between items-center px-5 mb-4">
-          <h3 className="text-sm font-black uppercase tracking-widest text-white">Siber Sektörler</h3>
-          <span className="text-[10px] text-[#00f260] font-bold uppercase tracking-widest cursor-pointer hover:underline">Tümü</span>
+      {/* 🚀 LÜKS KATEGORİLER */}
+      <div className="mt-8">
+        <div className="px-5 mb-4 flex justify-between items-center">
+          <h3 className="text-sm font-semibold text-zinc-300">Kategoriler</h3>
+          <span className="text-[11px] text-emerald-500 font-medium cursor-pointer">Tümünü Gör</span>
         </div>
-        <div className="flex gap-3 overflow-x-auto px-5 pb-4 scrollbar-hide snap-x">
+        <div className="flex gap-3 overflow-x-auto px-5 pb-4 scrollbar-hide">
           {['📱 Elektronik', '🚗 Vasıta', '💻 Bilgisayar', '🛋️ Mobilya', '⌚ Lüks Saat'].map((kat, i) => (
-            <div key={i} className="snap-start shrink-0 bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-3.5 rounded-full text-xs font-bold text-slate-300 whitespace-nowrap backdrop-blur-md transition-all cursor-pointer shadow-sm">
+            <div key={i} className="shrink-0 bg-zinc-900/80 border border-zinc-800 px-5 py-2.5 rounded-xl text-xs font-medium text-zinc-300 whitespace-nowrap active:bg-zinc-800 transition-colors cursor-pointer">
               {kat}
             </div>
           ))}
@@ -73,70 +74,48 @@ export default function Home() {
       </div>
 
       {/* 🚀 VİTRİN: Premium Ürün Kartları */}
-      <div className="px-5 mt-4 relative z-10">
-        <h3 className="text-sm font-black uppercase tracking-widest text-white mb-5">Sizin İçin Seçilenler</h3>
-        <div className="grid grid-cols-2 gap-4">
+      <div className="px-4 mt-2">
+        <h3 className="text-sm font-semibold text-zinc-300 mb-4 px-1">Sizin İçin Seçilenler</h3>
+        <div className="grid grid-cols-2 gap-3">
           {[1, 2, 3, 4].map((urun) => (
-            <Link href={`/urun/${urun}`} key={urun} className="group bg-[#0a0a0a] border border-white/5 rounded-[2rem] overflow-hidden active:scale-95 transition-all shadow-lg hover:border-[#00f260]/30 hover:shadow-[0_0_30px_rgba(0,242,96,0.05)] flex flex-col">
+            <Link href={`/urun/${urun}`} key={urun} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col active:scale-[0.98] transition-transform">
               
-              {/* Fotoğraf Alanı */}
-              <div className="aspect-[4/5] relative bg-[#111] overflow-hidden">
-                <img src={`https://placehold.co/600x800/111/00f260?text=Varlık+${urun}`} alt="Varlık" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-80"></div>
-                
-                {/* Sol Üst Etiket */}
-                <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-md border border-white/10 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
-                  <Zap size={10} className="text-[#00f260]" /> Takasa Açık
+              <div className="aspect-[4/5] bg-zinc-950 relative">
+                <img src={`https://placehold.co/400x500/18181b/10b981?text=Urun+${urun}`} alt="Ürün" className="w-full h-full object-cover opacity-90" />
+                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-md border border-white/5 flex items-center gap-1">
+                   <Zap size={10} /> Takasa Uygun
                 </div>
               </div>
-
-              {/* Bilgi Alanı */}
-              <div className="p-4 flex flex-col flex-grow justify-between bg-[#0a0a0a] z-10 -mt-2 rounded-t-2xl relative">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-200 line-clamp-2 leading-snug mb-2 group-hover:text-white transition-colors">
-                    Apple iPhone 13 Pro Max 256GB Kusursuz {urun}
-                  </h4>
-                </div>
-                <div className="flex justify-between items-end mt-2 pt-3 border-t border-white/5">
-                  <div>
-                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-0.5">Değer</span>
-                    <span className="text-[#00f260] font-black text-sm">35.000 ₺</span>
-                  </div>
-                  <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-[#00f260]/20 group-hover:text-[#00f260] transition-colors">
-                    <ArrowRight size={14} />
-                  </div>
-                </div>
+              
+              <div className="p-3 bg-zinc-900/80">
+                <h4 className="text-xs font-medium text-zinc-200 line-clamp-2 mb-2 leading-relaxed">Apple iPhone 13 Pro Max 256GB - Kusursuz</h4>
+                <div className="text-emerald-400 font-bold text-sm">35.000 ₺</div>
               </div>
-
             </Link>
           ))}
         </div>
       </div>
 
       {/* 📱 İOS STİLİ YÜZEN ALT MENÜ (Floating Dock) */}
-      <div className="fixed bottom-6 w-full px-5 z-[100] md:hidden">
-        <div className="bg-[#050505]/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-2 flex justify-between items-center shadow-[0_20px_40px_rgba(0,0,0,0.8)]">
-          <Link href="/" className="flex-1 flex flex-col items-center gap-1 p-2">
-            <LayoutGrid size={22} className="text-[#00f260]" />
-            <span className="text-[9px] font-black text-[#00f260]">Vitrin</span>
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50">
+        <div className="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800 rounded-3xl p-2 flex justify-between items-center shadow-[0_20px_40px_rgba(0,0,0,0.8)]">
+          <Link href="/" className="flex-1 flex flex-col items-center gap-1 p-2 text-emerald-500">
+            <LayoutGrid size={22} />
           </Link>
-          <Link href="/borsa" className="flex-1 flex flex-col items-center gap-1 p-2 text-slate-500 hover:text-white transition-colors">
+          <Link href="/borsa" className="flex-1 flex flex-col items-center gap-1 p-2 text-zinc-500 hover:text-zinc-300 transition-colors">
             <Zap size={22} />
-            <span className="text-[9px] font-black">Borsa</span>
           </Link>
           
-          {/* Ortadaki Dev Buton */}
-          <Link href="/urun-ekle" className="relative -top-5 w-16 h-16 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.3)] text-black border-[6px] border-[#000000] active:scale-95 transition-transform">
-            <ArrowLeftRight size={26} />
+          {/* Ortadaki Aksiyon Butonu */}
+          <Link href="/urun-ekle" className="relative -top-6 w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center text-black border-[5px] border-black shadow-lg active:scale-95 transition-transform">
+            <ArrowLeftRight size={22} />
           </Link>
 
-          <button className="flex-1 flex flex-col items-center gap-1 p-2 text-slate-500 hover:text-white transition-colors">
+          <button className="flex-1 flex flex-col items-center gap-1 p-2 text-zinc-500 hover:text-zinc-300 transition-colors">
             <Search size={22} />
-            <span className="text-[9px] font-black">Ara</span>
           </button>
-          <button className="flex-1 flex flex-col items-center gap-1 p-2 text-slate-500 hover:text-white transition-colors">
+          <button className="flex-1 flex flex-col items-center gap-1 p-2 text-zinc-500 hover:text-zinc-300 transition-colors">
             <User size={22} />
-            <span className="text-[9px] font-black">Profil</span>
           </button>
         </div>
       </div>
