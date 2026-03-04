@@ -1,5 +1,3 @@
-// models/Trade.ts
-
 import mongoose, { Schema, models, model } from "mongoose";
 
 const TradeSchema = new Schema(
