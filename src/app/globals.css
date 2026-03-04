@@ -2,13 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Altına senin özel siber renklerin gelecek */
 :root {
   --background: #030712;
   --foreground: #ffffff;
 }
 
+/* 🚀 Mavi linkleri ve eski fontları siber zırhla kapla */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
-  background-color: #030712 !important; /* Arka planı siyaha zorla */
-  color: white;
+  background-color: #030712 !important;
+  color: white !important;
+  font-family: sans-serif !important;
+}
+
+a {
+  text-decoration: none !important;
+  color: inherit !important;
 }
