@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { TrendingUp, Sun, CloudRain, Wind, User, ArrowRight, Zap, ArrowLeftRight } from "lucide-react";
+import { TrendingUp, Sun, Wind, User, ArrowRight, Zap, ArrowLeftRight } from "lucide-react";
 
 export default function Home() {
   const [sloganIdx, setSloganIdx] = useState(0);
@@ -34,8 +34,8 @@ export default function Home() {
         </div>
         <div className="flex gap-6 items-center shrink-0 ml-4">
           <span className="flex items-center gap-2 text-sky-400"><Sun size={14} /> İZMİR 18°C</span>
-          <Link href="/panel" className="hidden md:flex items-center gap-2 text-[#00f260] hover:text-white transition-colors bg-[#00f260]/10 px-3 py-1 rounded-full border border-[#00f260]/20">
-            <User size={14} /> PANEL GİRİŞİ
+          <Link href="/trades" className="hidden md:flex items-center gap-2 text-[#00f260] hover:text-white transition-colors bg-[#00f260]/10 px-3 py-1 rounded-full border border-[#00f260]/20">
+            <User size={14} /> SİBER PANEL
           </Link>
         </div>
       </div>
@@ -44,8 +44,9 @@ export default function Home() {
       <div className="relative pt-16 pb-12 px-4 flex flex-col items-center justify-center text-center overflow-hidden border-b border-white/5 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#00f260]/5 via-[#030712] to-[#030712]">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00f260]/10 blur-[120px] rounded-full pointer-events-none"></div>
         
+        {/* 🔥 YENİ MARKA: TAKAS SEPETİ */}
         <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter mb-6 relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-300 to-slate-500">
-          NEXUS <span className="text-[#00f260] drop-shadow-[0_0_20px_rgba(0,242,96,0.8)]">GLOBAL.</span>
+          TAKAS <span className="text-[#00f260] drop-shadow-[0_0_20px_rgba(0,242,96,0.8)]">SEPETİ.</span>
         </h1>
         
         <div className="h-12 flex items-center justify-center relative z-10 mb-8">
@@ -106,7 +107,6 @@ export default function Home() {
                   <div className="p-5 flex flex-col flex-grow justify-between">
                     <div>
                       <h3 className="text-white font-bold text-sm uppercase leading-tight mb-2 line-clamp-2 group-hover:text-[#00f260] transition-colors">Siber İlan Başlığı Örneği {item}</h3>
-                      <p className="text-slate-500 text-[10px] font-black tracking-widest uppercase flex items-center gap-1"><Sun size={10}/> İZMİR</p>
                     </div>
                     <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-end">
                       <div>
@@ -141,9 +141,9 @@ export default function Home() {
                     <span className="text-[8px] text-slate-600 font-black">2 DK ÖNCE</span>
                   </div>
                   <div className="flex items-center gap-3 mt-3">
-                    <div className="w-10 h-10 bg-white/5 rounded-lg shrink-0 overflow-hidden"><img src={`https://placehold.co/100/030712/fff?text=A`} /></div>
+                    <div className="w-10 h-10 bg-white/5 rounded-lg shrink-0 overflow-hidden"><img src={`https://placehold.co/100/030712/fff?text=A`} alt="A" /></div>
                     <ArrowLeftRight size={14} className="text-slate-500 shrink-0" />
-                    <div className="w-10 h-10 bg-white/5 rounded-lg shrink-0 overflow-hidden"><img src={`https://placehold.co/100/030712/00f260?text=B`} /></div>
+                    <div className="w-10 h-10 bg-white/5 rounded-lg shrink-0 overflow-hidden"><img src={`https://placehold.co/100/030712/00f260?text=B`} alt="B" /></div>
                   </div>
                   <p className="text-slate-400 text-[10px] mt-3 font-bold leading-relaxed line-clamp-2 group-hover:text-white transition-colors">
                     iPhone 13 Pro ile Oyuncu Bilgisayarı takasa sunuldu. Üste 5000₺ nakit teklifi var.
@@ -152,7 +152,7 @@ export default function Home() {
               ))}
             </div>
             
-            <Link href="/takas-baslat" className="mt-6 w-full py-4 bg-amber-400 text-black rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform">
+            <Link href="/takas-teklif" className="mt-6 w-full py-4 bg-[#00f260] text-black rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(0,242,96,0.4)] transition-all">
               SİSTEME DAHİL OL <Zap size={14} />
             </Link>
           </div>
@@ -163,4 +163,3 @@ export default function Home() {
     </div>
   );
 }
- 
