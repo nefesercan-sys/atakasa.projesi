@@ -3,12 +3,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { TrendingUp, TrendingDown, Activity, ArrowLeftRight, BarChart2, Search } from "lucide-react";
 
-export default function Borsa() {
+export default function SiberBorsa() {
   const [arama, setArama] = useState("");
 
   // 🧠 Borsa Simülasyon Verileri (İleride MongoDB'den gelecek)
   const borsaVerileri = [
-    { id: 1, kod: "APP-IPH13", isim: "Apple iPhone 13 Pro", kategori: "Elektronik", deger: "35.000 ₺", trend: "up", yuzde: "+5.2%", talep: "Çok Yüksek" },
+    { id: 1, kod: "APP-IPH13", isim: "Apple iPhone 13 Pro Max", kategori: "Elektronik", deger: "35.000 ₺", trend: "up", yuzde: "+5.2%", talep: "Çok Yüksek" },
     { id: 2, kod: "ASU-RTX3080", isim: "Asus ROG RTX 3080", kategori: "Bilgisayar", deger: "18.500 ₺", trend: "down", yuzde: "-1.4%", talep: "Orta" },
     { id: 3, kod: "AUD-A3", isim: "Audi A3 2016 S-Line", kategori: "Vasıta", deger: "1.250.000 ₺", trend: "up", yuzde: "+2.1%", talep: "Yüksek" },
     { id: 4, kod: "SON-PS5", isim: "Sony PlayStation 5", kategori: "Elektronik", deger: "19.000 ₺", trend: "up", yuzde: "+8.7%", talep: "Aşırı Yoğun" },
