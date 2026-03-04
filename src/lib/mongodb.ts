@@ -1,24 +1,26 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string
+const MONGODB_URI = process.env.MONGODB_URI!;
 
 if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI tanımlı değil")
+  throw new Error("SİBER HATA: MONGODB_URI şifresi .env dosyasında bulunamadı!");
 }
 
-let cached = (global as any).mongoose
+let cached = (global as any).mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null }
+  cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
-export async function connectDB() {
-  if (cached.conn) return cached.conn
+export const connectDB = async () => {
+  if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI)
+    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => {
+      console.log("🚀 SİBER AĞ: Atakasa MongoDB'ye Bağlandı!");
+      return mongoose;
+    });
   }
-
-  cached.conn = await cached.promise
-  return cached.conn
-}
+  cached.conn = await cached.promise;
+  return cached.conn;
+};
