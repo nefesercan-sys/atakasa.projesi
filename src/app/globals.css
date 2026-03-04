@@ -2,38 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Altına senin özel siber renklerin gelecek */
 :root {
   --background: #030712;
   --foreground: #ffffff;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-
-@layer utilities {
-  /* 🚀 Borsa ve Sloganlar İçin Kayan Yazı Motoru */
-  .animate-marquee {
-    display: inline-block;
-    animation: marquee 30s linear infinite;
-  }
-  .animate-marquee-fast {
-    display: inline-block;
-    animation: marquee 15s linear infinite;
-  }
-  @keyframes marquee {
-    0% { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
-  }
-  
-  /* 🚀 Kusursuz Görünüm İçin Scrollbar (Kaydırma Çubuğu) Gizleyici */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  background-color: #030712 !important; /* Arka planı siyaha zorla */
+  color: white;
 }
