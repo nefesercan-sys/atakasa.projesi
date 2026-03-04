@@ -1,21 +1,27 @@
 import { Inter } from "next/font/google";
-// ⚡ KRİTİK BAĞLANTI: Stil motorunu sisteme enjekte ediyoruz
-import "./globals.css"; 
+import "./globals.css";
+// ⚡ KRİTİK BAĞLANTI: Yeni Siber Navigasyon Motoru Eklendi
+import CyberNav from "@/components/CyberNav"; 
 
 const inter = Inter({ subsets: ["latin"] });
 
-// 🚀 SİBER KİMLİK: Sitenin tarayıcı sekmesinde görünecek adı ve açıklaması
 export const metadata = {
-  title: "Nexus Global | Siber Ticaret Ağı",
+  title: "ATAKASA | Siber Ticaret Ağı",
   description: "Yeni nesil güvenli siber pazar yeri ve takas platformu.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="tr">
-      <body className={`${inter.className} bg-[#030712] text-white antialiased`}>
+      {/* pb-24 sınıfı, mobilde alt menünün sayfanın en altındaki yazıları kapatmaması için eklendi */}
+      <body className={`${inter.className} bg-[#030712] text-white antialiased pb-24 md:pb-0`}>
+        
         {/* Tüm sayfalar bu siber iskeletin içinde render edilir */}
         {children}
+
+        {/* 🛡️ SİBER NAVİGASYON AĞI (Her sayfada otomatik görünecek) */}
+        <CyberNav />
+        
       </body>
     </html>
   );
