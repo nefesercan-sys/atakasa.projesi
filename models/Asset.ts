@@ -4,7 +4,7 @@ const AssetSchema = new Schema({
   title: { type: String, required: true },
   price: { type: String, required: true },
   category: { type: String, required: true },
-  image: { type: String, required: false }, // İleride Cloudinary görsel linki buraya eklenecek
+  image: { type: String, required: false }, // İleride eklenecek Cloudinary medya linkleri için
   description: { type: String, required: false },
 }, { timestamps: true });
 
