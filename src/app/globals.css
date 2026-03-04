@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🛡️ SİBER TEMEL ZIRH */
+body {
+  background-color: #030712;
+  color: #ffffff;
+}
+
+/* Chrome, Safari ve Opera için kaydırma çubuğunu gizleme (Panel sayfalarında kullandık) */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
