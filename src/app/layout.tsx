@@ -14,8 +14,7 @@ export const metadata = {
   description: "Satamıyor musun? At takasa! Yeni nesil siber takas ve ticaret ağı.",
 };
 
-export default function RootLayout({ children }) {
-  return (
+export default function RootLayout({ children }: { children: React.ReactNode }) {
     <html lang="tr" className="scroll-smooth">
       <body className={`${inter.className} bg-[#030712] text-white antialiased min-h-screen overflow-x-hidden pb-24 md:pb-0`}>
         
