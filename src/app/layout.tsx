@@ -45,3 +45,19 @@ export default function RootLayout({ children }) {
                     👤
                  </Link>
               </div>
+
+            </div>
+          </header>
+
+          <main className="relative pt-20">
+            {children}
+          </main>
+
+          <CyberNav />
+          
+        </AuthProvider>
+
+      </body>
+    </html>
+  );
+}
