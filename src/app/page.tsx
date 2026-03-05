@@ -7,7 +7,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   // 📡 CANLI VERİ STATE'LERİ
-  const [ilanlar, setIlanlar] = useState([]);
+  const [ilanlar, setIlanlar] = useState<any[]>([]); // TypeScript hatasını önlemek için <any[]> eklendi
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
