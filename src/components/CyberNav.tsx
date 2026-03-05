@@ -10,20 +10,21 @@ export default function CyberNav() {
   const router = useRouter();
   const pathname = usePathname();
   
-  // 🚀 ZIRHLI REFERANSLAR
+  // 🚀 REFERANSLAR
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 🚀 ZIRHLI STATE'LER
+  // 🚀 STATE'LER
   const [activeModal, setActiveModal] = useState<string | null>(null); 
   const [showForm, setShowForm] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  // 🛡️ Yeni: Paylaşılan ilanın ID'sini tutar
+  const [lastPublishedId, setLastPublishedId] = useState<string | null>(null);
 
   const [images, setImages] = useState<Array<string | null>>(Array(5).fill(null));
   
-  // DETAYLI İLAN FORMU
   const [formData, setFormData] = useState({ 
     sektor: "", 
     baslik: "", 
@@ -45,7 +46,6 @@ export default function CyberNav() {
     { name: "ANTİKA", icon: "🏺", slug: "antika" }, { name: "EL SANATLARI", icon: "🎨", slug: "sanat" },
   ];
 
-  // KAMERA FONKSİYONLARI
   const startCamera = async () => {
     try {
       setCameraActive(true);
@@ -70,7 +70,6 @@ export default function CyberNav() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      
       if (context) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -84,13 +83,10 @@ export default function CyberNav() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (event.target?.result) {
-          addImageToState(event.target.result as string);
-        }
+        if (event.target?.result) addImageToState(event.target.result as string);
       };
       reader.readAsDataURL(file);
     });
@@ -105,12 +101,9 @@ export default function CyberNav() {
     });
   };
 
-  // 🚀 EKLEDİĞİMİZ CANLI İLAN YAYINLAMA KODU
+  // 🚀 CANLI İLAN YAYINLAMA (GÜNCELLENDİ)
   const handlePublish = async () => {
-     if(!session) {
-       return alert("SİBER ENGEL: İlan vermek için önce giriş yapmalısın!");
-     }
-
+     if(!session) return alert("SİBER ENGEL: İlan vermek için önce giriş yapmalısın!");
      if(!formData.baslik || !formData.fiyat || !formData.sektor || !formData.sehir) {
        return alert("Lütfen tüm zorunlu alanları doldurun!");
      }
@@ -134,6 +127,8 @@ export default function CyberNav() {
        });
 
        if (res.ok) {
+         const data = await res.json();
+         setLastPublishedId(data.id); // 🛡️ ID'yi yakala
          setPublishStatus('success');
          stopCamera();
        } else {
@@ -147,15 +142,22 @@ export default function CyberNav() {
      }
   };
 
+  // 🛡️ GÜNCELLENMİŞ PAYLAŞIM: Doğrudan ilana gider
   const handleShare = async () => {
+    const shareUrl = lastPublishedId 
+      ? `https://atakasa.com/varlik/${lastPublishedId}` 
+      : window.location.href;
+
     const shareData = {
       title: formData.baslik || 'ATAKASA İlanı',
-      text: 'Bu siber varlığı Atakasa\'da incele!',
-      url: window.location.href, 
+      text: `${formData.baslik} - Bu siber varlığı Atakasa'da incele!`,
+      url: shareUrl, 
     };
+
     if (navigator.share) {
       try { await navigator.share(shareData); } catch (err) {}
     } else {
+      navigator.clipboard.writeText(shareUrl);
       alert("Siber Bağlantı Kopyalandı!");
     }
   };
@@ -165,6 +167,7 @@ export default function CyberNav() {
     setShowForm(false); 
     stopCamera();
     setPublishStatus('idle');
+    setLastPublishedId(null);
     setImages(Array(5).fill(null));
     setFormData({ sektor: "", baslik: "", fiyat: "", ulke: "Türkiye", sehir: "", ilce: "", aciklama: "" });
   };
@@ -189,7 +192,7 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* ⚡ AT TAKASA (KAMERA/İLAN) MODALI */}
+      {/* ⚡ AT TAKASA MODALI */}
       {activeModal === 'ilan' && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/98 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in slide-in-from-bottom-8 duration-500">
           <div className="max-w-xl mx-auto mt-4">
@@ -286,6 +289,7 @@ export default function CyberNav() {
         </div>
       )}
 
+      {/* 📱 SİBER MOBİL ALT MENÜ */}
       <nav className="fixed bottom-0 left-0 z-[500] w-full md:hidden">
         <div className="absolute bottom-0 w-full h-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-t border-white/[0.04] shadow-[0_-20px_40px_rgba(0,0,0,0.8)]"></div>
         <div className="relative flex justify-between items-end px-4 pb-3 h-24">
