@@ -6,10 +6,27 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
+  // 📡 CANLI VERİ STATE'LERİ
+  const [ilanlar, setIlanlar] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // 📡 SİBER VERİ ÇEKME OPERASYONU
   useEffect(() => {
     setIsLoaded(true);
+    const veriGetir = async () => {
+      try {
+        const res = await fetch("/api/varliklar");
+        const data = await res.json();
+        // Eğer veri geldiyse ilanları set et, gelmediyse boş dizi kalsın
+        setIlanlar(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Veri akışı kesildi:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    veriGetir();
   }, []);
 
   const kategoriler = [
@@ -19,13 +36,6 @@ export default function Home() {
     { isim: "Koleksiyon & Sanat", ikon: "🏺", trend: "+%35", renk: "from-orange-400 to-amber-500" },
     { isim: "Hizmet & Yetenek", ikon: "⚡", trend: "+%41", renk: "from-rose-400 to-red-500" },
     { isim: "Moda & Lüks", ikon: "💎", trend: "+%5", renk: "from-fuchsia-400 to-purple-500" }
-  ];
-
-  const sonVarliklar = [
-    { id: 1, baslik: "MacBook Pro M3 Max", deger: "120.000 ₺", takasIsteği: "Araba veya Arsa", resim: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=600" },
-    { id: 2, baslik: "Rolex Submariner", deger: "450.000 ₺", takasIsteği: "Klasik Otomobil", resim: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&q=80&w=600" },
-    { id: 3, baslik: "Sony A7 IV + Lens Seti", deger: "95.000 ₺", takasIsteği: "Oyun Bilgisayarı", resim: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=600" },
-    { id: 4, baslik: "Ege'de 500m2 Arsa", deger: "Teklif Bekliyor", takasIsteği: "2 Adet SUV Araç", resim: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=600" }
   ];
 
   const handleArama = () => {
@@ -51,7 +61,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 🚀 NEFES ALAN HERO SECTION & SUBLIMINAL TETİKLEYİCİLER */}
+      {/* 🚀 HERO SECTION */}
       <div className={`relative z-10 pt-28 pb-20 px-6 md:px-12 flex flex-col items-center text-center transition-all duration-1000 transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
         
         <h1 className="text-7xl md:text-[10rem] font-black tracking-tighter uppercase leading-[0.85] mb-8 drop-shadow-2xl">
@@ -72,7 +82,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ⚡ ARAMA MOTORU (Doğrudan Keşfet Sayfasına Bağlandı) */}
+        {/* ⚡ ARAMA MOTORU */}
         <div className="relative w-full max-w-3xl z-30 group">
           <div className="absolute -inset-1 bg-[#00f260] rounded-[2.5rem] blur-2xl opacity-0 group-focus-within:opacity-25 transition duration-1000"></div>
           <div className="relative flex items-center bg-[#0a0a0a] border border-white/[0.08] rounded-[2.5rem] p-2.5 shadow-[0_30px_50px_rgba(0,0,0,0.6)] transition-all hover:border-white/[0.15]">
@@ -91,12 +101,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 📊 ESTETİK ENDEKS KARTLARI */}
+      {/* 📊 ENDEKS KARTLARI */}
       <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-12 mb-32">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-6">
           Siber Piyasa Hacmi <div className="h-[1px] flex-1 bg-gradient-to-r from-white/[0.05] to-transparent"></div>
         </h2>
-        
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {kategoriler.map((kat, idx) => (
             <Link key={idx} href="/kesfet" className="group relative bg-[#0a0a0a] border border-white/[0.04] rounded-3xl p-7 flex flex-col justify-between h-40 hover:border-[#00f260]/30 hover:-translate-y-1 transition-all duration-500 shadow-xl shadow-black/20">
@@ -110,7 +119,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 💠 DERİNLİK KATILMIŞ CANLI TAHTA */}
+      {/* 💠 CANLI TAHTA (ARTIK GERÇEK VERİLERLE!) */}
       <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-12">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
           <div>
@@ -127,40 +136,58 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {sonVarliklar.map((varlik) => (
-            <Link key={varlik.id} href={`/varlik/${varlik.id}`} className="group flex flex-col bg-[#0a0a0a] border border-white/[0.04] rounded-[2.5rem] p-3 hover:border-[#00f260]/20 hover:-translate-y-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
-              
-              <div className="relative h-64 w-full rounded-[2rem] overflow-hidden bg-[#111]">
-                <img src={varlik.resim} alt={varlik.baslik} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
-                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md border border-white/10 text-[#00f260] text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
-                  At Takasa
-                </div>
-              </div>
-
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-white leading-snug mb-4 group-hover:text-[#00f260] transition-colors">{varlik.baslik}</h3>
-                  <div className="flex flex-col gap-1.5 mb-6">
-                    <p className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Tahmini Değer</p>
-                    <p className="text-[#00f260] font-black text-base">{varlik.deger}</p>
-                  </div>
-                </div>
+        {/* 🚀 VERİ AKIŞI */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-[400px] bg-white/[0.02] border border-white/[0.04] rounded-[2.5rem] animate-pulse"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {ilanlar.length > 0 ? ilanlar.map((varlik) => (
+              <Link key={varlik._id} href={`/varlik/${varlik._id}`} className="group flex flex-col bg-[#0a0a0a] border border-white/[0.04] rounded-[2.5rem] p-3 hover:border-[#00f260]/20 hover:-translate-y-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
                 
-                <div className="pt-4 border-t border-white/[0.04] flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mb-1">Takas Beklentisi</p>
-                    <p className="text-slate-200 text-xs font-semibold">{varlik.takasIsteği}</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-white/[0.05] flex items-center justify-center group-hover:bg-[#00f260] group-hover:text-black transition-all duration-300">
-                    <span className="transform -rotate-45 group-hover:rotate-0 transition-transform duration-500">➔</span>
+                <div className="relative h-64 w-full rounded-[2rem] overflow-hidden bg-[#111]">
+                  {varlik.resimler?.[0] ? (
+                    <img src={varlik.resimler[0]} alt={varlik.baslik} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-5xl opacity-10">🖼️</div>
+                  )}
+                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md border border-white/10 text-[#00f260] text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
+                    {varlik.kategori || "At Takasa"}
                   </div>
                 </div>
-              </div>
 
-            </Link>
-          ))}
-        </div>
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white leading-snug mb-4 group-hover:text-[#00f260] transition-colors truncate">{varlik.baslik}</h3>
+                    <div className="flex flex-col gap-1.5 mb-6">
+                      <p className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Tahmini Değer</p>
+                      <p className="text-[#00f260] font-black text-base">{Number(varlik.fiyat).toLocaleString()} ₺</p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-white/[0.04] flex items-center justify-between">
+                    <div>
+                      <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mb-1">Takas Beklentisi</p>
+                      <p className="text-slate-200 text-xs font-semibold truncate max-w-[150px]">{varlik.takasIstegi || "Takasa Açık"}</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-white/[0.05] flex items-center justify-center group-hover:bg-[#00f260] group-hover:text-black transition-all duration-300">
+                      <span className="transform -rotate-45 group-hover:rotate-0 transition-transform duration-500">➔</span>
+                    </div>
+                  </div>
+                </div>
+
+              </Link>
+            )) : (
+              <div className="col-span-full py-20 text-center opacity-30">
+                <span className="text-6xl block mb-4">📡</span>
+                <p className="font-black uppercase tracking-widest">Sinyal Bulunamadı. İlk ilanı sen ver!</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 🚀 DEV TÜM PİYASAYI GÖR BUTONU */}
         <div className="mt-16 flex justify-center">
