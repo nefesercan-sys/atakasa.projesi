@@ -11,12 +11,12 @@ export default function Home() {
   }, []);
 
   const kategoriler = [
-    { isim: "Teknoloji Endeksi", ikon: "💻", trend: "+%14" },
-    { isim: "Araç & Mobilite", ikon: "🚗", trend: "+%8" },
-    { isim: "Gayrimenkul", ikon: "🏢", trend: "+%22" },
-    { isim: "Koleksiyon & Antika", ikon: "🏺", trend: "+%35" },
-    { isim: "Hizmet & Yetenek", ikon: "⚡", trend: "+%41" },
-    { isim: "Moda & Lüks", ikon: "💎", trend: "+%5" }
+    { isim: "Teknoloji Endeksi", ikon: "💻", trend: "+%14", renk: "from-emerald-400 to-cyan-400" },
+    { isim: "Araç & Mobilite", ikon: "🚗", trend: "+%8", renk: "from-teal-400 to-emerald-500" },
+    { isim: "Gayrimenkul", ikon: "🏢", trend: "+%22", renk: "from-blue-400 to-indigo-500" },
+    { isim: "Koleksiyon & Sanat", ikon: "🏺", trend: "+%35", renk: "from-orange-400 to-amber-500" },
+    { isim: "Hizmet & Yetenek", ikon: "⚡", trend: "+%41", renk: "from-rose-400 to-red-500" },
+    { isim: "Moda & Lüks", ikon: "💎", trend: "+%5", renk: "from-fuchsia-400 to-purple-500" }
   ];
 
   const sonVarliklar = [
@@ -27,131 +27,125 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#02040a] text-white selection:bg-[#00f260] selection:text-black overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#050505] text-slate-200 selection:bg-[#00f260] selection:text-black font-sans pb-20">
       
-      {/* 🌌 SİBER ARKA PLAN EFEKTLERİ (Çizgisiz, Yumuşak Geçişli) */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#00f260] opacity-[0.04] blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-600 opacity-[0.03] blur-[150px] rounded-full"></div>
+      {/* 🌌 YUMUŞATILMIŞ ARKA PLAN IŞIKLARI */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] opacity-[0.015] blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-blue-600 opacity-[0.015] blur-[150px] rounded-full"></div>
       </div>
 
-      {/* 📢 CANLI BANT (Sınır Çizgisi Yok, Sadece Arka Plan Rengi) */}
-      <div className="relative z-20 bg-[#00f260] text-black text-[10px] md:text-xs font-black uppercase tracking-[0.2em] py-3 overflow-hidden flex items-center shadow-[0_10px_30px_rgba(0,242,96,0.15)]">
-        <div className="animate-[marquee_20s_linear_infinite] whitespace-nowrap flex gap-12">
-          <span>🔥 SON İŞLEM: iPhone 14 Pro 🔄 PS5 + 10.000₺ Takaslandı (2 dk önce)</span>
-          <span>⚡ TREND: Teknoloji kategorisinde %14 hacim artışı!</span>
-          <span>💎 DEV TAKAS: İzmir'de Arsa 🔄 2 Adet Elektrikli Araç (15 dk önce)</span>
-          <span>🔥 SON İŞLEM: MacBook Air 🔄 iPad Pro M2 (Şimdi)</span>
+      {/* 📢 ELEGANT CANLI BANT */}
+      <div className="relative z-20 bg-white/[0.02] border-b border-white/[0.05] backdrop-blur-md py-3 overflow-hidden flex items-center">
+        <div className="animate-[marquee_25s_linear_infinite] whitespace-nowrap flex gap-16 text-[11px] font-semibold tracking-widest text-slate-400 uppercase">
+          <span>🔥 <strong className="text-white">SON İŞLEM:</strong> iPhone 14 Pro 🔄 PS5 + 10.000₺ <span className="text-[#00f260]">(2 dk önce)</span></span>
+          <span>⚡ <strong className="text-white">TREND:</strong> Teknoloji kategorisinde %14 hacim artışı!</span>
+          <span>💎 <strong className="text-white">DEV TAKAS:</strong> İzmir'de Arsa 🔄 2 Adet Elektrikli Araç <span className="text-[#00f260]">(15 dk önce)</span></span>
         </div>
       </div>
 
-      {/* 🚀 HERO SECTION (Tamamen Cam Efekti, Çizgi Yok) */}
-      <div className={`relative z-10 pt-24 pb-20 px-4 md:px-8 text-center transition-all duration-1000 transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-        <h1 className="text-7xl md:text-[10rem] font-black italic tracking-tighter uppercase leading-[0.8] mb-6 drop-shadow-2xl">
+      {/* 🚀 NEFES ALAN HERO SECTION */}
+      <div className={`relative z-10 pt-32 pb-24 px-6 md:px-12 flex flex-col items-center text-center transition-all duration-1000 transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+        <h1 className="text-6xl md:text-[9rem] font-black tracking-tighter uppercase leading-[0.85] mb-8 text-white">
           AT <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#00f260] to-teal-400 drop-shadow-[0_0_30px_rgba(0,242,96,0.4)]">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400">
             TAKASA.
           </span>
         </h1>
-        <p className="max-w-2xl mx-auto text-slate-400 font-medium uppercase tracking-[0.2em] text-xs md:text-sm mb-14">
-          Satamıyor musun? Bekleme. Elindeki gücü kullan. Sınırları kaldır ve küresel takas borsasına hükmet.
+        <p className="max-w-2xl text-slate-400 font-medium tracking-wide text-sm md:text-base leading-relaxed mb-16">
+          Satamıyor musun? Bekleme. Elindeki gücü kullan, sınırları kaldır ve yepyeni bir küresel ekosisteme adım at.
         </p>
         
-        {/* DEV ARAMA MOTORU (Çizgisiz, Havada Asılı Zırh) */}
-        <div className="relative max-w-3xl mx-auto z-30 group">
-          <div className="absolute -inset-2 bg-[#00f260] rounded-[2rem] blur-xl opacity-10 group-focus-within:opacity-30 transition duration-700"></div>
-          <div className="relative flex items-center bg-white/[0.03] backdrop-blur-2xl rounded-[2rem] overflow-hidden p-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-            <span className="pl-6 text-[#00f260] text-2xl animate-pulse">⚡</span>
+        {/* YUMUŞAK ARAMA MOTORU */}
+        <div className="relative w-full max-w-3xl z-30 group">
+          <div className="absolute -inset-1 bg-[#00f260] rounded-[2.5rem] blur-2xl opacity-0 group-focus-within:opacity-20 transition duration-1000"></div>
+          <div className="relative flex items-center bg-[#0a0a0a] border border-white/[0.08] rounded-[2.5rem] p-2.5 shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all hover:border-white/[0.15]">
+            <span className="pl-6 text-[#00f260] text-xl">✨</span>
             <input 
               type="text"
-              placeholder="PİYASADA VARLIK ARA (Örn: MacBook, Arsa, Saat)..."
-              className="w-full bg-transparent border-none p-5 text-white text-sm md:text-base font-bold tracking-widest outline-none placeholder:text-slate-500"
+              placeholder="Sistemde varlık ara (Örn: MacBook, Arsa, Saat)..."
+              className="w-full bg-transparent border-none px-6 py-5 text-white text-base font-medium tracking-wide outline-none placeholder:text-slate-500"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button className="hidden md:block bg-gradient-to-r from-[#00f260] to-emerald-400 text-black font-black uppercase tracking-widest px-10 py-5 rounded-xl hover:scale-105 transition-transform duration-300 shadow-[0_0_20px_rgba(0,242,96,0.3)]">
-              Tara
+            <button className="hidden md:block bg-white text-black font-bold tracking-widest px-10 py-5 rounded-[2rem] hover:bg-[#00f260] transition-colors duration-500 shadow-lg">
+              KEŞFET
             </button>
           </div>
         </div>
       </div>
 
-      {/* 📊 HACİM ENDEKSLERİ (Çizgisiz "Bento Box" Tasarımı) */}
-      <div className="relative z-10 max-w-[1500px] mx-auto px-4 md:px-8 mb-32">
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-6">
-          Piyasa Endeksleri <div className="h-[1px] flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
+      {/* 📊 ESTETİK ENDEKS KARTLARI */}
+      <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-12 mb-32">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-6">
+          Piyasa Endeksleri <div className="h-[1px] flex-1 bg-gradient-to-r from-white/[0.05] to-transparent"></div>
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {kategoriler.map((kat, idx) => (
-            <Link key={idx} href="#" className="group relative bg-[#0a0f1c] rounded-3xl p-6 overflow-hidden hover:bg-[#0d1425] transition-colors duration-300 shadow-xl shadow-black/40">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent"></div>
-              <div className="relative z-10 flex flex-col h-full justify-between gap-6">
-                <div className="flex justify-between items-start">
-                  <span className="text-4xl drop-shadow-lg group-hover:scale-110 transition-transform duration-500">{kat.ikon}</span>
-                  <span className="text-[#00f260] font-black text-[10px] bg-[#00f260]/10 px-3 py-1.5 rounded-full">{kat.trend}</span>
-                </div>
-                <h3 className="font-bold text-[11px] uppercase tracking-widest text-slate-300 group-hover:text-white">{kat.isim}</h3>
+            <Link key={idx} href="#" className="group relative bg-[#0a0a0a] border border-white/[0.04] rounded-3xl p-7 flex flex-col justify-between h-40 hover:border-white/[0.1] hover:-translate-y-1 transition-all duration-500 shadow-xl shadow-black/20">
+              <div className="flex justify-between items-start">
+                <span className="text-3xl opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500">{kat.ikon}</span>
+                <span className="text-[#00f260] font-bold text-[10px] bg-[#00f260]/10 px-3 py-1.5 rounded-full">{kat.trend}</span>
               </div>
+              <h3 className="font-semibold text-xs tracking-wide text-slate-300 group-hover:text-white transition-colors">{kat.isim}</h3>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* 💠 CANLI TAHTA / KARTLAR (Sıfır Çizgi, Sadece Derinlik ve Gölge) */}
-      <div className="relative z-10 max-w-[1500px] mx-auto px-4 md:px-8 pb-32">
-        <div className="flex justify-between items-end mb-12">
+      {/* 💠 DERİNLİK KATILMIŞ CANLI TAHTA */}
+      <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
           <div>
-            <h2 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase drop-shadow-lg">
-              Canlı <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400">Tahta.</span>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-3">
+              Canlı Akış
             </h2>
-            <p className="text-[#00f260] text-xs font-bold uppercase tracking-widest mt-3 flex items-center gap-3">
-              <span className="relative flex h-3 w-3">
+            <p className="text-slate-400 text-sm font-medium flex items-center gap-3">
+              <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00f260] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#00f260]"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00f260]"></span>
               </span>
-              Gerçek zamanlı piyasa akışı
+              Sistemdeki son varlık hareketleri
             </p>
           </div>
-          <Link href="/kesfet" className="hidden md:flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-[#00f260] transition-colors">
-            Tüm Piyasayı Gör <span className="text-lg">➔</span>
+          <Link href="/kesfet" className="group flex items-center gap-3 text-sm font-semibold text-white bg-white/[0.03] border border-white/[0.05] px-6 py-3 rounded-2xl hover:bg-white/[0.08] transition-all">
+            Tüm Tahta <span className="text-[#00f260] group-hover:translate-x-1 transition-transform">➔</span>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {sonVarliklar.map((varlik) => (
-            <Link key={varlik.id} href={`/varlik/${varlik.id}`} className="group relative bg-[#0a0f1c] rounded-[2.5rem] overflow-hidden hover:-translate-y-3 transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.6)] hover:shadow-[0_30px_60px_rgba(0,242,96,0.1)] flex flex-col">
+            <Link key={varlik.id} href={`/varlik/${varlik.id}`} className="group flex flex-col bg-[#0a0a0a] border border-white/[0.04] rounded-[2.5rem] p-3 hover:border-white/[0.12] hover:-translate-y-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
               
-              {/* Resim Alanı */}
-              <div className="relative h-72 overflow-hidden bg-[#02040a]">
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] via-transparent to-transparent z-10 opacity-100"></div>
-                <img src={varlik.resim} alt={varlik.baslik} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-90 mix-blend-luminosity group-hover:mix-blend-normal" />
+              {/* İçeri Gömülü, Kavisli Resim Alanı (Apple Tarzı) */}
+              <div className="relative h-64 w-full rounded-[2rem] overflow-hidden bg-[#111]">
+                <img src={varlik.resim} alt={varlik.baslik} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
+                  Açık İşlem
+                </div>
+              </div>
+
+              {/* Temiz ve Yumuşak İçerik Alanı */}
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-snug mb-4 group-hover:text-[#00f260] transition-colors">{varlik.baslik}</h3>
+                  <div className="flex flex-col gap-1.5 mb-6">
+                    <p className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Tahmini Değer</p>
+                    <p className="text-[#00f260] font-black text-base">{varlik.deger}</p>
+                  </div>
+                </div>
                 
-                {/* Değer Etiketi (Çizgisiz, Cam) */}
-                <div className="absolute bottom-5 left-5 z-20">
-                  <div className="bg-white/10 backdrop-blur-xl text-white text-[11px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest shadow-2xl">
-                    Değer: <span className="text-[#00f260] ml-1">{varlik.deger}</span>
+                <div className="pt-4 border-t border-white/[0.04] flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mb-1">Takas Beklentisi</p>
+                    <p className="text-slate-200 text-xs font-semibold">{varlik.takasIsteği}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-white/[0.05] flex items-center justify-center group-hover:bg-[#00f260] group-hover:text-black transition-all duration-300">
+                    <span className="transform -rotate-45 group-hover:rotate-0 transition-transform duration-500">➔</span>
                   </div>
                 </div>
               </div>
 
-              {/* İçerik Alanı */}
-              <div className="p-7 flex-1 flex flex-col justify-between relative z-20 bg-[#0a0f1c]">
-                <div>
-                  <h3 className="text-xl font-black uppercase tracking-wide leading-tight mb-5 group-hover:text-[#00f260] transition-colors">{varlik.baslik}</h3>
-                  <div className="bg-white/[0.03] rounded-2xl p-4">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mb-1.5">
-                      <span className="text-[#00f260] text-sm">🔄</span> İstenen Takas
-                    </p>
-                    <p className="text-white text-xs font-black uppercase tracking-wide">{varlik.takasIsteği}</p>
-                  </div>
-                </div>
-                
-                <div className="mt-8 flex justify-between items-center">
-                  <span className="text-[10px] text-[#00f260] font-black uppercase tracking-widest">Açık İşlem</span>
-                  <div className="w-12 h-12 rounded-full bg-white/[0.05] flex items-center justify-center group-hover:bg-[#00f260] transition-colors duration-500">
-                    <span className="text-white group-hover:text-black transform -rotate-45 group-hover:rotate-0 transition-transform duration-500 text-lg">➔</span>
-                  </div>
-                </div>
-              </div>
             </Link>
           ))}
         </div>
