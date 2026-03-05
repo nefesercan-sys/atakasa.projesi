@@ -1,26 +1,49 @@
-import { NextResponse } from "next/server";
-// TAM İSABET: 3 Adım Geri
-import { connectMongoDB } from "../../../lib/mongodb";
-import User from "../../../models/User";
+import NextAuth from "next-auth/next";
+import CredentialsProvider from "next-auth/providers/credentials";
+// TAM İSABET: 4 Adım Geri
+import { connectMongoDB } from "../../../../lib/mongodb";
+import User from "../../../../models/User";
 import bcrypt from "bcryptjs";
 
-export async function POST(req: Request) {
-  try {
-    const { name, email, password } = await req.json();
-    
-    await connectMongoDB();
-    
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return NextResponse.json({ message: "SİBER HATA: Bu e-posta ağda zaten mevcut." }, { status: 400 });
-    }
-    
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    await User.create({ name, email, password: hashedPassword });
-    
-    return NextResponse.json({ message: "Siber kimlik başarıyla oluşturuldu." }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ message: "Sistem Hatası: Kayıt yapılamadı." }, { status: 500 });
-  }
-}
+const authOptions = {
+  providers: [
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {},
+      async authorize(credentials: any) {
+        const { email, password } = credentials;
+
+        try {
+          await connectMongoDB();
+          const user = await User.findOne({ email });
+
+          if (!user) {
+            return null;
+          }
+
+          const passwordsMatch = await bcrypt.compare(password, user.password);
+
+          if (!passwordsMatch) {
+            return null;
+          }
+
+          return user;
+        } catch (error) {
+          console.log("SİBER HATA: Kimlik doğrulama başarısız: ", error);
+          return null;
+        }
+      },
+    }),
+  ],
+  session: {
+    strategy: "jwt" as const,
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: "/giris", 
+  },
+};
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
