@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-// 3 Adım Geri: api -> app -> src -> lib
 import { connectMongoDB } from "../../../lib/mongodb";
 import Varlik from "../../../models/Varlik";
+import User from "../../../models/User"; // 🛡️ Kullanıcıyı bulmak için eklendi
 import { getServerSession } from "next-auth/next";
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession();
-    // 🛡️ Oturum kontrolü
     if (!session) {
       return NextResponse.json({ message: "SİBER ENGEL: Önce giriş yapmalısın." }, { status: 401 });
     }
@@ -15,6 +14,12 @@ export async function POST(req: Request) {
     const { baslik, fiyat, kategori, ulke, sehir, ilce, aciklama, resimler } = await req.json();
     
     await connectMongoDB();
+
+    // 🛡️ KRİTİK DÜZELTME: Email ile kullanıcıyı bulup _id'sini alıyoruz
+    const user = await User.findOne({ email: session.user?.email });
+    if (!user) {
+      return NextResponse.json({ message: "Kullanıcı kaydı bulunamadı." }, { status: 404 });
+    }
 
     const yeniVarlik = await Varlik.create({
       baslik,
@@ -25,7 +30,7 @@ export async function POST(req: Request) {
       ilce,
       aciklama,
       resimler,
-      satici: session.user?.email 
+      satici: user._id // 🛡️ Email değil, gerçek DB ID'sini mühürlüyoruz
     });
 
     return NextResponse.json({ message: "Varlık mühürlendi.", id: yeniVarlik._id }, { status: 201 });
