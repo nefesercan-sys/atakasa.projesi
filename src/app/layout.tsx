@@ -1,3 +1,4 @@
+import React from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
@@ -8,13 +9,15 @@ import AuthProvider from "../components/AuthProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// 🚀 ARAMA MOTORLARI İÇİN YENİ MARKAMIZ
+// 🚀 ARAMA MOTORLARI İÇİN ATAKASA MARKAMIZ
 export const metadata = {
   title: "ATAKASA | Küresel Takas Borsası",
   description: "Satamıyor musun? At takasa! Yeni nesil siber takas ve ticaret ağı.",
 };
 
+// 🛡️ SİBER DÜZELTME: TypeScript "children" hatasını önlemek için ReactNode tipini atadık.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
     <html lang="tr" className="scroll-smooth">
       <body className={`${inter.className} bg-[#030712] text-white antialiased min-h-screen overflow-x-hidden pb-24 md:pb-0`}>
         
