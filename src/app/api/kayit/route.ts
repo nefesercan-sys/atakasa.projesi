@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-// ⚡ LAZER HEDEFLEME: Kaç klasör derinde olduğunun önemi yok, doğrudan src'nin içine bakar
-import { connectMongoDB } from "@/lib/mongodb";
-import User from "@/models/User";
+// TAM İSABET: 3 Adım Geri
+import { connectMongoDB } from "../../../lib/mongodb";
+import User from "../../../models/User";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
