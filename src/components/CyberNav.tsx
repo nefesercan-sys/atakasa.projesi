@@ -105,15 +105,43 @@ export default function CyberNav() {
     });
   };
 
-  const handlePublish = () => {
+  // 🚀 GERÇEK VERİTABANI BAĞLANTILI İLAN YAYINLAMA
+  const handlePublish = async () => {
      if(!formData.baslik || !formData.fiyat || !formData.sektor || !formData.sehir) {
-       return alert("Lütfen tüm zorunlu alanları doldurun!");
+       return alert("Lütfen tüm zorunlu alanları (Sektör, Başlık, Fiyat, Şehir) doldurun!");
      }
+     
      setPublishStatus('loading');
-     setTimeout(() => {
-       setPublishStatus('success');
-       stopCamera();
-     }, 1500);
+     
+     try {
+       const res = await fetch("/api/varlik-ekle", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           baslik: formData.baslik,
+           fiyat: formData.fiyat,
+           kategori: formData.sektor,
+           ulke: formData.ulke,
+           sehir: formData.sehir,
+           ilce: formData.ilce,
+           aciklama: formData.aciklama,
+           takasIstegi: "Varlık takasına açığım.", 
+           resimler: images.filter(img => img !== null)
+         }),
+       });
+
+       if (res.ok) {
+         setPublishStatus('success');
+         stopCamera();
+       } else {
+         const data = await res.json();
+         alert(data.message || "Siber bir hata oluştu.");
+         setPublishStatus('idle');
+       }
+     } catch (error) {
+       alert("Sistem bağlantısı koptu.");
+       setPublishStatus('idle');
+     }
   };
 
   const handleShare = async () => {
@@ -255,7 +283,7 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* 📱 SİBER MOBİL ALT MENÜ (YÖNLENDİRMELER DÜZELTİLDİ!) */}
+      {/* 📱 SİBER MOBİL ALT MENÜ */}
       <nav className="fixed bottom-0 left-0 z-[500] w-full md:hidden">
         <div className="absolute bottom-0 w-full h-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-t border-white/[0.04] shadow-[0_-20px_40px_rgba(0,0,0,0.8)]"></div>
         
@@ -284,7 +312,6 @@ export default function CyberNav() {
             </button>
           </div>
 
-          {/* 💬 DOĞRUDAN MESAJLAR SAYFASINA GİDEN LİNK */}
           <Link href="/mesajlar" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
             <div className="relative mb-1.5 transition-transform group-hover:scale-110">
               <span className={`text-2xl ${pathname.startsWith('/mesajlar') ? 'grayscale-0' : 'grayscale opacity-50'}`}>💬</span>
@@ -293,7 +320,6 @@ export default function CyberNav() {
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith('/mesajlar') ? 'text-[#00f260]' : 'text-slate-500'}`}>MESAJ</span>
           </Link>
 
-          {/* 👤 DOĞRUDAN PANEL SAYFASINA GİDEN LİNK */}
           <Link href="/panel" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
             <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname.startsWith('/panel') ? 'grayscale-0' : 'grayscale opacity-50'}`}>👤</span>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith('/panel') ? 'text-[#00f260]' : 'text-slate-500'}`}>PANEL</span>
