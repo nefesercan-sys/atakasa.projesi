@@ -31,44 +31,59 @@ export default function Home() {
       
       {/* 🌌 YUMUŞATILMIŞ ARKA PLAN IŞIKLARI */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] opacity-[0.015] blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-blue-600 opacity-[0.015] blur-[150px] rounded-full"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] opacity-[0.02] blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-blue-600 opacity-[0.02] blur-[150px] rounded-full"></div>
       </div>
 
-      {/* 📢 ELEGANT CANLI BANT */}
-      <div className="relative z-20 bg-white/[0.02] border-b border-white/[0.05] backdrop-blur-md py-3 overflow-hidden flex items-center">
-        <div className="animate-[marquee_25s_linear_infinite] whitespace-nowrap flex gap-16 text-[11px] font-semibold tracking-widest text-slate-400 uppercase">
-          <span>🔥 <strong className="text-white">SON İŞLEM:</strong> iPhone 14 Pro 🔄 PS5 + 10.000₺ <span className="text-[#00f260]">(2 dk önce)</span></span>
-          <span>⚡ <strong className="text-white">TREND:</strong> Teknoloji kategorisinde %14 hacim artışı!</span>
-          <span>💎 <strong className="text-white">DEV TAKAS:</strong> İzmir'de Arsa 🔄 2 Adet Elektrikli Araç <span className="text-[#00f260]">(15 dk önce)</span></span>
+      {/* 📢 ELEGANT CANLI BANT (Subliminal Mesajlar Eklendi) */}
+      <div className="relative z-20 bg-[#00f260] border-b border-[#00f260] shadow-[0_0_20px_rgba(0,242,96,0.2)] py-2.5 overflow-hidden flex items-center">
+        <div className="animate-[marquee_25s_linear_infinite] whitespace-nowrap flex gap-12 text-[11px] font-black tracking-widest text-black uppercase">
+          <span>🔥 İŞİNE YARAMIYOR MU? <strong className="text-white bg-black px-2 py-0.5 rounded">AT TAKASA, DEĞER YARAT!</strong></span>
+          <span>⚡ <strong className="text-black">TAKAS ET, KÂR ET!</strong> Son 1 saatte 142 başarılı işlem.</span>
+          <span>🔄 ELİNDE TUTMA, <strong className="text-white bg-black px-2 py-0.5 rounded">HEMEN DEĞİŞTİR!</strong></span>
+          <span>💎 <strong className="text-black">SATAMIYOR MUSUN?</strong> Bekleme, doğrudan takasla.</span>
         </div>
       </div>
 
-      {/* 🚀 NEFES ALAN HERO SECTION */}
-      <div className={`relative z-10 pt-32 pb-24 px-6 md:px-12 flex flex-col items-center text-center transition-all duration-1000 transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-        <h1 className="text-6xl md:text-[9rem] font-black tracking-tighter uppercase leading-[0.85] mb-8 text-white">
-          AT <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400">
-            TAKASA.
-          </span>
-        </h1>
-        <p className="max-w-2xl text-slate-400 font-medium tracking-wide text-sm md:text-base leading-relaxed mb-16">
-          Satamıyor musun? Bekleme. Elindeki gücü kullan, sınırları kaldır ve yepyeni bir küresel ekosisteme adım at.
-        </p>
+      {/* 🚀 NEFES ALAN HERO SECTION & SUBLIMINAL TETİKLEYİCİLER */}
+      <div className={`relative z-10 pt-28 pb-20 px-6 md:px-12 flex flex-col items-center text-center transition-all duration-1000 transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
         
+        {/* SUBLIMINAL LOGO: İlk A ve Son A beyaz, TAKAS yeşil parlıyor */}
+        <h1 className="text-7xl md:text-[10rem] font-black tracking-tighter uppercase leading-[0.85] mb-8 drop-shadow-2xl">
+          <span className="text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">A</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400 drop-shadow-[0_0_30px_rgba(0,242,96,0.5)]">TAKAS</span>
+          <span className="text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">A.</span>
+        </h1>
+        
+        {/* BİLİNÇALTI TETİKLEYİCİ KAPSÜLLER (Göz yormayan eylem komutları) */}
+        <div className="flex flex-wrap justify-center gap-3 md:gap-5 mb-10 max-w-4xl mx-auto">
+          <div className="px-5 py-2.5 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-lg hover:border-[#00f260]/40 transition-colors">
+            <span className="text-slate-400 text-[10px] md:text-xs font-bold tracking-widest uppercase">Satamıyor musun? <strong className="text-white">At Takasa</strong></span>
+          </div>
+          <div className="px-5 py-2.5 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-lg hover:border-[#00f260]/40 transition-colors">
+            <span className="text-slate-400 text-[10px] md:text-xs font-bold tracking-widest uppercase">Elinde Tutma, <strong className="text-[#00f260]">Hemen Değiştir</strong></span>
+          </div>
+          <div className="px-5 py-2.5 rounded-full bg-[#00f260]/10 border border-[#00f260]/20 shadow-[0_0_15px_rgba(0,242,96,0.1)]">
+            <span className="text-[#00f260] text-[10px] md:text-xs font-black tracking-widest uppercase animate-pulse">Takas Et, Kâr Et 🚀</span>
+          </div>
+          <div className="px-5 py-2.5 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-lg hover:border-[#00f260]/40 transition-colors">
+            <span className="text-slate-400 text-[10px] md:text-xs font-bold tracking-widest uppercase">İşine Yaramıyor Mu? <strong className="text-white">Değer Yarat</strong></span>
+          </div>
+        </div>
+
         {/* YUMUŞAK ARAMA MOTORU */}
         <div className="relative w-full max-w-3xl z-30 group">
-          <div className="absolute -inset-1 bg-[#00f260] rounded-[2.5rem] blur-2xl opacity-0 group-focus-within:opacity-20 transition duration-1000"></div>
-          <div className="relative flex items-center bg-[#0a0a0a] border border-white/[0.08] rounded-[2.5rem] p-2.5 shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all hover:border-white/[0.15]">
+          <div className="absolute -inset-1 bg-[#00f260] rounded-[2.5rem] blur-2xl opacity-0 group-focus-within:opacity-25 transition duration-1000"></div>
+          <div className="relative flex items-center bg-[#0a0a0a] border border-white/[0.08] rounded-[2.5rem] p-2.5 shadow-[0_30px_50px_rgba(0,0,0,0.6)] transition-all hover:border-white/[0.15]">
             <span className="pl-6 text-[#00f260] text-xl">✨</span>
             <input 
               type="text"
-              placeholder="Sistemde varlık ara (Örn: MacBook, Arsa, Saat)..."
+              placeholder="İstediğin varlığı ara (Örn: MacBook, Arsa, Saat)..."
               className="w-full bg-transparent border-none px-6 py-5 text-white text-base font-medium tracking-wide outline-none placeholder:text-slate-500"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button className="hidden md:block bg-white text-black font-bold tracking-widest px-10 py-5 rounded-[2rem] hover:bg-[#00f260] transition-colors duration-500 shadow-lg">
-              KEŞFET
+            <button className="hidden md:block bg-gradient-to-r from-white to-slate-200 text-black font-black tracking-widest px-10 py-5 rounded-[2rem] hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300">
+              DEĞİŞ TOKUŞ YAP
             </button>
           </div>
         </div>
@@ -77,12 +92,12 @@ export default function Home() {
       {/* 📊 ESTETİK ENDEKS KARTLARI */}
       <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-12 mb-32">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-6">
-          Piyasa Endeksleri <div className="h-[1px] flex-1 bg-gradient-to-r from-white/[0.05] to-transparent"></div>
+          Siber Piyasa Hacmi <div className="h-[1px] flex-1 bg-gradient-to-r from-white/[0.05] to-transparent"></div>
         </h2>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {kategoriler.map((kat, idx) => (
-            <Link key={idx} href="#" className="group relative bg-[#0a0a0a] border border-white/[0.04] rounded-3xl p-7 flex flex-col justify-between h-40 hover:border-white/[0.1] hover:-translate-y-1 transition-all duration-500 shadow-xl shadow-black/20">
+            <Link key={idx} href="#" className="group relative bg-[#0a0a0a] border border-white/[0.04] rounded-3xl p-7 flex flex-col justify-between h-40 hover:border-[#00f260]/30 hover:-translate-y-1 transition-all duration-500 shadow-xl shadow-black/20">
               <div className="flex justify-between items-start">
                 <span className="text-3xl opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500">{kat.ikon}</span>
                 <span className="text-[#00f260] font-bold text-[10px] bg-[#00f260]/10 px-3 py-1.5 rounded-full">{kat.trend}</span>
@@ -98,30 +113,30 @@ export default function Home() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
           <div>
             <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-3">
-              Canlı Akış
+              Canlı <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400">Akış.</span>
             </h2>
             <p className="text-slate-400 text-sm font-medium flex items-center gap-3">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00f260] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00f260]"></span>
               </span>
-              Sistemdeki son varlık hareketleri
+              Sistemdeki sıcak varlık hareketleri
             </p>
           </div>
-          <Link href="/kesfet" className="group flex items-center gap-3 text-sm font-semibold text-white bg-white/[0.03] border border-white/[0.05] px-6 py-3 rounded-2xl hover:bg-white/[0.08] transition-all">
-            Tüm Tahta <span className="text-[#00f260] group-hover:translate-x-1 transition-transform">➔</span>
+          <Link href="/kesfet" className="group flex items-center gap-3 text-sm font-semibold text-white bg-white/[0.03] border border-white/[0.05] px-6 py-3 rounded-2xl hover:bg-[#00f260] hover:text-black transition-all duration-300">
+            Tüm Tahta <span className="group-hover:translate-x-1 transition-transform">➔</span>
           </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {sonVarliklar.map((varlik) => (
-            <Link key={varlik.id} href={`/varlik/${varlik.id}`} className="group flex flex-col bg-[#0a0a0a] border border-white/[0.04] rounded-[2.5rem] p-3 hover:border-white/[0.12] hover:-translate-y-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
+            <Link key={varlik.id} href={`/varlik/${varlik.id}`} className="group flex flex-col bg-[#0a0a0a] border border-white/[0.04] rounded-[2.5rem] p-3 hover:border-[#00f260]/20 hover:-translate-y-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
               
-              {/* İçeri Gömülü, Kavisli Resim Alanı (Apple Tarzı) */}
+              {/* İçeri Gömülü, Kavisli Resim Alanı */}
               <div className="relative h-64 w-full rounded-[2rem] overflow-hidden bg-[#111]">
                 <img src={varlik.resim} alt={varlik.baslik} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
-                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
-                  Açık İşlem
+                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md border border-white/10 text-[#00f260] text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
+                  At Takasa
                 </div>
               </div>
 
