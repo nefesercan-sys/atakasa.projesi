@@ -199,11 +199,4 @@ export default function SiberPanel() {
       </div>
     </div>
   );
-}            </div>
-          )}
-        </div>
-
-      </div>
-    </div>
-  );
 }
