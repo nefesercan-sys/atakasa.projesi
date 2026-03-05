@@ -22,28 +22,27 @@ export default function SiberPanel() {
     }
   }, [status, router]);
 
-  // 📡 VERİ SENTEZLEME MOTORU
+  // 📡 GERÇEK ZAMANLI VERİ SENTEZLEME MOTORU (GÜNCELLENDİ)
   useEffect(() => {
     const veriSentezle = async () => {
       if (!session?.user?.email) return;
       
       try {
         setLoading(true);
-        // 1. İlanları Çek ve Filtrele
-        const resIlan = await fetch("/api/varliklar");
+        
+        // 🚀 cache: "no-store" eklendi! Anlık veri çeker. (BUZUL KIRICI)
+        const resIlan = await fetch("/api/varliklar", { cache: "no-store" });
         const ilanlar = await resIlan.json();
         
-        // 🛡️ Email eşleşmesi ile sadece kendi ilanlarını ayır
         const filtreIlan = ilanlar.filter((i: any) => 
           i.satici === session.user?.email || i.satici?.email === session.user?.email
         );
         setBenimIlanlar(filtreIlan);
 
-        // 2. Mesajları (Teklif Sinyallerini) Çek
-        const resMesaj = await fetch("/api/mesajlar");
+        // 🚀 cache: "no-store" eklendi! Anlık teklif sinyallerini çeker.
+        const resMesaj = await fetch("/api/mesajlar", { cache: "no-store" });
         if (resMesaj.ok) {
           const mesajlar = await resMesaj.json();
-          // Bana gelen ama benim göndermediğim sinyalleri yakala
           const filtreTeklif = mesajlar.filter((m: any) => m.alici === session.user?.email);
           setGelenTeklifler(filtreTeklif);
         }
@@ -56,7 +55,7 @@ export default function SiberPanel() {
     };
 
     if (session) veriSentezle();
-  }, [session]);
+  }, [session]); // Sadece session değiştiğinde çalışır
 
   if (status === "loading") {
     return (
@@ -73,8 +72,7 @@ export default function SiberPanel() {
   // 🗑️ VARLIK KALDIRMA FONKSİYONU (Opsiyonel)
   const varlikKaldir = async (id: string) => {
     if (confirm("Bu varlığı piyasadan çekmek istediğine emin misin?")) {
-      // Burada bir delete API'si çağrılabilir
-      alert("Varlık kaldırma sinyali gönderildi.");
+      alert("Varlık kaldırma özelliği bir sonraki siber operasyonda eklenecektir.");
     }
   };
 
@@ -154,15 +152,19 @@ export default function SiberPanel() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {benimIlanlar.map((ilan) => (
                   <div key={ilan._id} className="bg-[#0a0a0a] border border-white/[0.05] rounded-[2rem] p-4 flex gap-6 items-center shadow-xl hover:border-[#00f260]/30 transition-all group">
-                    <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white/5">
-                      <img src={ilan.resimler?.[0]} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
+                    <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white/5 relative">
+                      <img 
+                        src={ilan.resimler?.[0] || "https://via.placeholder.com/150"} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+                        alt="Varlık Resmi" 
+                      />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-white font-bold text-lg uppercase tracking-tighter truncate">{ilan.baslik}</h3>
                       <p className="text-[#00f260] font-black text-sm">{Number(ilan.fiyat).toLocaleString()} ₺</p>
                       <div className="flex gap-4 mt-4">
                         <Link href={`/varlik/${ilan._id}`} className="text-[9px] font-black text-white bg-white/5 px-4 py-2 rounded-lg uppercase tracking-widest hover:bg-white/10 transition-colors">İncele</Link>
-                        <button onClick={() => varlikKaldir(ilan._id)} className="text-[9px] font-black text-red-500/50 uppercase tracking-widest hover:text-red-500 transition-colors">Piyasadan Çek</button>
+                        <button onClick={() => varlikKaldir(ilan._id)} className="text-[9px] font-black text-red-500/50 uppercase tracking-widest hover:text-red-500 transition-colors">Kaldır</button>
                       </div>
                     </div>
                   </div>
@@ -191,6 +193,13 @@ export default function SiberPanel() {
                 </div>
               )}
             </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}            </div>
           )}
         </div>
 
