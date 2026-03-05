@@ -105,10 +105,14 @@ export default function CyberNav() {
     });
   };
 
-  // 🚀 GERÇEK VERİTABANI BAĞLANTILI İLAN YAYINLAMA
+  // 🚀 EKLEDİĞİMİZ CANLI İLAN YAYINLAMA KODU
   const handlePublish = async () => {
+     if(!session) {
+       return alert("SİBER ENGEL: İlan vermek için önce giriş yapmalısın!");
+     }
+
      if(!formData.baslik || !formData.fiyat || !formData.sektor || !formData.sehir) {
-       return alert("Lütfen tüm zorunlu alanları (Sektör, Başlık, Fiyat, Şehir) doldurun!");
+       return alert("Lütfen tüm zorunlu alanları doldurun!");
      }
      
      setPublishStatus('loading');
@@ -125,7 +129,6 @@ export default function CyberNav() {
            sehir: formData.sehir,
            ilce: formData.ilce,
            aciklama: formData.aciklama,
-           takasIstegi: "Varlık takasına açığım.", 
            resimler: images.filter(img => img !== null)
          }),
        });
@@ -135,10 +138,10 @@ export default function CyberNav() {
          stopCamera();
        } else {
          const data = await res.json();
-         alert(data.message || "Siber bir hata oluştu.");
+         alert(data.message || "Siber hata oluştu.");
          setPublishStatus('idle');
        }
-     } catch (error) {
+     } catch (err) {
        alert("Sistem bağlantısı koptu.");
        setPublishStatus('idle');
      }
@@ -283,12 +286,9 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* 📱 SİBER MOBİL ALT MENÜ */}
       <nav className="fixed bottom-0 left-0 z-[500] w-full md:hidden">
         <div className="absolute bottom-0 w-full h-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-t border-white/[0.04] shadow-[0_-20px_40px_rgba(0,0,0,0.8)]"></div>
-        
         <div className="relative flex justify-between items-end px-4 pb-3 h-24">
-          
           <Link href="/" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
             <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname === '/' && !activeModal ? 'grayscale-0' : 'grayscale opacity-50'}`}>🏠</span>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname === '/' && !activeModal ? 'text-[#00f260]' : 'text-slate-500'}`}>VİTRİN</span>
@@ -299,23 +299,20 @@ export default function CyberNav() {
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${activeModal === 'sectors' ? 'text-[#00f260]' : 'text-slate-500'}`}>SEKTÖR</span>
           </button>
 
-          {/* ⚡ AT TAKASA REAKTÖRÜ */}
           <div className="relative flex justify-center w-full px-2 z-20">
             <button onClick={() => setActiveModal('ilan')} className="group flex flex-col items-center outline-none relative -top-6">
               <div className="absolute inset-0 bg-[#00f260] rounded-full blur-xl opacity-30 group-hover:opacity-60 transition-opacity duration-500"></div>
               <div className="relative w-[72px] h-[72px] bg-[#050505] rounded-full flex items-center justify-center border-4 border-[#0a0a0a] shadow-[0_10px_30px_rgba(0,242,96,0.3)] group-hover:border-[#00f260]/50 transition-all duration-300">
                 <span className="text-3xl text-[#00f260] drop-shadow-[0_0_8px_rgba(0,242,96,0.8)] group-hover:scale-110 transition-transform duration-300">⚡</span>
               </div>
-              <span className="absolute -bottom-5 text-[10px] font-black text-[#00f260] tracking-widest whitespace-nowrap drop-shadow-md">
-                AT TAKASA
-              </span>
+              <span className="absolute -bottom-5 text-[10px] font-black text-[#00f260] tracking-widest whitespace-nowrap drop-shadow-md">AT TAKASA</span>
             </button>
           </div>
 
           <Link href="/mesajlar" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
             <div className="relative mb-1.5 transition-transform group-hover:scale-110">
               <span className={`text-2xl ${pathname.startsWith('/mesajlar') ? 'grayscale-0' : 'grayscale opacity-50'}`}>💬</span>
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00f260] rounded-full border-2 border-[#0a0a0a] animate-pulse shadow-[0_0_10px_rgba(0,242,96,0.5)]"></span>
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00f260] rounded-full border-2 border-[#0a0a0a] animate-pulse"></span>
             </div>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith('/mesajlar') ? 'text-[#00f260]' : 'text-slate-500'}`}>MESAJ</span>
           </Link>
@@ -324,10 +321,8 @@ export default function CyberNav() {
             <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname.startsWith('/panel') ? 'grayscale-0' : 'grayscale opacity-50'}`}>👤</span>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith('/panel') ? 'text-[#00f260]' : 'text-slate-500'}`}>PANEL</span>
           </Link>
-          
         </div>
       </nav>
-
     </React.Fragment>
   );
 }
