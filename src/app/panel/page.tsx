@@ -22,28 +22,36 @@ export default function SiberPanel() {
     }
   }, [status, router]);
 
-  // 📡 GERÇEK ZAMANLI VERİ SENTEZLEME MOTORU (GÜNCELLENDİ)
+  // 📡 GERÇEK ZAMANLI VERİ SENTEZLEME MOTORU (Büyük/Küçük Harf Zırhlı)
   useEffect(() => {
     const veriSentezle = async () => {
       if (!session?.user?.email) return;
       
       try {
         setLoading(true);
+        // 🛡️ Giriş yapan kullanıcının e-postasını tamamen küçük harfe çevir
+        const aktifEmail = session.user.email.toLowerCase();
         
-        // 🚀 cache: "no-store" eklendi! Anlık veri çeker. (BUZUL KIRICI)
+        // 1. İlanları Çek
         const resIlan = await fetch("/api/varliklar", { cache: "no-store" });
         const ilanlar = await resIlan.json();
         
-        const filtreIlan = ilanlar.filter((i: any) => 
-          i.satici === session.user?.email || i.satici?.email === session.user?.email
-        );
+        // 🛡️ Veritabanındaki satıcı e-postasını da küçük harfe çevirip eşleştir
+        const filtreIlan = ilanlar.filter((i: any) => {
+          const saticiEmail = (typeof i.satici === 'string' ? i.satici : i.satici?.email || "").toLowerCase();
+          return saticiEmail === aktifEmail;
+        });
         setBenimIlanlar(filtreIlan);
 
-        // 🚀 cache: "no-store" eklendi! Anlık teklif sinyallerini çeker.
+        // 2. Mesajları (Teklif Sinyallerini) Çek
         const resMesaj = await fetch("/api/mesajlar", { cache: "no-store" });
         if (resMesaj.ok) {
           const mesajlar = await resMesaj.json();
-          const filtreTeklif = mesajlar.filter((m: any) => m.alici === session.user?.email);
+          // 🛡️ Alıcı e-postasını küçük harfe çevirip eşleştir
+          const filtreTeklif = mesajlar.filter((m: any) => {
+             const aliciEmail = (m.alici || "").toLowerCase();
+             return aliciEmail === aktifEmail;
+          });
           setGelenTeklifler(filtreTeklif);
         }
 
@@ -55,7 +63,7 @@ export default function SiberPanel() {
     };
 
     if (session) veriSentezle();
-  }, [session]); // Sadece session değiştiğinde çalışır
+  }, [session]);
 
   if (status === "loading") {
     return (
@@ -69,7 +77,6 @@ export default function SiberPanel() {
     signOut({ callbackUrl: "/" });
   };
 
-  // 🗑️ VARLIK KALDIRMA FONKSİYONU (Opsiyonel)
   const varlikKaldir = async (id: string) => {
     if (confirm("Bu varlığı piyasadan çekmek istediğine emin misin?")) {
       alert("Varlık kaldırma özelliği bir sonraki siber operasyonda eklenecektir.");
@@ -78,15 +85,12 @@ export default function SiberPanel() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-slate-200 font-sans pb-32 pt-6">
-      
-      {/* 🌌 ARKA PLAN DERİNLİĞİ */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[20%] w-[40vw] h-[40vw] bg-[#00f260] opacity-[0.02] blur-[150px] rounded-full"></div>
       </div>
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
         
-        {/* 👤 PROFİL HEADER */}
         <div className="bg-[#0a0a0a] border border-white/[0.04] rounded-[2.5rem] p-8 md:p-10 mb-8 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
           <div className="flex items-center gap-6 z-10">
             <div className="w-24 h-24 bg-[#00f260]/10 border border-[#00f260]/30 rounded-full flex items-center justify-center text-4xl shadow-inner relative">
@@ -105,15 +109,11 @@ export default function SiberPanel() {
             </div>
           </div>
 
-          <button 
-            onClick={handleCikis}
-            className="px-8 py-5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-95"
-          >
+          <button onClick={handleCikis} className="px-8 py-5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-95">
             SİSTEMDEN GÜVENLİ ÇIKIŞ ✕
           </button>
         </div>
 
-        {/* 📊 İSTATİSTİKLER */}
         <div className="grid grid-cols-2 gap-4 mb-8">
             <div className="bg-white/[0.02] border border-white/[0.05] rounded-3xl p-6 text-center shadow-inner">
               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Mühürlü Varlıklar</p>
@@ -125,23 +125,15 @@ export default function SiberPanel() {
             </div>
         </div>
 
-        {/* 🎛️ SEKMELER */}
         <div className="flex gap-4 overflow-x-auto no-scrollbar mb-8">
-          <button 
-            onClick={() => setActiveTab("varliklar")} 
-            className={`px-10 py-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === "varliklar" ? "bg-white text-black shadow-lg" : "bg-white/[0.03] text-slate-500 border border-white/5"}`}
-          >
+          <button onClick={() => setActiveTab("varliklar")} className={`px-10 py-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === "varliklar" ? "bg-white text-black shadow-lg" : "bg-white/[0.03] text-slate-500 border border-white/5"}`}>
             AKTİF VARLIKLARIM
           </button>
-          <button 
-            onClick={() => setActiveTab("teklifler")} 
-            className={`px-10 py-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === "teklifler" ? "bg-[#00f260] text-black shadow-lg" : "bg-white/[0.03] text-slate-500 border border-white/5"}`}
-          >
+          <button onClick={() => setActiveTab("teklifler")} className={`px-10 py-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === "teklifler" ? "bg-[#00f260] text-black shadow-lg" : "bg-white/[0.03] text-slate-500 border border-white/5"}`}>
             TAKAS SİNYALLERİ ({gelenTeklifler.length})
           </button>
         </div>
 
-        {/* 💠 CANLI İÇERİK ALANI */}
         <div className="min-h-[400px]">
           {loading ? (
             <div className="text-center py-20 animate-pulse text-slate-600 font-bold uppercase tracking-widest text-[10px]">
@@ -153,11 +145,7 @@ export default function SiberPanel() {
                 {benimIlanlar.map((ilan) => (
                   <div key={ilan._id} className="bg-[#0a0a0a] border border-white/[0.05] rounded-[2rem] p-4 flex gap-6 items-center shadow-xl hover:border-[#00f260]/30 transition-all group">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white/5 relative">
-                      <img 
-                        src={ilan.resimler?.[0] || "https://via.placeholder.com/150"} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
-                        alt="Varlık Resmi" 
-                      />
+                      <img src={ilan.resimler?.[0] || "https://via.placeholder.com/150"} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Varlık Resmi" />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-white font-bold text-lg uppercase tracking-tighter truncate">{ilan.baslik}</h3>
