@@ -1,7 +1,8 @@
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { connectMongoDB } from "../../../../../lib/mongodb";
-import User from "../../../../../models/User";
+// ⚡ LAZER HEDEFLEME
+import { connectMongoDB } from "@/lib/mongodb";
+import User from "@/models/User";
 import bcrypt from "bcryptjs";
 
 const authOptions = {
@@ -39,7 +40,7 @@ const authOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/giris", // Kullanıcı giriş yapmamışsa bu sayfaya yönlendirilecek (Bir sonraki adımda yapacağız)
+    signIn: "/giris", 
   },
 };
 
