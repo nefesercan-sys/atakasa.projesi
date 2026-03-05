@@ -1,8 +1,8 @@
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
-// ⚡ LAZER HEDEFLEME
-import { connectMongoDB } from "@/lib/mongodb";
-import User from "@/models/User";
+// TAM İSABET: 4 Adım Geri
+import { connectMongoDB } from "../../../../lib/mongodb";
+import User from "../../../../models/User";
 import bcrypt from "bcryptjs";
 
 const authOptions = {
