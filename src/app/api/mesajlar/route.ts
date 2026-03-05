@@ -1,17 +1,16 @@
+export const dynamic = 'force-dynamic'; // 🚀 BUZUL KIRICI
+
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "../../../lib/mongodb";
 import Mesaj from "../../../models/Mesaj";
 import { getServerSession } from "next-auth/next";
 
-// 📡 MESAJ GEÇMİŞİNİ GETİR
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
     const session = await getServerSession();
     if (!session) return NextResponse.json({ message: "Yetkisiz Erişim" }, { status: 401 });
 
     await connectMongoDB();
-    // Oturumdaki kullanıcının dahil olduğu tüm mesajları çek
     const mesajlar = await Mesaj.find({
       $or: [{ gonderen: session.user?.email }, { alici: session.user?.email }]
     }).sort({ createdAt: 1 });
@@ -22,7 +21,6 @@ export async function GET(req: Request) {
   }
 }
 
-// 📡 YENİ MESAJ MÜHÜRLE
 export async function POST(req: Request) {
   try {
     const session = await getServerSession();
