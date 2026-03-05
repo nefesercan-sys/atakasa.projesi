@@ -10,7 +10,7 @@ export default function CyberNav() {
   const router = useRouter();
   const pathname = usePathname();
   
-  // 🚀 ZIRHLI REFERANSLAR (TypeScript Hatalarını Önler)
+  // 🚀 ZIRHLI REFERANSLAR
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -70,7 +70,6 @@ export default function CyberNav() {
      if(!formData.baslik || !formData.fiyat) return alert("Zorunlu alanları doldurun!");
      alert("⚡ SİBER BAŞARI: İlan sisteme mühürlendi ve vitrine aktarıldı!");
      
-     // Formu Sıfırla ve Modalı Kapat
      setActiveModal(null);
      setShowForm(false);
      setCameraActive(false);
@@ -80,128 +79,24 @@ export default function CyberNav() {
 
   return (
     <>
+      {/* 📂 SEKTÖRLER MODALI (Yumuşak ve Derin) */}
       {activeModal === 'sectors' && (
-        <div className="fixed inset-0 z-[400] bg-[#030712]/95 backdrop-blur-xl p-6 overflow-y-auto pb-32 animate-in fade-in">
-          <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4 mt-4">
-            <h2 className="text-[#00f260] font-black uppercase tracking-tighter text-2xl italic">SEKTÖRLER.</h2>
-            <button onClick={() => setActiveModal(null)} className="text-white text-3xl">✕</button>
+        <div className="fixed inset-0 z-[600] bg-[#050505]/95 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in fade-in duration-300">
+          <div className="flex justify-between items-center mb-8 border-b border-white/[0.05] pb-4 mt-4">
+            <h2 className="text-white font-black uppercase tracking-tighter text-2xl">Piyasa <span className="text-[#00f260]">Endeksleri.</span></h2>
+            <button onClick={() => setActiveModal(null)} className="text-slate-500 hover:text-white text-3xl transition-colors">✕</button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {sectors.map((s, idx) => (
-              <button key={idx} onClick={() => { router.push(`/kategori/${s.slug}`); setActiveModal(null); }} className="bg-[#0b0f19] border border-white/5 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-[#00f260] transition-colors">
-                <span className="text-4xl">{s.icon}</span>
-                <span className="text-[11px] font-black text-white uppercase">{s.name}</span>
+              <button key={idx} onClick={() => { router.push(`/kategori/${s.slug}`); setActiveModal(null); }} className="bg-white/[0.02] border border-white/[0.04] p-6 rounded-3xl flex flex-col items-center gap-4 hover:border-[#00f260]/50 hover:bg-white/[0.04] transition-all shadow-lg hover:-translate-y-1">
+                <span className="text-4xl drop-shadow-lg">{s.icon}</span>
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{s.name}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
+      {/* ⚡ AT TAKASA (KAMERA/İLAN) MODALI */}
       {activeModal === 'ilan' && (
-        <div className="fixed inset-0 z-[400] bg-[#030712]/98 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in slide-in-from-bottom">
-          <div className="max-w-xl mx-auto mt-4">
-              <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
-                <h2 className="text-[#00f260] font-black uppercase tracking-tighter text-2xl italic">SİBER <span className="text-white">VİTRİN.</span></h2>
-                <button onClick={() => {setActiveModal(null); setShowForm(false); setCameraActive(false)}} className="text-white text-3xl">✕</button>
-              </div>
-
-              <div className="aspect-square bg-[#0b0f19] border-2 border-[#00f260]/50 rounded-[2.5rem] mb-6 overflow-hidden relative shadow-[0_0_30px_rgba(0,242,96,0.1)]">
-                {!cameraActive ? (
-                  <button onClick={startCamera} className="absolute inset-0 flex flex-col items-center justify-center gap-4 hover:bg-white/5 transition-colors">
-                    <span className="text-6xl">📸</span>
-                    <span className="text-[12px] font-black text-white uppercase">SİBER KAMERAYI AÇ</span>
-                  </button>
-                ) : (
-                  <>
-                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                    <button onClick={takePhoto} className="absolute bottom-6 left-1/2 -translate-x-1/2 w-20 h-20 bg-transparent rounded-full border-[6px] border-[#00f260] flex items-center justify-center active:scale-90 transition-transform">
-                        <div className="w-14 h-14 bg-[#00f260] rounded-full"></div>
-                    </button>
-                  </>
-                )}
-                <canvas ref={canvasRef} className="hidden" />
-              </div>
-
-              <div className="grid grid-cols-5 gap-2 mb-8">
-                {images.map((img, i) => (
-                  <div key={i} className="aspect-square bg-[#0b0f19] border border-white/10 rounded-xl flex items-center justify-center overflow-hidden">
-                    {img ? <img src={img} className="w-full h-full object-cover" alt={`Foto ${i+1}`} /> : <span className="text-slate-700 text-[9px] font-black">FOTO {i+1}</span>}
-                  </div>
-                ))}
-              </div>
-
-              {!showForm ? (
-                <button onClick={() => setShowForm(true)} className="w-full py-6 bg-white/5 border border-[#00f260]/30 text-[#00f260] rounded-[2rem] font-black uppercase text-xs hover:bg-[#00f260]/10 transition-colors">📝 DETAYLARI GİR VE YAYINLA</button>
-              ) : (
-                <div className="space-y-5 animate-in fade-in">
-                  <input type="text" placeholder="Başlık" className="w-full bg-[#0b0f19] border border-white/5 p-6 rounded-2xl text-white outline-none focus:border-[#00f260] transition-colors" onChange={e => setFormData({...formData, baslik: e.target.value})} />
-                  <input type="number" placeholder="Fiyat (₺)" className="w-full bg-[#0b0f19] border border-white/5 p-6 rounded-2xl text-[#00f260] font-black outline-none focus:border-[#00f260] transition-colors" onChange={e => setFormData({...formData, fiyat: e.target.value})} />
-                  <button onClick={handlePublish} className="w-full mt-8 py-7 bg-[#00f260] text-black rounded-[2rem] font-black uppercase tracking-widest hover:scale-[1.02] shadow-[0_0_20px_rgba(0,242,96,0.4)] transition-all">⚡ VİTRİNE MÜHÜRLE</button>
-                </div>
-              )}
-          </div>
-        </div>
-      )}
-
-      {activeModal === 'messages' && (
-        <div className="fixed inset-0 z-[400] bg-[#030712]/98 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in fade-in">
-          <div className="max-w-xl mx-auto mt-4">
-              <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
-                <h2 className="text-[#00f260] font-black text-2xl uppercase tracking-tighter italic">MESAJLAR</h2>
-                <button onClick={() => setActiveModal(null)} className="text-white text-3xl">✕</button>
-              </div>
-          </div>
-        </div>
-      )}
-
-      {activeModal === 'panel' && (
-        <div className="fixed inset-0 z-[400] bg-[#030712]/98 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in fade-in">
-          <div className="max-w-xl mx-auto mt-4">
-              <div className="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
-                <h2 className="text-[#00f260] font-black text-2xl uppercase tracking-tighter italic">SİBER KONTROL</h2>
-                <button onClick={() => setActiveModal(null)} className="text-white text-3xl">✕</button>
-              </div>
-              
-              <div className="space-y-4">
-                <button className="w-full bg-red-500/10 text-red-500 py-6 rounded-3xl font-black uppercase text-xs border border-red-500/20 hover:bg-red-500/20 transition-colors">SİBER ÇIKIŞ YAP</button>
-              </div>
-          </div>
-        </div>
-      )}
-
-      {/* 📱 SİBER MOBİL ALT MENÜ */}
-      <nav className="fixed bottom-0 left-0 z-[500] w-full bg-[#030712]/95 backdrop-blur-md border-t border-white/10 md:hidden">
-        <div className="flex justify-around items-end px-2 pb-6 pt-4 relative">
-          
-          <Link href="/" onClick={() => setActiveModal(null)} className="flex flex-col items-center gap-1 min-w-[50px] py-2">
-            <span className="text-2xl">🏠</span>
-            <span className={`text-[9px] font-black ${pathname === '/' && !activeModal ? 'text-[#00f260]' : 'text-slate-500'}`}>VİTRİN</span>
-          </Link>
-
-          <button onClick={() => setActiveModal('sectors')} className="flex flex-col items-center gap-1 min-w-[50px] py-2">
-            <span className="text-2xl">📂</span>
-            <span className={`text-[9px] font-black ${activeModal === 'sectors' ? 'text-[#00f260]' : 'text-slate-500'}`}>SEKTÖR</span>
-          </button>
-
-          <div className="relative -top-8 px-2 z-10">
-            <button onClick={() => setActiveModal('ilan')} className="w-[72px] h-[72px] bg-[#00f260] rounded-full flex items-center justify-center border-[6px] border-[#030712] shadow-[0_0_20px_rgba(0,242,96,0.3)] active:scale-95 transition-transform">
-              <span className="text-4xl text-black font-black">＋</span>
-            </button>
-            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-black text-[#00f260] whitespace-nowrap">AT TAKASA</span>
-          </div>
-
-          <button onClick={() => setActiveModal('messages')} className="flex flex-col items-center gap-1 min-w-[50px] py-2">
-            <span className="text-2xl">💬</span>
-            <span className={`text-[9px] font-black ${activeModal === 'messages' ? 'text-[#00f260]' : 'text-slate-500'}`}>MESAJ</span>
-          </button>
-
-          <button onClick={() => setActiveModal('panel')} className="flex flex-col items-center gap-1 min-w-[50px] py-2">
-            <span className="text-2xl">👤</span>
-            <span className={`text-[9px] font-black ${activeModal === 'panel' ? 'text-[#00f260]' : 'text-slate-500'}`}>PANEL</span>
-          </button>
-          
-        </div>
-      </nav>
-    </>
-  );
-}
+        <div className="fixed inset-0 z-[600] bg-[#050505]/
