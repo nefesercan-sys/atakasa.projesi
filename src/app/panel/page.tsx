@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "next/link"; // 🚀 LİNK MODÜLÜ AKTİF
 
 export default function SiberPanel() {
   const { data: session, status } = useSession();
@@ -15,7 +15,6 @@ export default function SiberPanel() {
   const [alimSiparisleri, setAlimSiparisleri] = useState<any[]>([]); 
   const [satisSiparisleri, setSatisSiparisleri] = useState<any[]>([]); 
   
-  // 🔄 YENİ: TAKAS STATE'LERİ
   const [gelenTakaslar, setGelenTakaslar] = useState<any[]>([]);
   const [gidenTakaslar, setGidenTakaslar] = useState<any[]>([]);
 
@@ -34,14 +33,12 @@ export default function SiberPanel() {
     const aktifEmail = session.user.email.toLowerCase();
     
     try {
-      // Bakiye Çek
       const resWallet = await fetch(`/api/wallet`, { cache: "no-store" });
       if (resWallet.ok) {
          const wData = await resWallet.json();
          setBakiye(wData.balance || 0);
       }
 
-      // İlanları Çek
       const resListings = await fetch(`/api/listings`, { cache: "no-store" });
       if (resListings.ok) {
         const dataListings = await resListings.json();
@@ -52,7 +49,6 @@ export default function SiberPanel() {
         setIlanlarim(benimIlanlar);
       }
 
-      // Siparişleri Çek
       const resOrders = await fetch(`/api/orders?email=${aktifEmail}`, { cache: "no-store" });
       if (resOrders.ok) {
         const dataOrders = await resOrders.json();
@@ -60,7 +56,6 @@ export default function SiberPanel() {
         setSatisSiparisleri(dataOrders.filter((o: any) => (o.sellerEmail || "").toLowerCase() === aktifEmail));
       }
 
-      // 🔄 YENİ: TAKASLARI ÇEK
       const resTakas = await fetch(`/api/takas`, { cache: "no-store" });
       if (resTakas.ok) {
         const dataTakas = await resTakas.json();
@@ -87,7 +82,6 @@ export default function SiberPanel() {
     }
   };
 
-  // 🔄 YENİ: TAKAS DURUMUNU GÜNCELLE (Kabul / Red)
   const handleTakasDurum = async (id: string, yeniDurum: string) => {
     try {
       const res = await fetch("/api/takas", {
@@ -131,14 +125,14 @@ export default function SiberPanel() {
       if (activeTab === "kargoda") return alimSiparisleri.filter((o: any) => o.status === "shipped");
       if (activeTab === "teslim_aldiklarim") return alimSiparisleri.filter((o: any) => o.status === "delivered");
       if (activeTab === "iptal") return alimSiparisleri.filter((o: any) => o.status === "canceled");
-      if (activeTab === "yaptigim_teklifler") return gidenTakaslar; // YENİ
+      if (activeTab === "yaptigim_teklifler") return gidenTakaslar;
     } else {
       if (activeTab === "ilanlarim") return ilanlarim;
       if (activeTab === "onay_bekleyen") return satisSiparisleri.filter((o: any) => o.status === "pending" || !o.status);
       if (activeTab === "onayladiklarim") return satisSiparisleri.filter((o: any) => o.status === "approved");
       if (activeTab === "kargoda") return satisSiparisleri.filter((o: any) => o.status === "shipped");
       if (activeTab === "teslim_edilenler") return satisSiparisleri.filter((o: any) => o.status === "delivered");
-      if (activeTab === "gelen_takaslar") return gelenTakaslar; // YENİ
+      if (activeTab === "gelen_takaslar") return gelenTakaslar;
     }
     return [];
   };
@@ -210,7 +204,7 @@ export default function SiberPanel() {
               <div className="space-y-4">
                 {currentData.map((item: any, idx: number) => {
                   
-                  // 🔄 EĞER BU BİR TAKAS VERİSİYSE FARKLI TASARIM GÖSTER:
+                  // 🔄 TAKAS KARTLARI
                   if (activeTab === "gelen_takaslar" || activeTab === "yaptigim_teklifler") {
                     return (
                       <div key={idx} className="bg-[#030712] border border-cyan-500/20 p-5 rounded-3xl flex flex-col items-start gap-4 group hover:border-cyan-500/50 transition-all shadow-[0_0_15px_rgba(6,182,212,0.05)]">
@@ -223,37 +217,36 @@ export default function SiberPanel() {
                         </div>
 
                         <div className="w-full flex flex-col md:flex-row items-center gap-4 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
-                          
-                          {/* İstenen Varlık */}
                           <div className="flex-1 text-center md:text-left">
                             <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Hedef Varlık</p>
                             <p className="text-white font-bold text-sm uppercase">{item.hedefIlanBaslik}</p>
                           </div>
-
                           <div className="text-cyan-400 text-2xl font-black rotate-90 md:rotate-0">⇄</div>
-
-                          {/* Teklif Edilen Varlık */}
                           <div className="flex-1 text-center md:text-right">
                             <p className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-1">Teklif Edilen Varlık</p>
                             <p className="text-white font-bold text-sm uppercase">{item.teklifEdilenIlanBaslik}</p>
-                            {item.eklenenNakit > 0 && (
-                              <p className="text-[#00f260] text-xs font-black mt-1">+ {item.eklenenNakit.toLocaleString()} ₺ Nakit</p>
-                            )}
+                            {item.eklenenNakit > 0 && <p className="text-[#00f260] text-xs font-black mt-1">+ {item.eklenenNakit.toLocaleString()} ₺ Nakit</p>}
                           </div>
                         </div>
 
-                        {/* Aksiyon Butonları (Sadece Gelen Takas ve Durum "Bekliyor" ise) */}
-                        {activeTab === "gelen_takaslar" && item.durum === "bekliyor" && (
-                          <div className="flex gap-3 w-full mt-2">
-                            <button onClick={()=>handleTakasDurum(item._id, "kabul")} className="flex-1 bg-[#00f260] text-black py-3 rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all shadow-lg">Kabul Et</button>
-                            <button onClick={()=>handleTakasDurum(item._id, "red")} className="flex-1 bg-red-500/10 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Reddet</button>
-                          </div>
-                        )}
+                        {/* 🚀 TAKAS KARTI İÇİN MESAJ BUTONU EKLENDİ */}
+                        <div className="flex flex-col md:flex-row gap-3 w-full mt-2">
+                          {activeTab === "gelen_takaslar" && item.durum === "bekliyor" && (
+                            <>
+                              <button onClick={()=>handleTakasDurum(item._id, "kabul")} className="flex-1 bg-[#00f260] text-black py-3 rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all shadow-lg">Kabul Et</button>
+                              <button onClick={()=>handleTakasDurum(item._id, "red")} className="flex-1 bg-red-500/10 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Reddet</button>
+                            </>
+                          )}
+                          <Link href={`/mesajlar?satici=${activeTab === 'gelen_takaslar' ? item.gonderenEmail : item.aliciEmail}`} className="flex-1 bg-cyan-500/10 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all text-center border border-cyan-500/20">
+                            💬 SOHBETE GİT
+                          </Link>
+                        </div>
+
                       </div>
                     );
                   }
 
-                  // 📦 EĞER BU BİR SİPARİŞ VEYA İLAN İSE STANDART TASARIMI GÖSTER:
+                  // 📦 SİPARİŞ KARTLARI
                   return (
                     <div key={idx} className="bg-[#030712] border border-white/5 p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center gap-6 group hover:border-white/20 transition-all">
                       <div className="flex-1">
@@ -266,7 +259,7 @@ export default function SiberPanel() {
 
                       <div className="flex flex-wrap gap-2 w-full md:w-auto mt-4 md:mt-0">
                         {activeRole === "alici" && activeTab === "siparislerim" && item.status === "pending" && (
-                          <button onClick={()=>handleUpdateStatus(item._id, "canceled")} className="flex-1 md:flex-none bg-red-500/10 text-red-500 p-3 rounded-xl text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">İptal Et</button>
+                          <button onClick={()=>handleUpdateStatus(item._id, "canceled")} className="flex-1 md:flex-none bg-red-500/10 text-red-500 px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">İptal Et</button>
                         )}
                         {activeRole === "satici" && activeTab === "onay_bekleyen" && (
                           <>
@@ -274,6 +267,12 @@ export default function SiberPanel() {
                             <button onClick={()=>handleUpdateStatus(item._id, "canceled")} className="flex-1 md:flex-none bg-red-500/10 text-red-500 px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Reddet</button>
                           </>
                         )}
+                        
+                        {/* 🚀 SİPARİŞ KARTI İÇİN MESAJ BUTONU EKLENDİ */}
+                        <Link href={`/mesajlar?satici=${activeRole === "satici" ? item.buyerEmail : item.sellerEmail}`} className="flex-1 md:flex-none bg-white/5 text-cyan-400 px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:bg-white/10 transition-all text-center border border-white/10">
+                          💬 MESAJ AT
+                        </Link>
+
                       </div>
                     </div>
                   );
