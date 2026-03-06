@@ -11,13 +11,11 @@ export default function SiberPanel() {
   const [activeRole, setActiveRole] = useState("alici");
   const [activeTab, setActiveTab] = useState("siparislerim");
   
-  // 📡 VERİ STATE'LERİ
-  const [ilanlarim, setIlanlarim] = useState([]);
-  const [alimSiparisleri, setAlimSiparisleri] = useState([]); // Alıcı olduğum
-  const [satisSiparisleri, setSatisSiparisleri] = useState([]); // Satıcı olduğum
+  const [ilanlarim, setIlanlarim] = useState<any[]>([]);
+  const [alimSiparisleri, setAlimSiparisleri] = useState<any[]>([]); 
+  const [satisSiparisleri, setSatisSiparisleri] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
 
-  // 💰 YENİ: SİBER CÜZDAN STATE'LERİ
   const [bakiye, setBakiye] = useState(0); 
   const [bakiyeYukleniyor, setBakiyeYukleniyor] = useState(false);
 
@@ -26,37 +24,35 @@ export default function SiberPanel() {
     else if (status === "unauthenticated") router.push("/login");
   }, [status]);
 
-  // 📡 GERÇEK ZAMANLI VERİ ÇEKME MOTORU
   const fetchSiberData = async () => {
     if (!session?.user?.email) return;
     setLoading(true);
     const aktifEmail = session.user.email.toLowerCase();
     
     try {
-      // 💰 0. SİBER BAKİYEYİ ÇEK
       const resWallet = await fetch(`/api/wallet`, { cache: "no-store" });
       if (resWallet.ok) {
          const wData = await resWallet.json();
          setBakiye(wData.balance || 0);
       }
 
-      // 1. İLANLARI ÇEK (Satıcı Paneli İçin)
       const resListings = await fetch(`/api/listings`, { cache: "no-store" });
       if (resListings.ok) {
         const dataListings = await resListings.json();
-        const benimIlanlar = dataListings.filter(i => {
+        // 🚨 TİP HATASI BURADA ÇÖZÜLDÜ: (i) yerine (i: any) yapıldı
+        const benimIlanlar = dataListings.filter((i: any) => {
            const sEmail = (typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
            return sEmail === aktifEmail;
         });
         setIlanlarim(benimIlanlar);
       }
 
-      // 2. SİPARİŞLERİ ÇEK (Tüm lojistik ağ)
       const resOrders = await fetch(`/api/orders?email=${aktifEmail}`, { cache: "no-store" });
       if (resOrders.ok) {
         const dataOrders = await resOrders.json();
-        setAlimSiparisleri(dataOrders.filter(o => (o.buyerEmail || "").toLowerCase() === aktifEmail));
-        setSatisSiparisleri(dataOrders.filter(o => (o.sellerEmail || "").toLowerCase() === aktifEmail));
+        // 🚨 TİP HATASI BURADA ÇÖZÜLDÜ: (o) yerine (o: any) yapıldı
+        setAlimSiparisleri(dataOrders.filter((o: any) => (o.buyerEmail || "").toLowerCase() === aktifEmail));
+        setSatisSiparisleri(dataOrders.filter((o: any) => (o.sellerEmail || "").toLowerCase() === aktifEmail));
       }
     } catch (err) { 
       console.error("Veri Çekme Hatası:", err); 
@@ -64,8 +60,7 @@ export default function SiberPanel() {
     setLoading(false);
   };
 
-  // 🔄 DURUM GÜNCELLEME MOTORU (Tetikleyici)
-  const handleUpdateStatus = async (id, yeniDurum) => {
+  const handleUpdateStatus = async (id: string, yeniDurum: string) => {
     try {
       const res = await fetch("/api/orders", {
         method: "PUT",
@@ -78,10 +73,9 @@ export default function SiberPanel() {
     }
   };
 
-  // 💰 SİBER BAKİYE YÜKLEME MOTORU
   const handleBakiyeYukle = async () => {
     const miktar = prompt("Siber Kasaya yüklenecek tutarı girin (₺):");
-    if (!miktar || isNaN(miktar) || Number(miktar) <= 0) return;
+    if (!miktar || isNaN(Number(miktar)) || Number(miktar) <= 0) return;
 
     setBakiyeYukleniyor(true);
     try {
@@ -104,28 +98,28 @@ export default function SiberPanel() {
     }
   };
 
-  // 🎛️ SEKMELERE GÖRE VERİ FİLTRELEME MANTIĞI
+  // 🚨 DİĞER TİP HATALARI DA BURADA ZIRHLANDI: (o: any)
   const getFilteredData = () => {
     if (activeRole === "alici") {
       if (activeTab === "sepetim") return []; 
-      if (activeTab === "siparislerim") return alimSiparisleri.filter(o => o.status === "pending" || o.status === "approved");
-      if (activeTab === "kargoda") return alimSiparisleri.filter(o => o.status === "shipped");
-      if (activeTab === "teslim_aldiklarim") return alimSiparisleri.filter(o => o.status === "delivered");
-      if (activeTab === "iptal") return alimSiparisleri.filter(o => o.status === "canceled");
+      if (activeTab === "siparislerim") return alimSiparisleri.filter((o: any) => o.status === "pending" || o.status === "approved");
+      if (activeTab === "kargoda") return alimSiparisleri.filter((o: any) => o.status === "shipped");
+      if (activeTab === "teslim_aldiklarim") return alimSiparisleri.filter((o: any) => o.status === "delivered");
+      if (activeTab === "iptal") return alimSiparisleri.filter((o: any) => o.status === "canceled");
     } else {
       if (activeTab === "ilanlarim") return ilanlarim;
-      if (activeTab === "onay_bekleyen") return satisSiparisleri.filter(o => o.status === "pending" || !o.status);
-      if (activeTab === "onayladiklarim") return satisSiparisleri.filter(o => o.status === "approved");
-      if (activeTab === "kargoda") return satisSiparisleri.filter(o => o.status === "shipped");
-      if (activeTab === "teslim_edilenler") return satisSiparisleri.filter(o => o.status === "delivered");
-      if (activeTab === "iptal") return satisSiparisleri.filter(o => o.status === "canceled");
+      if (activeTab === "onay_bekleyen") return satisSiparisleri.filter((o: any) => o.status === "pending" || !o.status);
+      if (activeTab === "onayladiklarim") return satisSiparisleri.filter((o: any) => o.status === "approved");
+      if (activeTab === "kargoda") return satisSiparisleri.filter((o: any) => o.status === "shipped");
+      if (activeTab === "teslim_edilenler") return satisSiparisleri.filter((o: any) => o.status === "delivered");
+      if (activeTab === "iptal") return satisSiparisleri.filter((o: any) => o.status === "canceled");
     }
     return [];
   };
 
   const currentData = getFilteredData();
 
-  const handleRoleChange = (role) => {
+  const handleRoleChange = (role: string) => {
     setActiveRole(role);
     setActiveTab(role === "alici" ? "siparislerim" : "ilanlarim");
   };
@@ -166,19 +160,19 @@ export default function SiberPanel() {
           {activeRole === "alici" ? (
             <>
               <TabButton id="sepetim" label="Sepetim" active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
-              <TabButton id="siparislerim" label={`Siparişlerim (${alimSiparisleri.filter(o=>o.status==='pending'||o.status==='approved').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
-              <TabButton id="kargoda" label={`Kargoda Olanlar (${alimSiparisleri.filter(o=>o.status==='shipped').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
-              <TabButton id="teslim_aldiklarim" label={`Teslim Aldıklarım (${alimSiparisleri.filter(o=>o.status==='delivered').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
-              <TabButton id="iptal" label={`İptal Edilenler (${alimSiparisleri.filter(o=>o.status==='canceled').length})`} active={activeTab} set={setActiveTab} color="text-red-500" border="border-red-500" />
+              <TabButton id="siparislerim" label={`Siparişlerim (${alimSiparisleri.filter((o:any)=>o.status==='pending'||o.status==='approved').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
+              <TabButton id="kargoda" label={`Kargoda Olanlar (${alimSiparisleri.filter((o:any)=>o.status==='shipped').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
+              <TabButton id="teslim_aldiklarim" label={`Teslim Aldıklarım (${alimSiparisleri.filter((o:any)=>o.status==='delivered').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
+              <TabButton id="iptal" label={`İptal Edilenler (${alimSiparisleri.filter((o:any)=>o.status==='canceled').length})`} active={activeTab} set={setActiveTab} color="text-red-500" border="border-red-500" />
             </>
           ) : (
             <>
               <TabButton id="ilanlarim" label={`İlanlarım (${ilanlarim.length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
-              <TabButton id="onay_bekleyen" label={`Onay Bekleyenler (${satisSiparisleri.filter(o=>o.status==='pending'||!o.status).length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
-              <TabButton id="onayladiklarim" label={`Onayladıklarım (${satisSiparisleri.filter(o=>o.status==='approved').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
-              <TabButton id="kargoda" label={`Kargoda (${satisSiparisleri.filter(o=>o.status==='shipped').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
-              <TabButton id="teslim_edilenler" label={`Teslim Edilenler (${satisSiparisleri.filter(o=>o.status==='delivered').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
-              <TabButton id="iptal" label={`İptal (${satisSiparisleri.filter(o=>o.status==='canceled').length})`} active={activeTab} set={setActiveTab} color="text-red-500" border="border-red-500" />
+              <TabButton id="onay_bekleyen" label={`Onay Bekleyenler (${satisSiparisleri.filter((o:any)=>o.status==='pending'||!o.status).length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="onayladiklarim" label={`Onayladıklarım (${satisSiparisleri.filter((o:any)=>o.status==='approved').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="kargoda" label={`Kargoda (${satisSiparisleri.filter((o:any)=>o.status==='shipped').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="teslim_edilenler" label={`Teslim Edilenler (${satisSiparisleri.filter((o:any)=>o.status==='delivered').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="iptal" label={`İptal (${satisSiparisleri.filter((o:any)=>o.status==='canceled').length})`} active={activeTab} set={setActiveTab} color="text-red-500" border="border-red-500" />
             </>
           )}
         </div>
@@ -193,7 +187,7 @@ export default function SiberPanel() {
               </div>
             ) : (
               <div className="space-y-4">
-                {currentData.map((item, idx) => (
+                {currentData.map((item: any, idx: number) => (
                   <div key={idx} className="bg-[#030712] border border-white/5 p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center gap-6 group hover:border-white/20 transition-all">
                     <img src={item.media?.images?.[0] || item.resimUrl || "https://placehold.co/100"} className="w-20 h-20 rounded-2xl object-cover border border-white/5" alt="Ürün" />
                     
@@ -205,7 +199,6 @@ export default function SiberPanel() {
                        <p className="text-[#00f260] font-black text-sm italic">{Number(item.price || item.fiyat || item.totalAmount || 0).toLocaleString()} ₺</p>
                     </div>
 
-                    {/* 🚀 AKSİYON BUTONLARI */}
                     <div className="flex flex-wrap gap-2 w-full md:w-auto mt-4 md:mt-0">
                       
                       {activeRole === "alici" && activeTab === "siparislerim" && item.status === "pending" && (
@@ -228,8 +221,13 @@ export default function SiberPanel() {
                       {activeTab === "ilanlarim" && (
                         <Link href={`/ilan-duzenle/${item._id}`} className="flex-1 md:flex-none bg-amber-500 text-black px-5 py-3 rounded-xl text-[9px] font-black uppercase text-center hover:scale-105 transition-all">Düzenle</Link>
                       )}
-                      {/* ⚡ İŞTE DÜZELTİLEN KUSURSUZ İNCELE ROTASI */}
-                      <Link href={`/ilanlar/${item.listingId || item._id}`} className="flex-1 md:flex-none bg-white/5 text-white px-5 py-3 rounded-xl text-[9px] font-black uppercase border border-white/10 text-center hover:bg-white/10 transition-all">İncele</Link>
+                      
+                      <Link 
+                        href={`/ilanlar/${activeTab === "ilanlarim" ? item._id : (item.listingId || item.urunId || item._id)}`} 
+                        className="flex-1 md:flex-none bg-white/5 text-white px-5 py-3 rounded-xl text-[9px] font-black uppercase border border-white/10 text-center hover:bg-white/10 transition-all"
+                      >
+                        İncele
+                      </Link>
                     </div>
 
                   </div>
@@ -243,8 +241,8 @@ export default function SiberPanel() {
   );
 }
 
-// 🎨 YARDIMCI BİLEŞEN
-function TabButton({ id, label, active, set, color, border }) {
+// 🚨 BİLEŞEN HATASI DA BURADA ZIRHLANDI: (props: any) yapıldı
+function TabButton({ id, label, active, set, color, border }: any) {
   const isActive = active === id;
   return (
     <button 
@@ -255,4 +253,3 @@ function TabButton({ id, label, active, set, color, border }) {
     </button>
   );
 }
- 
