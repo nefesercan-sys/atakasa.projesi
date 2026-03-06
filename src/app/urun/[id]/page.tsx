@@ -1,87 +1,243 @@
 "use client";
-import React from "react";
-import Link from "next/link";
-import { ArrowLeft, Share2, Heart, ShieldCheck, MapPin, Zap } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
-export default function UrunDetay() {
-  return (
-    <div className="min-h-screen bg-[#030712] text-white pb-24 font-sans antialiased">
+export default function VarlikDetay({ params }: { params: any }) {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [ilan, setIlan] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // 🔄 TAKAS SİBER STATE'LERİ
+  const [takasModalAcik, setTakasModalAcik] = useState(false);
+  const [benimIlanlarim, setBenimIlanlarim] = useState<any[]>([]);
+  const [secilenBenimIlanim, setSecilenBenimIlanim] = useState("");
+  const [eklenecekNakit, setEklenecekNakit] = useState("");
+
+  const [resolvedParams, setResolvedParams] = useState<any>(null);
+
+  useEffect(() => {
+    const unwrapParams = async () => {
+      const p = await params;
+      setResolvedParams(p);
+    };
+    unwrapParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (resolvedParams?.id) {
+      fetchIlanDetay();
+      if (session?.user?.email) {
+        fetchBenimIlanlarim();
+      }
+    }
+  }, [resolvedParams, session]);
+
+  // 1. VARLIK DETAYLARINI ÇEK
+  const fetchIlanDetay = async () => {
+    try {
+      const res = await fetch(`/api/listings`); 
+      const data = await res.json();
       
-      {/* 🚀 UÇTAN UCA FOTOĞRAF ALANI */}
-      <div className="relative w-full h-96 bg-[#111827]">
-        {/* Üst Kayan Butonlar */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between z-10">
-          <Link href="/" className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10">
-            <ArrowLeft size={20} />
-          </Link>
-          <div className="flex gap-2">
-            <button className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10">
-              <Share2 size={18} />
-            </button>
-            <button className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10">
-              <Heart size={18} />
-            </button>
-          </div>
-        </div>
-        {/* Örnek Resim */}
-        <img src="https://placehold.co/800x800/111827/00f260?text=Varlık+Görseli" alt="Varlık" className="w-full h-full object-cover" />
-      </div>
+      let liste = Array.isArray(data) ? data : data.data || data.ilanlar || [];
+      const seciliIlan = liste.find((i: any) => i._id === resolvedParams.id || i.id === resolvedParams.id);
+      
+      setIlan(seciliIlan);
+    } catch (error) {
+      console.error("Varlık çekilemedi:", error);
+    }
+    setLoading(false);
+  };
 
-      {/* 🚀 ÜRÜN BİLGİLERİ */}
-      <div className="p-5">
-        <div className="flex justify-between items-start mb-2">
-          <div className="bg-[#00f260]/10 text-[#00f260] text-[10px] font-black px-3 py-1 rounded-md uppercase tracking-widest border border-[#00f260]/20">
-            Elektronik
-          </div>
-          <div className="text-xs text-slate-500 font-bold flex items-center gap-1">
-            <MapPin size={12} /> İzmir, Karşıyaka
-          </div>
-        </div>
+  // 2. KULLANICININ KENDİ VARLIKLARINI ÇEK (Takas için)
+  const fetchBenimIlanlarim = async () => {
+    try {
+      const aktifEmail = session?.user?.email?.toLowerCase() || "";
+      const res = await fetch(`/api/listings`);
+      if (res.ok) {
+        const data = await res.json();
+        let liste = Array.isArray(data) ? data : data.data || data.ilanlar || [];
         
-        <h1 className="text-2xl font-black mb-3 leading-tight">iPhone 13 Pro Max 256GB Kusursuz Temizlikte</h1>
-        
-        <div className="flex items-end gap-2 mb-6 border-b border-white/5 pb-6">
-          <span className="text-3xl font-black text-[#00f260] italic">35.000 ₺</span>
-          <span className="text-xs text-slate-500 font-bold mb-1 uppercase tracking-widest">Piyasa Değeri</span>
-        </div>
+        const benimkiler = liste.filter((i: any) => {
+           const sEmail = (typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
+           return sEmail === aktifEmail;
+        });
+        setBenimIlanlarim(benimkiler);
+      }
+    } catch (error) {
+      console.error("Kullanıcı varlıkları çekilemedi.");
+    }
+  };
 
-        {/* 🚀 SATICI (TAKASÇI) GÜVEN PROFİLİ */}
-        <div className="bg-[#0b0f19] border border-white/5 rounded-2xl p-4 flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-tr from-[#00f260] to-sky-500 rounded-full p-[2px]">
-              <div className="w-full h-full bg-[#030712] rounded-full border-2 border-[#030712] overflow-hidden">
-                <img src="https://placehold.co/100/111827/fff?text=A" alt="Avatar" className="w-full h-full object-cover" />
-              </div>
+  // 3. TAKAS SİNYALİNİ GÖNDER
+  const handleTakasGonder = async () => {
+    if (!secilenBenimIlanim) return;
+
+    const [teklifIlanId, teklifIlanBaslik] = secilenBenimIlanim.split("|");
+
+    try {
+      const res = await fetch("/api/takas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aliciEmail: ilan.sellerEmail || ilan.satici?.email || ilan.userId,
+          hedefIlanId: ilan._id || ilan.id,
+          hedefIlanBaslik: ilan.title || ilan.baslik,
+          teklifEdilenIlanId: teklifIlanId,
+          teklifEdilenIlanBaslik: teklifIlanBaslik,
+          eklenenNakit: eklenecekNakit || 0
+        })
+      });
+
+      if (res.ok) {
+        alert("⚡ SİBER TEKLİF BAŞARIYLA İLETİLDİ!");
+        setTakasModalAcik(false);
+      } else {
+        const err = await res.json();
+        alert(`Hata: ${err.error}`);
+      }
+    } catch (error) {
+      alert("Takas motoru yanıt vermiyor.");
+    }
+  };
+
+  const getResim = (ilan: any) => {
+    const p = "https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK";
+    if (!ilan) return p;
+    if (ilan.media?.images?.[0]) return ilan.media.images[0];
+    if (ilan.images?.[0]) return ilan.images[0];
+    if (typeof ilan.image === 'string' && ilan.image) return ilan.image;
+    return p;
+  };
+
+  if (loading) return <div className="min-h-screen bg-[#030712] flex items-center justify-center text-[#00f260] font-black animate-pulse">SİBER AĞ TARANIYOR...</div>;
+  if (!ilan) return <div className="min-h-screen bg-[#030712] flex items-center justify-center text-red-500 font-black">VARLIK BULUNAMADI.</div>;
+
+  return (
+    <div className="min-h-screen bg-[#030712] py-24 px-4 text-white">
+      <div className="max-w-4xl mx-auto bg-[#0b0f19] border border-white/5 rounded-[2rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
+        
+        {/* Arka plan siber parlaması */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
+          
+          {/* GÖRSEL ALANI */}
+          <div className="rounded-3xl overflow-hidden border border-white/10 bg-[#030712]">
+             <img src={getResim(ilan)} alt={ilan.title} className="w-full h-auto object-cover" />
+          </div>
+
+          {/* DETAY VE AKSİYON ALANI */}
+          <div className="flex flex-col">
+            <div className="inline-block bg-[#00f260]/10 text-[#00f260] text-[9px] font-black px-3 py-1 rounded-md uppercase tracking-widest border border-[#00f260]/20 mb-4 w-max">
+              {ilan.category || "Kategori Yok"}
             </div>
-            <div>
-              <h3 className="font-bold text-sm">Ali Yılmaz</h3>
-              <div className="flex items-center gap-1 text-[10px] text-slate-400 font-black tracking-wider uppercase mt-1">
-                <ShieldCheck size={12} className="text-[#00f260]" /> Siber Onaylı Hesap
-              </div>
+            
+            <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter mb-4">
+              {ilan.title || ilan.baslik || "İsimsiz Varlık"}
+            </h1>
+            
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+              {ilan.description || ilan.aciklama || "Açıklama belirtilmemiş."}
+            </p>
+
+            <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold tracking-widest uppercase mb-8 border-b border-white/5 pb-6">
+              📍 Konum: {ilan.location || "Belirtilmemiş"}
+            </div>
+
+            <div className="mt-auto">
+              <p className="text-[#00f260] font-black text-4xl mb-6">
+                {Number(ilan.price || ilan.fiyat || 0).toLocaleString()} <span className="text-xl">₺</span>
+              </p>
+
+              {/* 🚀 SATIN ALMA VE TAKAS BUTONLARI */}
+              {session?.user?.email !== (ilan.sellerEmail || ilan.satici?.email || ilan.userId) ? (
+                <>
+                  <button className="w-full bg-[#00f260] text-black py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,242,96,0.3)]">
+                    SATIN AL
+                  </button>
+                  
+                  {/* SİBER TAKAS BUTONU */}
+                  <button 
+                    onClick={() => {
+                      if (!session) {
+                        alert("Takas yapmak için giriş yapmalısınız!");
+                        router.push("/login");
+                        return;
+                      }
+                      setTakasModalAcik(true);
+                    }} 
+                    className="w-full bg-cyan-500 text-black py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] mt-3">
+                    🔄 TAKAS TEKLİF ET
+                  </button>
+                </>
+              ) : (
+                <div className="text-center bg-white/5 border border-white/10 p-4 rounded-xl text-slate-400 text-xs font-bold uppercase tracking-widest">
+                  Bu Varlık Zaten Size Ait
+                </div>
+              )}
             </div>
           </div>
-          <Link href="/profil/ali" className="text-[10px] font-black bg-white/5 text-white px-4 py-2 rounded-xl uppercase tracking-widest hover:bg-white/10 transition-colors">
-            Profili Gör
-          </Link>
         </div>
-
-        {/* 🚀 AÇIKLAMA */}
-        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-3">Varlık Detayları</h3>
-        <p className="text-sm text-slate-300 leading-relaxed font-medium">
-          Cihazım ilk günkü gibi temizdir. Sadece oyuncu bilgisayarı (Tercihen RTX 3080 ve üzeri sistemler) veya dengi mantıklı teknolojik aletlerle takas düşünülür. Üste nakit alıp verebilirim, tekliflere açığım.
-        </p>
       </div>
 
-      {/* 🚀 SABİT ALT AKSİYON BARI (App Style Sticky Bottom) */}
-      <div className="fixed bottom-0 w-full bg-[#030712]/90 backdrop-blur-xl border-t border-white/10 p-4 flex gap-3 z-50">
-        <button className="flex-1 bg-[#0b0f19] border border-white/10 text-white font-black uppercase tracking-widest text-xs py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-white/5 transition-colors">
-          Mesaj At
-        </button>
-        <button className="flex-[2] bg-[#00f260] text-black font-black uppercase tracking-widest text-xs py-4 rounded-2xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,242,96,0.3)] hover:scale-[1.02] transition-transform">
-          <Zap size={16} /> TAKAS TEKLİF ET
-        </button>
-      </div>
+      {/* 🚀 SİBER TAKAS MODALI */}
+      {takasModalAcik && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-cyan-500/50 p-6 rounded-3xl w-full max-w-md shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+            <h3 className="text-xl font-black text-white italic uppercase mb-2">SİBER <span className="text-cyan-400">TAKAS</span> EKRANI</h3>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">
+              "{ilan.title || ilan.baslik}" İÇİN NE TEKLİF EDİYORSUNUZ?
+            </p>
 
+            <div className="mb-4">
+              <label className="text-[#00f260] text-[10px] font-black uppercase tracking-widest block mb-2">Vereceğiniz Varlığı Seçin:</label>
+              <select 
+                onChange={(e) => setSecilenBenimIlanim(e.target.value)}
+                className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl focus:outline-none focus:border-cyan-500 transition-colors"
+              >
+                <option value="">-- Kendi İlanlarınızdan Birini Seçin --</option>
+                {benimIlanlarim.map(bIlan => (
+                  <option key={bIlan._id} value={`${bIlan._id}|${bIlan.title || bIlan.baslik}`}>
+                    {bIlan.title || bIlan.baslik}
+                  </option>
+                ))}
+              </select>
+              {benimIlanlarim.length === 0 && (
+                <p className="text-red-500 text-[9px] mt-2 font-bold uppercase tracking-widest animate-pulse">
+                  ⚠️ Sistemde aktif ilanınız bulunmuyor. Takas için önce bir ilan eklemelisiniz.
+                </p>
+              )}
+            </div>
+
+            <div className="mb-8">
+              <label className="text-[#00f260] text-[10px] font-black uppercase tracking-widest block mb-2">Üstüne Eklenecek Nakit (₺) - Opsiyonel:</label>
+              <input 
+                type="number" 
+                placeholder="Örn: 500"
+                value={eklenecekNakit}
+                onChange={(e) => setEklenecekNakit(e.target.value)}
+                className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setTakasModalAcik(false)}
+                className="flex-1 bg-white/5 text-white py-4 rounded-xl font-black text-[10px] uppercase hover:bg-white/10 transition-colors">
+                İPTAL ET
+              </button>
+              <button 
+                onClick={handleTakasGonder}
+                disabled={!secilenBenimIlanim || benimIlanlarim.length === 0}
+                className="flex-1 bg-cyan-500 text-black py-4 rounded-xl font-black text-[10px] uppercase hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                🚀 TEKLİFİ FIRLAT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
