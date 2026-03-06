@@ -1,7 +1,6 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -9,219 +8,250 @@ export default function SiberPanel() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState("varliklar");
+  const [activeRole, setActiveRole] = useState("alici");
+  const [activeTab, setActiveTab] = useState("siparislerim");
   
-  // 📡 CANLI VERİ STATE'LERİ
-  const [benimIlanlar, setBenimIlanlar] = useState<any[]>([]);
-  const [gelenTeklifler, setGelenTeklifler] = useState<any[]>([]);
-  const [gidenTeklifler, setGidenTeklifler] = useState<any[]>([]); // 🚀 YENİ: Verdiğim Teklifler
-  const [favoriler, setFavoriler] = useState<any[]>([]); // 🚀 YENİ: İzleme Listesi
+  // 📡 VERİ STATE'LERİ
+  const [ilanlarim, setIlanlarim] = useState([]);
+  const [alimSiparisleri, setAlimSiparisleri] = useState([]); // Alıcı olduğum
+  const [satisSiparisleri, setSatisSiparisleri] = useState([]); // Satıcı olduğum
   const [loading, setLoading] = useState(true);
 
+  // 💰 YENİ: SİBER CÜZDAN STATE'LERİ
+  const [bakiye, setBakiye] = useState(0); 
+  const [bakiyeYukleniyor, setBakiyeYukleniyor] = useState(false);
+
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/giris");
-  }, [status, router]);
+    if (status === "authenticated") fetchSiberData();
+    else if (status === "unauthenticated") router.push("/login");
+  }, [status]);
 
-  // 📡 GERÇEK ZAMANLI VERİ SENTEZLEME MOTORU
-  useEffect(() => {
-    const veriSentezle = async () => {
-      if (!session?.user?.email) return;
-      
-      try {
-        setLoading(true);
-        const aktifEmail = session.user.email.toLowerCase();
-        
-        // 1. İLANLAR
-        const resIlan = await fetch("/api/varliklar", { cache: "no-store" });
-        const ilanlar = await resIlan.json();
-        const filtreIlan = ilanlar.filter((i: any) => {
-          const saticiEmail = (typeof i.satici === 'string' ? i.satici : i.satici?.email || "").toLowerCase();
-          return saticiEmail === aktifEmail;
-        });
-        setBenimIlanlar(filtreIlan);
-
-        // 2. MESAJLAR (Gelen ve Giden Teklifler)
-        const resMesaj = await fetch("/api/mesajlar", { cache: "no-store" });
-        if (resMesaj.ok) {
-          const mesajlar = await resMesaj.json();
-          // Bana gelenler:
-          const gelen = mesajlar.filter((m: any) => (m.alici || "").toLowerCase() === aktifEmail);
-          setGelenTeklifler(gelen);
-          // Benim gönderdiklerim:
-          const giden = mesajlar.filter((m: any) => (m.gonderen || "").toLowerCase() === aktifEmail);
-          setGidenTeklifler(giden);
-        }
-
-        // 3. FAVORİLER (İzleme Listesi)
-        const resFav = await fetch("/api/favoriler", { cache: "no-store" });
-        if (resFav.ok) {
-          const favData = await resFav.json();
-          // Sadece ilan verisi silinmemiş olanları filtrele
-          setFavoriler(favData.filter((f: any) => f.ilanId !== null));
-        }
-
-      } catch (err) {
-        console.error("Siber veri akışı hatası:", err);
-      } finally {
-        setLoading(false);
+  // 📡 GERÇEK ZAMANLI VERİ ÇEKME MOTORU
+  const fetchSiberData = async () => {
+    if (!session?.user?.email) return;
+    setLoading(true);
+    const aktifEmail = session.user.email.toLowerCase();
+    
+    try {
+      // 💰 0. SİBER BAKİYEYİ ÇEK
+      const resWallet = await fetch(`/api/wallet`, { cache: "no-store" });
+      if (resWallet.ok) {
+         const wData = await resWallet.json();
+         setBakiye(wData.balance || 0);
       }
-    };
 
-    if (session) veriSentezle();
-  }, [session]);
+      // 1. İLANLARI ÇEK (Satıcı Paneli İçin)
+      const resListings = await fetch(`/api/listings`, { cache: "no-store" });
+      if (resListings.ok) {
+        const dataListings = await resListings.json();
+        const benimIlanlar = dataListings.filter(i => {
+           const sEmail = (typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
+           return sEmail === aktifEmail;
+        });
+        setIlanlarim(benimIlanlar);
+      }
 
-  if (status === "loading") return <div className="min-h-screen bg-black flex items-center justify-center text-[#00f260] font-black tracking-[0.3em] animate-pulse">SİNYAL DOĞRULANIYOR...</div>;
+      // 2. SİPARİŞLERİ ÇEK (Tüm lojistik ağ)
+      const resOrders = await fetch(`/api/orders?email=${aktifEmail}`, { cache: "no-store" });
+      if (resOrders.ok) {
+        const dataOrders = await resOrders.json();
+        setAlimSiparisleri(dataOrders.filter(o => (o.buyerEmail || "").toLowerCase() === aktifEmail));
+        setSatisSiparisleri(dataOrders.filter(o => (o.sellerEmail || "").toLowerCase() === aktifEmail));
+      }
+    } catch (err) { 
+      console.error("Veri Çekme Hatası:", err); 
+    }
+    setLoading(false);
+  };
 
-  const handleCikis = () => signOut({ callbackUrl: "/" });
+  // 🔄 DURUM GÜNCELLEME MOTORU (Tetikleyici)
+  const handleUpdateStatus = async (id, yeniDurum) => {
+    try {
+      const res = await fetch("/api/orders", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: id, yeniDurum })
+      });
+      if (res.ok) fetchSiberData(); 
+    } catch (error) {
+      alert("Sinyal iletilemedi!");
+    }
+  };
+
+  // 💰 SİBER BAKİYE YÜKLEME MOTORU
+  const handleBakiyeYukle = async () => {
+    const miktar = prompt("Siber Kasaya yüklenecek tutarı girin (₺):");
+    if (!miktar || isNaN(miktar) || Number(miktar) <= 0) return;
+
+    setBakiyeYukleniyor(true);
+    try {
+      const res = await fetch("/api/wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ miktar: Number(miktar) })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBakiye(data.balance);
+        alert(`⚡ MÜHÜRLENDİ: Kasaya ${miktar} ₺ eklendi!`);
+      } else {
+        alert("Banka API'sine ulaşılamadı.");
+      }
+    } catch (err) {
+      alert("Siber bağlantı koptu.");
+    } finally {
+      setBakiyeYukleniyor(false);
+    }
+  };
+
+  // 🎛️ SEKMELERE GÖRE VERİ FİLTRELEME MANTIĞI
+  const getFilteredData = () => {
+    if (activeRole === "alici") {
+      if (activeTab === "sepetim") return []; 
+      if (activeTab === "siparislerim") return alimSiparisleri.filter(o => o.status === "pending" || o.status === "approved");
+      if (activeTab === "kargoda") return alimSiparisleri.filter(o => o.status === "shipped");
+      if (activeTab === "teslim_aldiklarim") return alimSiparisleri.filter(o => o.status === "delivered");
+      if (activeTab === "iptal") return alimSiparisleri.filter(o => o.status === "canceled");
+    } else {
+      if (activeTab === "ilanlarim") return ilanlarim;
+      if (activeTab === "onay_bekleyen") return satisSiparisleri.filter(o => o.status === "pending" || !o.status);
+      if (activeTab === "onayladiklarim") return satisSiparisleri.filter(o => o.status === "approved");
+      if (activeTab === "kargoda") return satisSiparisleri.filter(o => o.status === "shipped");
+      if (activeTab === "teslim_edilenler") return satisSiparisleri.filter(o => o.status === "delivered");
+      if (activeTab === "iptal") return satisSiparisleri.filter(o => o.status === "canceled");
+    }
+    return [];
+  };
+
+  const currentData = getFilteredData();
+
+  const handleRoleChange = (role) => {
+    setActiveRole(role);
+    setActiveTab(role === "alici" ? "siparislerim" : "ilanlarim");
+  };
+
+  if (loading) return <div className="min-h-screen bg-[#030712] flex items-center justify-center text-[#00f260] font-black animate-pulse tracking-[0.2em]">LOJİSTİK AĞ TARANIYOR...</div>;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-slate-200 font-sans pb-32 pt-6">
+    <div className="min-h-screen bg-[#030712] py-24 px-4 max-w-7xl mx-auto italic">
       
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[20%] w-[40vw] h-[40vw] bg-[#00f260] opacity-[0.02] blur-[150px] rounded-full"></div>
+      {/* 💰 SİBER CÜZDAN EKRANI */}
+      <div className="bg-white/[0.02] border border-[#00f260]/20 p-6 rounded-3xl mb-8 flex items-center justify-between gap-8 shadow-[0_0_20px_rgba(0,242,96,0.05)]">
+        <div>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-1">SİBER KASA BAKİYESİ</p>
+          <p className="text-3xl md:text-4xl font-black text-[#00f260]">
+            {bakiye.toLocaleString("tr-TR")} <span className="text-xl text-white">₺</span>
+          </p>
+        </div>
+        <button 
+          onClick={handleBakiyeYukle}
+          disabled={bakiyeYukleniyor}
+          className={`text-black w-14 h-14 rounded-full flex items-center justify-center font-black text-3xl transition-all shadow-[0_0_20px_rgba(0,242,96,0.3)] ${bakiyeYukleniyor ? 'bg-slate-500 animate-spin' : 'bg-[#00f260] hover:scale-110'}`}
+          title="Bakiye Yükle"
+        >
+          {bakiyeYukleniyor ? "⚙️" : "+"}
+        </button>
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 animate-in fade-in duration-1000">
+      {/* 🔄 ROL DEĞİŞTİRİCİ */}
+      <div className="flex bg-[#0b0f19] p-1 rounded-2xl mb-12 border border-white/5 shadow-2xl">
+        <button onClick={()=>handleRoleChange("alici")} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${activeRole === "alici" ? 'bg-[#00f260] text-black shadow-[0_0_20px_rgba(0,242,96,0.3)]' : 'text-slate-500 hover:text-white'}`}>🛡️ ALICI PANELİ</button>
+        <button onClick={()=>handleRoleChange("satici")} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${activeRole === "satici" ? 'bg-amber-500 text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'text-slate-500 hover:text-white'}`}>🏪 SATICI PANELİ</button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* 👤 PROFİL & CÜZDAN HEADER */}
-        <div className="bg-[#0a0a0a] border border-white/[0.04] rounded-[2.5rem] p-6 md:p-10 mb-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 md:w-24 md:h-24 bg-[#00f260]/10 border border-[#00f260]/30 rounded-full flex items-center justify-center text-3xl md:text-4xl relative">
-              👤
-              <div className="absolute -bottom-2 -right-2 bg-[#00f260] text-black text-[9px] font-black px-2 py-1 rounded-full uppercase border-2 border-[#0a0a0a]">PRO</div>
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">{session?.user?.name || "KULLANICI"}</h1>
-              <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#00f260] animate-pulse"></span> {session?.user?.email}
-              </p>
-            </div>
-          </div>
-
-          {/* 💰 SİBER CÜZDAN */}
-          <div className="bg-white/[0.02] border border-[#00f260]/20 p-5 rounded-3xl w-full md:w-auto flex items-center justify-between gap-8">
-            <div>
-              <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] mb-1">Kullanılabilir Bakiye</p>
-              <p className="text-2xl font-black text-[#00f260]">0.00 <span className="text-sm text-white">₺</span></p>
-            </div>
-            <button className="bg-[#00f260] text-black w-10 h-10 rounded-full flex items-center justify-center font-black text-xl hover:scale-105 transition-all shadow-[0_0_15px_rgba(0,242,96,0.3)]">+</button>
-          </div>
-
-          <button onClick={handleCikis} className="w-full md:w-auto px-8 py-4 bg-red-500/5 border border-red-500/20 text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">ÇIKIŞ</button>
-        </div>
-
-        {/* 🎛️ DEV SEKME MENÜSÜ */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar mb-8 pb-2">
-          {[
-            { id: "varliklar", label: `Mühürlü Varlıklar (${benimIlanlar.length})`, icon: "💎" },
-            { id: "teklifler", label: `Gelen Sinyaller (${gelenTeklifler.length})`, icon: "📥" },
-            { id: "giden_teklifler", label: `Verdiğim Teklifler (${gidenTeklifler.length})`, icon: "📤" }, // 🚀 CANLANDI
-            { id: "favoriler", label: `İzleme Listesi (${favoriler.length})`, icon: "⭐" }, // 🚀 CANLANDI
-            { id: "takas_sureci", label: "Takas Süreci (Yakında)", icon: "🔄" },
-            { id: "gecmis", label: "İşlem Geçmişi (Yakında)", icon: "📜" },
-          ].map((tab) => (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)} 
-              className={`flex-shrink-0 flex items-center gap-2 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${activeTab === tab.id ? "bg-[#00f260] text-black border-[#00f260] shadow-[0_0_20px_rgba(0,242,96,0.2)]" : "bg-white/[0.02] text-slate-400 border-white/5 hover:bg-white/5"}`}
-            >
-              <span className="text-sm">{tab.icon}</span> {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 💠 CANLI İÇERİK ALANI */}
-        <div className="min-h-[500px] bg-[#0a0a0a] border border-white/[0.02] rounded-[2.5rem] p-6 md:p-10 shadow-xl">
-          
-          {loading ? (
-            <div className="h-full flex flex-col items-center justify-center py-20 opacity-50 text-center">
-              <span className="text-4xl mb-4 animate-spin">⚙️</span>
-              <p className="text-[10px] text-[#00f260] font-bold uppercase tracking-widest animate-pulse">Veritabanı Senkronize Ediliyor...</p>
-            </div>
-          ) : activeTab === "varliklar" ? (
-            /* 💎 VARLIKLARIM */
-            benimIlanlar.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {benimIlanlar.map((ilan) => (
-                  <div key={ilan._id} className="bg-black/50 border border-white/[0.05] rounded-3xl p-4 shadow-xl hover:border-[#00f260]/30 transition-all group">
-                    <img src={ilan.resimler?.[0] || "https://via.placeholder.com/150"} className="w-full h-48 object-cover rounded-2xl mb-4 opacity-80 group-hover:opacity-100 transition-opacity" />
-                    <h3 className="text-white font-bold text-sm uppercase truncate mb-1">{ilan.baslik}</h3>
-                    <p className="text-[#00f260] font-black text-lg mb-4">{Number(ilan.fiyat).toLocaleString()} ₺</p>
-                    <div className="flex gap-2">
-                      <Link href={`/varlik/${ilan._id}`} className="flex-1 text-center py-3 bg-white/5 text-white rounded-xl text-[9px] font-black uppercase hover:bg-white/10">İncele</Link>
-                      <button className="flex-1 py-3 bg-red-500/10 text-red-500 rounded-xl text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-colors">Kaldır</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : <EmptyState icon="💎" text="Mühürlü varlığın bulunmuyor." sub="At Takasa menüsünden piyasaya yeni bir varlık sür." />
-            
-          ) : activeTab === "teklifler" ? (
-            /* 📥 GELEN TEKLİFLER */
-            gelenTeklifler.length > 0 ? (
-               <div className="space-y-4">
-                 {gelenTeklifler.map((t) => (
-                   <div key={t._id} className="bg-black/50 border border-l-4 border-l-[#00f260] border-y-white/5 border-r-white/5 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                     <div>
-                       <p className="text-[9px] text-[#00f260] font-black uppercase tracking-widest mb-1">GELEN SİNYAL</p>
-                       <p className="text-white font-medium text-sm">"{t.metin}"</p>
-                       <p className="text-slate-500 text-[10px] mt-2 font-bold uppercase">{t.gonderen} tarafından</p>
-                     </div>
-                     <Link href={`/mesajlar?satici=${t.gonderen}`} className="w-full md:w-auto text-center px-8 py-3 bg-[#00f260] text-black rounded-xl font-black text-[10px] uppercase hover:scale-105 transition-transform">Cevapla</Link>
-                   </div>
-                 ))}
-               </div>
-            ) : <EmptyState icon="📥" text="Henüz gelen bir takas sinyali yok." sub="Varlıkların keşfedilmeyi bekliyor." />
-
-          ) : activeTab === "giden_teklifler" ? (
-            /* 📤 GİDEN TEKLİFLER (YENİ) */
-            gidenTeklifler.length > 0 ? (
-               <div className="space-y-4">
-                 {gidenTeklifler.map((t) => (
-                   <div key={t._id} className="bg-black/50 border border-l-4 border-l-blue-500 border-y-white/5 border-r-white/5 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                     <div>
-                       <p className="text-[9px] text-blue-500 font-black uppercase tracking-widest mb-1">GÖNDERİLEN SİNYAL</p>
-                       <p className="text-white font-medium text-sm">"{t.metin}"</p>
-                       <p className="text-slate-500 text-[10px] mt-2 font-bold uppercase">Alıcı: {t.alici}</p>
-                     </div>
-                     <Link href={`/mesajlar?satici=${t.alici}`} className="w-full md:w-auto text-center px-8 py-3 bg-white/5 text-white rounded-xl font-black text-[10px] uppercase hover:bg-white/10 transition-colors">Mesajlara Git</Link>
-                   </div>
-                 ))}
-               </div>
-            ) : <EmptyState icon="📤" text="Henüz bir teklif göndermedin." sub="Piyasada gezin ve gözüne kestirdiğin varlıklara teklif ver." />
-
-          ) : activeTab === "favoriler" ? (
-            /* ⭐ FAVORİLER (YENİ) */
-            favoriler.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favoriler.map((fav) => (
-                  <div key={fav._id} className="bg-black/50 border border-white/[0.05] rounded-3xl p-4 shadow-xl hover:border-[#00f260]/30 transition-all group">
-                    <img src={fav.ilanId?.resimler?.[0] || "https://via.placeholder.com/150"} className="w-full h-48 object-cover rounded-2xl mb-4 opacity-80 group-hover:opacity-100 transition-opacity" />
-                    <h3 className="text-white font-bold text-sm uppercase truncate mb-1">{fav.ilanId?.baslik}</h3>
-                    <p className="text-[#00f260] font-black text-lg mb-4">{Number(fav.ilanId?.fiyat).toLocaleString()} ₺</p>
-                    <Link href={`/varlik/${fav.ilanId?._id}`} className="block w-full text-center py-3 bg-[#00f260]/10 text-[#00f260] rounded-xl text-[9px] font-black uppercase hover:bg-[#00f260] hover:text-black transition-colors">Radarda İncele</Link>
-                  </div>
-                ))}
-              </div>
-            ) : <EmptyState icon="⭐" text="İzleme listen boş." sub="Keşfet bölümünden ilgini çeken varlıkları radarına ekle." />
-
+        {/* 🎛️ SOL MENÜ */}
+        <div className="lg:col-span-1 space-y-2">
+          {activeRole === "alici" ? (
+            <>
+              <TabButton id="sepetim" label="Sepetim" active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
+              <TabButton id="siparislerim" label={`Siparişlerim (${alimSiparisleri.filter(o=>o.status==='pending'||o.status==='approved').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
+              <TabButton id="kargoda" label={`Kargoda Olanlar (${alimSiparisleri.filter(o=>o.status==='shipped').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
+              <TabButton id="teslim_aldiklarim" label={`Teslim Aldıklarım (${alimSiparisleri.filter(o=>o.status==='delivered').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
+              <TabButton id="iptal" label={`İptal Edilenler (${alimSiparisleri.filter(o=>o.status==='canceled').length})`} active={activeTab} set={setActiveTab} color="text-red-500" border="border-red-500" />
+            </>
           ) : (
-            /* DİĞER BOŞ SEKMELER İÇİN */
-            <EmptyState icon="🚧" text="Siber İnşaat Devam Ediyor" sub="Kargo Takibi ve Cüzdan altyapısı bir sonraki güncellemede (Faz 2) aktif edilecek." />
+            <>
+              <TabButton id="ilanlarim" label={`İlanlarım (${ilanlarim.length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="onay_bekleyen" label={`Onay Bekleyenler (${satisSiparisleri.filter(o=>o.status==='pending'||!o.status).length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="onayladiklarim" label={`Onayladıklarım (${satisSiparisleri.filter(o=>o.status==='approved').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="kargoda" label={`Kargoda (${satisSiparisleri.filter(o=>o.status==='shipped').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="teslim_edilenler" label={`Teslim Edilenler (${satisSiparisleri.filter(o=>o.status==='delivered').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
+              <TabButton id="iptal" label={`İptal (${satisSiparisleri.filter(o=>o.status==='canceled').length})`} active={activeTab} set={setActiveTab} color="text-red-500" border="border-red-500" />
+            </>
           )}
+        </div>
 
+        {/* 💠 SAĞ İÇERİK ALANI */}
+        <div className="lg:col-span-3">
+          <div className="bg-[#0b0f19] border border-white/5 rounded-[2.5rem] p-6 min-h-[500px]">
+            {currentData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full py-32 opacity-20">
+                <span className="text-6xl mb-4 grayscale">📦</span>
+                <p className="font-black text-xs text-white uppercase tracking-[0.2em]">BU BÖLÜMDE KAYIT YOK.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {currentData.map((item, idx) => (
+                  <div key={idx} className="bg-[#030712] border border-white/5 p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center gap-6 group hover:border-white/20 transition-all">
+                    <img src={item.media?.images?.[0] || item.resimUrl || "https://placehold.co/100"} className="w-20 h-20 rounded-2xl object-cover border border-white/5" alt="Ürün" />
+                    
+                    <div className="flex-1">
+                       <h4 className="text-white font-black uppercase text-sm mb-1">{item.title || item.baslik || "SİPARİŞ EDİLEN VARLIK"}</h4>
+                       <p className="text-slate-400 font-bold text-[10px] mb-2 uppercase tracking-widest">
+                         {activeRole === "satici" ? `Alıcı: ${item.buyerEmail || "Bilinmiyor"}` : `Satıcı: ${item.sellerEmail || "Bilinmiyor"}`}
+                       </p>
+                       <p className="text-[#00f260] font-black text-sm italic">{Number(item.price || item.fiyat || item.totalAmount || 0).toLocaleString()} ₺</p>
+                    </div>
+
+                    {/* 🚀 AKSİYON BUTONLARI */}
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto mt-4 md:mt-0">
+                      
+                      {activeRole === "alici" && activeTab === "siparislerim" && item.status === "pending" && (
+                        <button onClick={()=>handleUpdateStatus(item._id, "canceled")} className="flex-1 md:flex-none bg-red-500/10 text-red-500 p-3 rounded-xl text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">İptal Et</button>
+                      )}
+                      {activeRole === "alici" && activeTab === "kargoda" && (
+                        <button onClick={()=>handleUpdateStatus(item._id, "delivered")} className="flex-1 md:flex-none bg-[#00f260] text-black p-3 rounded-xl text-[9px] font-black uppercase hover:scale-105 transition-all shadow-lg">Teslim Aldım</button>
+                      )}
+
+                      {activeRole === "satici" && activeTab === "onay_bekleyen" && (
+                        <>
+                          <button onClick={()=>handleUpdateStatus(item._id, "approved")} className="flex-1 md:flex-none bg-[#00f260] text-black px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:scale-105 transition-all shadow-lg">Siparişi Onayla</button>
+                          <button onClick={()=>handleUpdateStatus(item._id, "canceled")} className="flex-1 md:flex-none bg-red-500/10 text-red-500 px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Reddet</button>
+                        </>
+                      )}
+                      {activeRole === "satici" && activeTab === "onayladiklarim" && (
+                        <button onClick={()=>handleUpdateStatus(item._id, "shipped")} className="flex-1 md:flex-none bg-blue-500 text-white px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:scale-105 transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)]">Kargoya Verildi</button>
+                      )}
+                      
+                      {activeTab === "ilanlarim" && (
+                        <Link href={`/ilan-duzenle/${item._id}`} className="flex-1 md:flex-none bg-amber-500 text-black px-5 py-3 rounded-xl text-[9px] font-black uppercase text-center hover:scale-105 transition-all">Düzenle</Link>
+                      )}
+                      {/* ⚡ İŞTE DÜZELTİLEN KUSURSUZ İNCELE ROTASI */}
+                      <Link href={`/ilanlar/${item.listingId || item._id}`} className="flex-1 md:flex-none bg-white/5 text-white px-5 py-3 rounded-xl text-[9px] font-black uppercase border border-white/10 text-center hover:bg-white/10 transition-all">İncele</Link>
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function EmptyState({ icon, text, sub }: { icon: string, text: string, sub: string }) {
+// 🎨 YARDIMCI BİLEŞEN
+function TabButton({ id, label, active, set, color, border }) {
+  const isActive = active === id;
   return (
-    <div className="h-[300px] flex flex-col items-center justify-center opacity-30 text-center px-4">
-      <span className="text-6xl mb-6 grayscale">{icon}</span>
-      <p className="text-sm font-black uppercase tracking-[0.2em] text-white">{text}</p>
-      <p className="text-[10px] mt-3 text-slate-400 font-bold tracking-widest leading-relaxed max-w-sm">{sub}</p>
-    </div>
+    <button 
+      onClick={() => set(id)} 
+      className={`w-full p-4 rounded-xl text-[9px] font-black uppercase border transition-all ${isActive ? `${border} ${color} bg-white/[0.02] shadow-sm` : "border-white/5 text-slate-500 bg-[#0b0f19] hover:bg-white/5"}`}
+    >
+      {label}
+    </button>
   );
 }
