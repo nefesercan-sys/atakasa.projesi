@@ -2,298 +2,276 @@
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link"; // 🚀 LİNK MODÜLÜ AKTİF
+import Link from "next/link";
 
-export default function SiberPanel() {
+export default function SiberBorsaPaneli() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [activeRole, setActiveRole] = useState("alici");
-  const [activeTab, setActiveTab] = useState("siparislerim");
-  
+  // 🎛️ PANEL KONTROLLERİ
+  const [aktifSekme, setAktifSekme] = useState("gelen_teklifler");
+  const [altFiltre, setAltFiltre] = useState("hepsi");
+
+  // 📡 VERİ MERKEZİ
+  const [bakiye, setBakiye] = useState(0);
   const [ilanlarim, setIlanlarim] = useState<any[]>([]);
-  const [alimSiparisleri, setAlimSiparisleri] = useState<any[]>([]); 
-  const [satisSiparisleri, setSatisSiparisleri] = useState<any[]>([]); 
-  
   const [gelenTakaslar, setGelenTakaslar] = useState<any[]>([]);
   const [gidenTakaslar, setGidenTakaslar] = useState<any[]>([]);
-
   const [loading, setLoading] = useState(true);
-  const [bakiye, setBakiye] = useState(0); 
-  const [bakiyeYukleniyor, setBakiyeYukleniyor] = useState(false);
 
   useEffect(() => {
-    if (status === "authenticated") fetchSiberData();
+    if (status === "authenticated") fetchBorsaVerileri();
     else if (status === "unauthenticated") router.push("/login");
   }, [status]);
 
-  const fetchSiberData = async () => {
+  const fetchBorsaVerileri = async () => {
     if (!session?.user?.email) return;
     setLoading(true);
     const aktifEmail = session.user.email.toLowerCase();
     
     try {
+      // 1. Cüzdan Bakiyesi
       const resWallet = await fetch(`/api/wallet`, { cache: "no-store" });
       if (resWallet.ok) {
          const wData = await resWallet.json();
          setBakiye(wData.balance || 0);
       }
 
+      // 2. Kendi İlanlarım
       const resListings = await fetch(`/api/listings`, { cache: "no-store" });
       if (resListings.ok) {
         const dataListings = await resListings.json();
-        const benimIlanlar = dataListings.filter((i: any) => {
-           const sEmail = (typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
-           return sEmail === aktifEmail;
-        });
-        setIlanlarim(benimIlanlar);
+        setIlanlarim(dataListings.filter((i: any) => (i.sellerEmail || i.userId || "").toLowerCase() === aktifEmail));
       }
 
-      const resOrders = await fetch(`/api/orders?email=${aktifEmail}`, { cache: "no-store" });
-      if (resOrders.ok) {
-        const dataOrders = await resOrders.json();
-        setAlimSiparisleri(dataOrders.filter((o: any) => (o.buyerEmail || "").toLowerCase() === aktifEmail));
-        setSatisSiparisleri(dataOrders.filter((o: any) => (o.sellerEmail || "").toLowerCase() === aktifEmail));
-      }
-
+      // 3. Takas (Borsa) Emirleri
       const resTakas = await fetch(`/api/takas`, { cache: "no-store" });
       if (resTakas.ok) {
         const dataTakas = await resTakas.json();
         setGelenTakaslar(dataTakas.filter((t: any) => t.aliciEmail === aktifEmail));
         setGidenTakaslar(dataTakas.filter((t: any) => t.gonderenEmail === aktifEmail));
       }
-
     } catch (err) { 
-      console.error("Veri Çekme Hatası:", err); 
+      console.error("Siber Ağ Hatası:", err); 
     }
     setLoading(false);
   };
 
-  const handleUpdateStatus = async (id: string, yeniDurum: string) => {
+  // 💰 SİBER TEMİNAT ÖDEME MOTORU
+  const handleTeminatOde = async (takasId: string) => {
+    if (!confirm("Siber Kasanızdan teminat çekilecektir. Onaylıyor musunuz?")) return;
     try {
-      const res = await fetch("/api/orders", {
-        method: "PUT",
+      const res = await fetch("/api/takas/teminat", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: id, yeniDurum })
+        body: JSON.stringify({ takasId })
       });
-      if (res.ok) fetchSiberData(); 
+      const data = await res.json();
+      if (res.ok) {
+        alert(`⚡ BAŞARILI: ${data.message}`);
+        fetchBorsaVerileri();
+      } else {
+        alert(`❌ HATA: ${data.error}`);
+      }
     } catch (error) {
-      alert("Sinyal iletilemedi!");
+      alert("Tahsilat motoruna ulaşılamadı.");
     }
   };
 
-  const handleTakasDurum = async (id: string, yeniDurum: string) => {
+  // 🔄 DURUM GÜNCELLEME MOTORU (Kabul, Red, Kargo, İptal)
+  const handleDurumGuncelle = async (takasId: string, yeniDurum: string) => {
+    if (!confirm(`İşlem durumunu '${yeniDurum}' olarak güncelliyorsunuz. Emin misiniz?`)) return;
     try {
       const res = await fetch("/api/takas", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ takasId: id, yeniDurum })
+        body: JSON.stringify({ takasId, yeniDurum })
       });
-      if (res.ok) fetchSiberData();
-      else alert("Takas işlemi başarısız.");
+      if (res.ok) fetchBorsaVerileri();
+      else alert("Güncelleme reddedildi!");
     } catch (error) {
-      alert("Takas ağına ulaşılamadı.");
+      alert("Sinyal koptu.");
     }
   };
 
-  const handleBakiyeYukle = async () => {
-    const miktar = prompt("Siber Kasaya yüklenecek tutarı girin (₺):");
-    if (!miktar || isNaN(Number(miktar)) || Number(miktar) <= 0) return;
+  // 📊 BORSA İSTATİSTİKLERİ HESAPLAMA
+  const toplamVarlikDegeri = ilanlarim.reduce((acc, ilan) => acc + Number(ilan.price || ilan.fiyat || 0), 0);
+  const toplamYaptigimTeklifDegeri = gidenTakaslar.reduce((acc, t) => acc + Number(t.hedefIlanFiyat || 0), 0);
 
-    setBakiyeYukleniyor(true);
-    try {
-      const res = await fetch("/api/wallet", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ miktar: Number(miktar) })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBakiye(data.balance);
-        alert(`⚡ MÜHÜRLENDİ: Kasaya ${miktar} ₺ eklendi!`);
-      }
-    } catch (err) {
-      alert("Siber bağlantı koptu.");
-    } finally {
-      setBakiyeYukleniyor(false);
+  // 🔍 FİLTRELEME MANTIĞI
+  const getGosterilecekVeri = () => {
+    let veri = aktifSekme === "gelen_teklifler" ? gelenTakaslar : gidenTakaslar;
+    if (altFiltre !== "hepsi") {
+      veri = veri.filter(t => t.durum === altFiltre);
+    }
+    return veri;
+  };
+
+  const gosterilenVeri = getGosterilecekVeri();
+
+  // 🎨 DURUM RENKLENDİRİCİ
+  const getDurumRozeti = (durum: string) => {
+    switch (durum) {
+      case "bekliyor": return <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded text-[9px] uppercase font-black">⏳ Onay Bekliyor</span>;
+      case "kabul": return <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded text-[9px] uppercase font-black">💳 Teminat Bekleniyor</span>;
+      case "teminat_odendi": return <span className="bg-[#00f260]/10 text-[#00f260] border border-[#00f260]/20 px-3 py-1 rounded text-[9px] uppercase font-black">📦 Kargolanacak</span>;
+      case "kargoda": return <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded text-[9px] uppercase font-black">🚚 Yolda</span>;
+      case "teslim_edildi": return <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded text-[9px] uppercase font-black">✅ Tamamlandı</span>;
+      case "iptal_istendi": return <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1 rounded text-[9px] uppercase font-black">⚠️ İptal Sürecinde</span>;
+      case "iptal_onaylandi": return <span className="bg-slate-500/10 text-slate-400 border border-slate-500/20 px-3 py-1 rounded text-[9px] uppercase font-black">❌ İptal Edildi</span>;
+      case "red": return <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1 rounded text-[9px] uppercase font-black">⛔ Reddedildi</span>;
+      default: return null;
     }
   };
 
-  const getFilteredData = () => {
-    if (activeRole === "alici") {
-      if (activeTab === "siparislerim") return alimSiparisleri.filter((o: any) => o.status === "pending" || o.status === "approved");
-      if (activeTab === "kargoda") return alimSiparisleri.filter((o: any) => o.status === "shipped");
-      if (activeTab === "teslim_aldiklarim") return alimSiparisleri.filter((o: any) => o.status === "delivered");
-      if (activeTab === "iptal") return alimSiparisleri.filter((o: any) => o.status === "canceled");
-      if (activeTab === "yaptigim_teklifler") return gidenTakaslar;
-    } else {
-      if (activeTab === "ilanlarim") return ilanlarim;
-      if (activeTab === "onay_bekleyen") return satisSiparisleri.filter((o: any) => o.status === "pending" || !o.status);
-      if (activeTab === "onayladiklarim") return satisSiparisleri.filter((o: any) => o.status === "approved");
-      if (activeTab === "kargoda") return satisSiparisleri.filter((o: any) => o.status === "shipped");
-      if (activeTab === "teslim_edilenler") return satisSiparisleri.filter((o: any) => o.status === "delivered");
-      if (activeTab === "gelen_takaslar") return gelenTakaslar;
-    }
-    return [];
-  };
-
-  const currentData = getFilteredData();
-
-  const handleRoleChange = (role: string) => {
-    setActiveRole(role);
-    setActiveTab(role === "alici" ? "siparislerim" : "ilanlarim");
-  };
-
-  if (loading) return <div className="min-h-screen bg-[#030712] flex items-center justify-center text-[#00f260] font-black animate-pulse tracking-[0.2em]">LOJİSTİK AĞ TARANIYOR...</div>;
+  if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#00f260] font-black tracking-widest animate-pulse">BORSA VERİLERİ ÇEKİLİYOR...</div>;
 
   return (
-    <div className="min-h-screen bg-[#030712] py-24 px-4 max-w-7xl mx-auto italic">
-      
-      {/* 💰 SİBER CÜZDAN */}
-      <div className="bg-white/[0.02] border border-[#00f260]/20 p-6 rounded-3xl mb-8 flex items-center justify-between gap-8 shadow-[0_0_20px_rgba(0,242,96,0.05)]">
-        <div>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-1">SİBER KASA BAKİYESİ</p>
-          <p className="text-3xl md:text-4xl font-black text-[#00f260]">
-            {bakiye.toLocaleString("tr-TR")} <span className="text-xl text-white">₺</span>
-          </p>
-        </div>
-        <button 
-          onClick={handleBakiyeYukle}
-          disabled={bakiyeYukleniyor}
-          className={`text-black w-14 h-14 rounded-full flex items-center justify-center font-black text-3xl transition-all shadow-[0_0_20px_rgba(0,242,96,0.3)] ${bakiyeYukleniyor ? 'bg-slate-500 animate-spin' : 'bg-[#00f260] hover:scale-110'}`}
-        >
-          {bakiyeYukleniyor ? "⚙️" : "+"}
-        </button>
-      </div>
-
-      {/* 🔄 ROL DEĞİŞTİRİCİ */}
-      <div className="flex bg-[#0b0f19] p-1 rounded-2xl mb-12 border border-white/5 shadow-2xl">
-        <button onClick={()=>handleRoleChange("alici")} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${activeRole === "alici" ? 'bg-[#00f260] text-black shadow-[0_0_20px_rgba(0,242,96,0.3)]' : 'text-slate-500 hover:text-white'}`}>🛡️ ALICI PANELİ</button>
-        <button onClick={()=>handleRoleChange("satici")} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${activeRole === "satici" ? 'bg-amber-500 text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'text-slate-500 hover:text-white'}`}>🏪 SATICI PANELİ</button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div className="min-h-screen bg-[#050505] py-24 px-4 text-white font-sans">
+      <div className="max-w-7xl mx-auto">
         
-        {/* 🎛️ SOL MENÜ */}
-        <div className="lg:col-span-1 space-y-2">
-          {activeRole === "alici" ? (
-            <>
-              <TabButton id="siparislerim" label={`Satın Aldıklarım (${alimSiparisleri.filter((o:any)=>o.status==='pending'||o.status==='approved').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
-              <TabButton id="kargoda" label={`Yoldaki Varlıklar (${alimSiparisleri.filter((o:any)=>o.status==='shipped').length})`} active={activeTab} set={setActiveTab} color="text-[#00f260]" border="border-[#00f260]" />
-              <TabButton id="yaptigim_teklifler" label={`Yaptığım Takas Teklifleri (${gidenTakaslar.length})`} active={activeTab} set={setActiveTab} color="text-cyan-400" border="border-cyan-400" />
-            </>
-          ) : (
-            <>
-              <TabButton id="ilanlarim" label={`Varlıklarım (${ilanlarim.length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
-              <TabButton id="onay_bekleyen" label={`Onay Bekleyen Satışlar (${satisSiparisleri.filter((o:any)=>o.status==='pending'||!o.status).length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
-              <TabButton id="kargoda" label={`Kargoya Verdiklerim (${satisSiparisleri.filter((o:any)=>o.status==='shipped').length})`} active={activeTab} set={setActiveTab} color="text-amber-500" border="border-amber-500" />
-              <TabButton id="gelen_takaslar" label={`Bana Gelen Takaslar (${gelenTakaslar.length})`} active={activeTab} set={setActiveTab} color="text-cyan-400" border="border-cyan-400" />
-            </>
-          )}
+        <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-6">
+          <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase">
+            A-TAKASA <span className="text-[#00f260]">TERMİNAL.</span>
+          </h1>
         </div>
 
-        {/* 💠 SAĞ İÇERİK ALANI */}
-        <div className="lg:col-span-3">
-          <div className="bg-[#0b0f19] border border-white/5 rounded-[2.5rem] p-6 min-h-[500px]">
-            {currentData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full py-32 opacity-20">
-                <span className="text-6xl mb-4 grayscale">📦</span>
-                <p className="font-black text-xs text-white uppercase tracking-[0.2em]">BU BÖLÜMDE KAYIT YOK.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {currentData.map((item: any, idx: number) => {
-                  
-                  // 🔄 TAKAS KARTLARI
-                  if (activeTab === "gelen_takaslar" || activeTab === "yaptigim_teklifler") {
-                    return (
-                      <div key={idx} className="bg-[#030712] border border-cyan-500/20 p-5 rounded-3xl flex flex-col items-start gap-4 group hover:border-cyan-500/50 transition-all shadow-[0_0_15px_rgba(6,182,212,0.05)]">
-                        
-                        <div className="flex items-center gap-2 w-full justify-between">
-                          <span className={`px-3 py-1 text-[9px] font-black uppercase rounded-md ${item.durum === 'kabul' ? 'bg-[#00f260]/10 text-[#00f260]' : item.durum === 'red' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                            Durum: {item.durum}
-                          </span>
-                          <span className="text-slate-500 text-[9px] font-bold">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</span>
-                        </div>
-
-                        <div className="w-full flex flex-col md:flex-row items-center gap-4 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
-                          <div className="flex-1 text-center md:text-left">
-                            <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Hedef Varlık</p>
-                            <p className="text-white font-bold text-sm uppercase">{item.hedefIlanBaslik}</p>
-                          </div>
-                          <div className="text-cyan-400 text-2xl font-black rotate-90 md:rotate-0">⇄</div>
-                          <div className="flex-1 text-center md:text-right">
-                            <p className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-1">Teklif Edilen Varlık</p>
-                            <p className="text-white font-bold text-sm uppercase">{item.teklifEdilenIlanBaslik}</p>
-                            {item.eklenenNakit > 0 && <p className="text-[#00f260] text-xs font-black mt-1">+ {item.eklenenNakit.toLocaleString()} ₺ Nakit</p>}
-                          </div>
-                        </div>
-
-                        {/* 🚀 TAKAS KARTI İÇİN MESAJ BUTONU EKLENDİ */}
-                        <div className="flex flex-col md:flex-row gap-3 w-full mt-2">
-                          {activeTab === "gelen_takaslar" && item.durum === "bekliyor" && (
-                            <>
-                              <button onClick={()=>handleTakasDurum(item._id, "kabul")} className="flex-1 bg-[#00f260] text-black py-3 rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all shadow-lg">Kabul Et</button>
-                              <button onClick={()=>handleTakasDurum(item._id, "red")} className="flex-1 bg-red-500/10 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Reddet</button>
-                            </>
-                          )}
-                          <Link href={`/mesajlar?satici=${activeTab === 'gelen_takaslar' ? item.gonderenEmail : item.aliciEmail}`} className="flex-1 bg-cyan-500/10 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all text-center border border-cyan-500/20">
-                            💬 SOHBETE GİT
-                          </Link>
-                        </div>
-
-                      </div>
-                    );
-                  }
-
-                  // 📦 SİPARİŞ KARTLARI
-                  return (
-                    <div key={idx} className="bg-[#030712] border border-white/5 p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center gap-6 group hover:border-white/20 transition-all">
-                      <div className="flex-1">
-                         <h4 className="text-white font-black uppercase text-sm mb-1">{item.title || item.baslik || "SİPARİŞ EDİLEN VARLIK"}</h4>
-                         <p className="text-slate-400 font-bold text-[10px] mb-2 uppercase tracking-widest">
-                           {activeRole === "satici" ? `Alıcı: ${item.buyerEmail || "Bilinmiyor"}` : `Satıcı: ${item.sellerEmail || "Bilinmiyor"}`}
-                         </p>
-                         <p className="text-[#00f260] font-black text-sm italic">{Number(item.price || item.fiyat || item.totalAmount || 0).toLocaleString()} ₺</p>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 w-full md:w-auto mt-4 md:mt-0">
-                        {activeRole === "alici" && activeTab === "siparislerim" && item.status === "pending" && (
-                          <button onClick={()=>handleUpdateStatus(item._id, "canceled")} className="flex-1 md:flex-none bg-red-500/10 text-red-500 px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">İptal Et</button>
-                        )}
-                        {activeRole === "satici" && activeTab === "onay_bekleyen" && (
-                          <>
-                            <button onClick={()=>handleUpdateStatus(item._id, "approved")} className="flex-1 md:flex-none bg-[#00f260] text-black px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:scale-105 transition-all shadow-lg">Onayla</button>
-                            <button onClick={()=>handleUpdateStatus(item._id, "canceled")} className="flex-1 md:flex-none bg-red-500/10 text-red-500 px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Reddet</button>
-                          </>
-                        )}
-                        
-                        {/* 🚀 SİPARİŞ KARTI İÇİN MESAJ BUTONU EKLENDİ */}
-                        <Link href={`/mesajlar?satici=${activeRole === "satici" ? item.buyerEmail : item.sellerEmail}`} className="flex-1 md:flex-none bg-white/5 text-cyan-400 px-5 py-3 rounded-xl text-[9px] font-black uppercase hover:bg-white/10 transition-all text-center border border-white/10">
-                          💬 MESAJ AT
-                        </Link>
-
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        {/* 📊 SİBER İSTATİSTİK PANOLARI (WIDGETS) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-3xl shadow-lg relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-[#00f260]/5 blur-[50px] rounded-full"></div>
+             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">SİBER KASA BAKİYESİ</p>
+             <p className="text-4xl font-black text-[#00f260]">{bakiye.toLocaleString()} ₺</p>
           </div>
+          <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-3xl shadow-lg">
+             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">VİTRİNDEKİ VARLIK DEĞERİM</p>
+             <p className="text-3xl font-black text-white">{toplamVarlikDegeri.toLocaleString()} ₺</p>
+             <p className="text-cyan-400 text-xs font-bold mt-2">{ilanlarim.length} Aktif İlan</p>
+          </div>
+          <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-3xl shadow-lg">
+             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">YAPTIĞIM TEKLİFLERİN HACMİ</p>
+             <p className="text-3xl font-black text-white">{toplamYaptigimTeklifDegeri.toLocaleString()} ₺</p>
+             <p className="text-amber-500 text-xs font-bold mt-2">{gidenTakaslar.length} Açık Teklif</p>
+          </div>
+        </div>
+
+        {/* 🎛️ ANA SEKMELER */}
+        <div className="flex gap-4 mb-6">
+          <button onClick={() => {setAktifSekme("gelen_teklifler"); setAltFiltre("hepsi");}} className={`flex-1 p-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${aktifSekme === "gelen_teklifler" ? 'bg-[#00f260] text-black shadow-[0_0_20px_rgba(0,242,96,0.2)]' : 'bg-[#0a0a0a] text-slate-400 border border-white/5 hover:bg-white/5'}`}>
+            Bana Gelen Teklifler ({gelenTakaslar.length})
+          </button>
+          <button onClick={() => {setAktifSekme("giden_teklifler"); setAltFiltre("hepsi");}} className={`flex-1 p-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${aktifSekme === "giden_teklifler" ? 'bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.2)]' : 'bg-[#0a0a0a] text-slate-400 border border-white/5 hover:bg-white/5'}`}>
+            Yaptığım Teklifler ({gidenTakaslar.length})
+          </button>
+        </div>
+
+        {/* 🔍 ALT FİLTRELER (Duruma Göre Süzme) */}
+        <div className="flex flex-wrap gap-2 mb-8 bg-[#0a0a0a] p-2 rounded-xl border border-white/5">
+          {["hepsi", "bekliyor", "kabul", "teminat_odendi", "kargoda", "teslim_edildi", "iptal_istendi"].map(durum => (
+            <button key={durum} onClick={() => setAltFiltre(durum)} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${altFiltre === durum ? 'bg-white/10 text-white' : 'text-slate-500 hover:bg-white/5'}`}>
+              {durum.replace("_", " ")}
+            </button>
+          ))}
+        </div>
+
+        {/* 📟 BORSA TAHTASI (Emirler Listesi) */}
+        <div className="space-y-4">
+          {gosterilenVeri.length === 0 ? (
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl py-24 text-center">
+              <p className="text-slate-600 font-black tracking-[0.3em] uppercase text-xs">Bu kategoride işlem yok.</p>
+            </div>
+          ) : (
+            gosterilenVeri.map((islem: any) => {
+              const benimRolum = islem.gonderenEmail === session?.user?.email?.toLowerCase() ? "gonderen" : "alici";
+              const teminatOdedimMi = benimRolum === "gonderen" ? islem.gonderenTeminatOdediMi : islem.aliciTeminatOdediMi;
+
+              return (
+                <div key={islem._id} className="bg-[#0a0a0a] border border-white/5 p-6 rounded-3xl flex flex-col hover:border-white/20 transition-all shadow-xl">
+                  
+                  {/* Üst Bilgi Satırı */}
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/5 pb-4 mb-4 gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-500 font-black text-[10px] uppercase tracking-widest bg-white/5 px-3 py-1 rounded">ID: {islem._id.slice(-6)}</span>
+                      {getDurumRozeti(islem.durum)}
+                    </div>
+                    <span className="text-slate-500 text-[9px] font-bold">{new Date(islem.createdAt).toLocaleString("tr-TR")}</span>
+                  </div>
+
+                  {/* Takas Özeti Kartı */}
+                  <div className="flex flex-col md:flex-row items-center gap-4 bg-black/40 p-5 rounded-2xl border border-white/5 mb-6">
+                    <div className="flex-1 text-center md:text-left">
+                      <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Benim Varlığım</p>
+                      <p className="text-white font-bold text-sm uppercase">{benimRolum === "alici" ? islem.hedefIlanBaslik : islem.teklifEdilenIlanBaslik}</p>
+                    </div>
+                    
+                    <div className="text-cyan-400 text-2xl font-black rotate-90 md:rotate-0">⇄</div>
+                    
+                    <div className="flex-1 text-center md:text-right">
+                      <p className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-1">Karşı Tarafın Varlığı</p>
+                      <p className="text-white font-bold text-sm uppercase">{benimRolum === "alici" ? islem.teklifEdilenIlanBaslik : islem.hedefIlanBaslik}</p>
+                      {islem.eklenenNakit > 0 && <p className="text-[#00f260] text-[10px] font-black mt-1">+ {islem.eklenenNakit.toLocaleString()} ₺ Nakit Eklendi</p>}
+                    </div>
+                  </div>
+
+                  {/* 🚀 BORSA AKSİYON BUTONLARI (Duruma Göre Değişir) */}
+                  <div className="flex flex-wrap gap-3 mt-auto">
+                    
+                    {/* 1. Bekliyor Aşaması */}
+                    {islem.durum === "bekliyor" && benimRolum === "alici" && (
+                      <>
+                        <button onClick={()=>handleDurumGuncelle(islem._id, "kabul")} className="flex-1 bg-[#00f260] text-black py-3 rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all shadow-lg">✅ Teklifi Kabul Et</button>
+                        <button onClick={()=>handleDurumGuncelle(islem._id, "red")} className="flex-1 bg-red-500/10 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">❌ Reddet</button>
+                      </>
+                    )}
+                    {islem.durum === "bekliyor" && benimRolum === "gonderen" && (
+                      <button onClick={()=>handleDurumGuncelle(islem._id, "iptal")} className="w-full md:w-auto px-6 bg-red-500/10 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Teklifi Geri Çek</button>
+                    )}
+
+                    {/* 2. Kabul Edildi -> Teminat Bekleniyor */}
+                    {islem.durum === "kabul" && !teminatOdedimMi && (
+                      <button onClick={()=>handleTeminatOde(islem._id)} className="flex-1 bg-blue-500 text-white py-3 rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] animate-pulse">
+                        💳 TEMİNAT YATIR (GÜVENLİ İŞLEM)
+                      </button>
+                    )}
+                    {islem.durum === "kabul" && teminatOdedimMi && (
+                      <div className="flex-1 bg-white/5 text-slate-400 py-3 rounded-xl text-[10px] font-black uppercase text-center border border-white/5">
+                        ⏳ Karşı Tarafın Teminatı Bekleniyor...
+                      </div>
+                    )}
+
+                    {/* 3. Teminatlar Ödendi -> Kargo Aşaması */}
+                    {islem.durum === "teminat_odendi" && (
+                      <button onClick={()=>handleDurumGuncelle(islem._id, "kargoda")} className="flex-1 bg-purple-500 text-white py-3 rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+                        📦 KARGOYA VERDİM
+                      </button>
+                    )}
+
+                    {/* 4. Kargoda -> Teslim Onayı */}
+                    {islem.durum === "kargoda" && (
+                      <button onClick={()=>handleDurumGuncelle(islem._id, "teslim_edildi")} className="flex-1 bg-[#00f260] text-black py-3 rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all shadow-[0_0_15px_rgba(0,242,96,0.4)]">
+                        ✅ ÜRÜNÜ TESLİM ALDIM (ONAYLA)
+                      </button>
+                    )}
+
+                    {/* İptal İsteği */}
+                    {["kabul", "teminat_odendi", "kargoda"].includes(islem.durum) && (
+                      <button onClick={()=>handleDurumGuncelle(islem._id, "iptal_istendi")} className="px-6 bg-red-500/10 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all border border-red-500/20">
+                        İPTAL TALEP ET
+                      </button>
+                    )}
+
+                    {/* 💬 Mesajlaşma Sabit Butonu */}
+                    <Link href={`/mesajlar?satici=${benimRolum === "alici" ? islem.gonderenEmail : islem.aliciEmail}`} className="px-6 bg-white/5 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center">
+                      💬 MESAJ AT
+                    </Link>
+                  </div>
+
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
-  );
-}
-
-function TabButton({ id, label, active, set, color, border }: any) {
-  const isActive = active === id;
-  return (
-    <button 
-      onClick={() => set(id)} 
-      className={`w-full p-4 rounded-xl text-[9px] font-black uppercase border transition-all ${isActive ? `${border} ${color} bg-white/[0.02] shadow-sm` : "border-white/5 text-slate-500 bg-[#0b0f19] hover:bg-white/5"}`}
-    >
-      {label}
-    </button>
   );
 }
