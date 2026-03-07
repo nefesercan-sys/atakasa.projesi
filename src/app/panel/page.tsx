@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react"; // 🛡️ SİBER ÇIKIŞ PROTOKOLÜ EKLENDİ
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -19,7 +19,7 @@ export default function SiberBorsaPaneli() {
   const [gidenTakaslar, setGidenTakaslar] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🛡️ GÜVENLİK DUVARI (SİBER YAMA UYGULANDI: /login yerine /giris)
+  // 🛡️ GÜVENLİK DUVARI
   useEffect(() => {
     if (status === "authenticated") fetchBorsaVerileri();
     else if (status === "unauthenticated") router.push("/giris");
@@ -79,7 +79,7 @@ export default function SiberBorsaPaneli() {
     }
   };
 
-  // 🔄 DURUM GÜNCELLEME MOTORU (Kabul, Red, Kargo, İptal)
+  // 🔄 DURUM GÜNCELLEME MOTORU
   const handleDurumGuncelle = async (takasId: string, yeniDurum: string) => {
     if (!confirm(`İşlem durumunu '${yeniDurum}' olarak güncelliyorsunuz. Emin misiniz?`)) return;
     try {
@@ -131,10 +131,23 @@ export default function SiberBorsaPaneli() {
     <div className="min-h-screen bg-[#050505] py-24 px-4 text-white font-sans">
       <div className="max-w-7xl mx-auto">
         
-        <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-6">
+        {/* 🚀 ÜST BAŞLIK VE GÜVENLİ ÇIKIŞ BUTONU */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 border-b border-white/5 pb-6 gap-4">
           <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase">
             A-TAKASA <span className="text-[#00f260]">TERMİNAL.</span>
           </h1>
+          
+          {/* 🔌 GÜVENLİ ÇIKIŞ BUTONU */}
+          <button 
+            onClick={() => {
+              if(confirm("Siber ağdan çıkış yapmak üzeresiniz. Onaylıyor musunuz?")) {
+                signOut({ callbackUrl: "/" });
+              }
+            }} 
+            className="bg-red-500/10 text-red-500 border border-red-500/20 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center gap-2"
+          >
+            <span className="text-sm">🔌</span> AĞDAN ÇIKIŞ YAP
+          </button>
         </div>
 
         {/* 📊 SİBER İSTATİSTİK PANOLARI (WIDGETS) */}
@@ -166,7 +179,7 @@ export default function SiberBorsaPaneli() {
           </button>
         </div>
 
-        {/* 🔍 ALT FİLTRELER (Duruma Göre Süzme) */}
+        {/* 🔍 ALT FİLTRELER */}
         <div className="flex flex-wrap gap-2 mb-8 bg-[#0a0a0a] p-2 rounded-xl border border-white/5">
           {["hepsi", "bekliyor", "kabul", "teminat_odendi", "kargoda", "teslim_edildi", "iptal_istendi"].map(durum => (
             <button key={durum} onClick={() => setAltFiltre(durum)} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${altFiltre === durum ? 'bg-white/10 text-white' : 'text-slate-500 hover:bg-white/5'}`}>
