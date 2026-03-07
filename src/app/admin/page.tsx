@@ -13,9 +13,9 @@ export default function SiberAdminTerminali() {
   const [aktifSekme, setAktifSekme] = useState("dashboard");
   const [loading, setLoading] = useState(true);
 
-  // 📡 VERİ MERKEZİ (Mock Data - Gerçek API'lere Bağlanmaya Hazır)
+  // 📡 VERİ MERKEZİ
   const [istatistikler, setIstatistikler] = useState({
-    toplamKullanici: 1245, toplamVarlik: 8430, aktifTakas: 342, toplamHacim: "14.500.000 ₺"
+    toplamKullanici: 0, toplamVarlik: 0, aktifTakas: 0, toplamHacim: "0 ₺"
   });
   const [kullanicilar, setKullanicilar] = useState<any[]>([]);
   const [ilanlar, setIlanlar] = useState<any[]>([]);
@@ -40,26 +40,41 @@ export default function SiberAdminTerminali() {
     setLoading(true);
     try {
       // 1. İlanları Çek
+      let cekilenIlanlar = [];
       const resIlan = await fetch("/api/varliklar");
       if (resIlan.ok) {
         const dataIlan = await resIlan.json();
-        setIlanlar(Array.isArray(dataIlan) ? dataIlan : dataIlan.ilanlar || []);
+        cekilenIlanlar = Array.isArray(dataIlan) ? dataIlan : dataIlan.ilanlar || [];
+        setIlanlar(cekilenIlanlar);
       }
       
-      // 2. Takasları Çek (Admin için özel API yapılabilir, şimdilik genel takaslar)
+      // 2. Takasları Çek 
+      let cekilenTakaslar = [];
       const resTakas = await fetch("/api/takas");
       if (resTakas.ok) {
         const dataTakas = await resTakas.json();
-        setTakaslar(dataTakas || []);
+        cekilenTakaslar = dataTakas || [];
+        setTakaslar(cekilenTakaslar);
       }
 
-      // 3. Kullanıcıları Çek (Bunun için /api/users admin rotası oluşturulmalı)
-      // Şimdilik sahte veri ile dolduruyoruz
-      setKullanicilar([
-        { _id: "u1", email: "test_ajan@gmail.com", rol: "kullanici", durum: "aktif", kayit: "2026-03-01" },
-        { _id: "u2", email: "hacker_spy@proton.me", rol: "kullanici", durum: "banli", kayit: "2026-03-05" },
-        { _id: "u3", email: "nefesercan@gmail.com", rol: "MASTER", durum: "aktif", kayit: "2026-01-01" },
-      ]);
+      // 3. Kullanıcıları Çek
+      let cekilenKullanicilar = [];
+      const resUsers = await fetch("/api/admin/users");
+      if (resUsers.ok) {
+        cekilenKullanicilar = await resUsers.json();
+        setKullanicilar(cekilenKullanicilar);
+      }
+
+      // İstatistikleri Hesapla
+      let toplamPara = 0;
+      cekilenIlanlar.forEach((i: any) => toplamPara += Number(i.price || i.fiyat || 0));
+
+      setIstatistikler({
+        toplamKullanici: cekilenKullanicilar.length,
+        toplamVarlik: cekilenIlanlar.length,
+        aktifTakas: cekilenTakaslar.length,
+        toplamHacim: `${toplamPara.toLocaleString()} ₺`
+      });
 
     } catch (error) {
       console.error("Ağ Taraması Başarısız:", error);
@@ -67,20 +82,45 @@ export default function SiberAdminTerminali() {
     setLoading(false);
   };
 
-  // 🚀 SİBER YÖNETİCİ AKSİYONLARI
+  // 🔥 SİBER YÖNETİCİ AKSİYONU: İLAN SİL
   const handleIlanSil = async (id: string) => {
-    if(!confirm("Bu varlığı siber ağdan tamamen silmek üzeresiniz. Onaylıyor musunuz?")) return;
+    if(!confirm("Bu varlığı siber ağdan tamamen SİLMEK üzeresiniz. Onaylıyor musunuz?")) return;
     try {
-      // const res = await fetch(`/api/varliklar/${id}`, { method: 'DELETE' });
-      // if(res.ok) siberAgiTara();
-      alert(`[SİMÜLASYON] ID: ${id} varlığı silindi! (API bağlandığında gerçek silme yapacak)`);
-    } catch (e) { alert("Silme başarısız!"); }
+      const res = await fetch(`/api/varliklar/${id}`, { method: 'DELETE' });
+      if(res.ok) {
+        alert("💥 Varlık başarıyla imha edildi!");
+        siberAgiTara(); // Paneli yenile
+      } else {
+        const err = await res.json();
+        alert(`Silme reddedildi: ${err.error || "Bilinmeyen hata"}`);
+      }
+    } catch (e) { alert("Sinyal koptu!"); }
   };
 
-  const handleKullaniciBanla = async (email: string) => {
+  // 🛡️ SİBER YÖNETİCİ AKSİYONU: KULLANICI BANLA / BAN KALDIR
+  const handleKullaniciBanla = async (email: string, mevcutDurum: string) => {
     if(email === MASTER_ADMIN_EMAIL) return alert("Kendini banlayamazsın Komutan!");
-    if(!confirm(`${email} ajanını sistemden men etmek istiyor musun?`)) return;
-    alert(`[SİMÜLASYON] ${email} banlandı!`);
+    
+    const yeniDurum = mevcutDurum === "banli" ? "aktif" : "banli";
+    const mesaj = yeniDurum === "banli" ? "MEN ETMEK (BANLAMAK)" : "AĞA GERİ ALMAK";
+
+    if(!confirm(`${email} ajanını sistemden ${mesaj} istiyor musun?`)) return;
+    
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, durum: yeniDurum, adminEmail: session?.user?.email })
+      });
+      
+      if(res.ok) {
+        alert(`⚡ İşlem Başarılı: Kullanıcı ${yeniDurum} yapıldı!`);
+        siberAgiTara(); // Paneli yenile
+      } else {
+        const err = await res.json();
+        alert(`İşlem reddedildi: ${err.error}`);
+      }
+    } catch (e) { alert("Sinyal gönderilemedi."); }
   };
 
   if (loading || status === "loading") return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#00f260] font-black animate-pulse tracking-[0.2em]">KUMANDA MERKEZİ BAŞLATILIYOR...</div>;
@@ -133,7 +173,7 @@ export default function SiberAdminTerminali() {
               <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-[2rem] shadow-lg relative overflow-hidden group">
                 <div className="absolute -right-6 -top-6 text-7xl opacity-5 group-hover:scale-110 transition-transform">📦</div>
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2">Piyasadaki Varlık</p>
-                <p className="text-4xl font-black text-white">{ilanlar.length || istatistikler.toplamVarlik}</p>
+                <p className="text-4xl font-black text-white">{istatistikler.toplamVarlik}</p>
               </div>
               <div className="bg-[#0a0a0a] border border-[#00f260]/20 p-6 rounded-[2rem] shadow-[0_0_20px_rgba(0,242,96,0.05)] relative overflow-hidden group">
                 <div className="absolute -right-6 -top-6 text-7xl opacity-5 group-hover:scale-110 transition-transform text-[#00f260]">💰</div>
@@ -143,7 +183,7 @@ export default function SiberAdminTerminali() {
               <div className="bg-[#0a0a0a] border border-cyan-500/20 p-6 rounded-[2rem] shadow-lg relative overflow-hidden group">
                 <div className="absolute -right-6 -top-6 text-7xl opacity-5 group-hover:scale-110 transition-transform text-cyan-500">🔄</div>
                 <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-2">Aktif Borsa Emirleri</p>
-                <p className="text-4xl font-black text-white">{takaslar.length || istatistikler.aktifTakas}</p>
+                <p className="text-4xl font-black text-white">{istatistikler.aktifTakas}</p>
               </div>
             </div>
             
@@ -179,7 +219,7 @@ export default function SiberAdminTerminali() {
                         <td className="p-5 text-slate-500">{new Date(ilan.createdAt).toLocaleDateString()}</td>
                         <td className="p-5 text-right">
                           <button onClick={() => window.open(`/varlik/${ilan._id}`, '_blank')} className="bg-cyan-500/10 text-cyan-400 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase mr-2 hover:bg-cyan-500 hover:text-black transition-colors">İncele</button>
-                          <button onClick={() => handleIlanSil(ilan._id)} className="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-colors">SİL</button>
+                          <button onClick={() => handleIlanSil(ilan._id)} className="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-colors shadow-lg">SİL</button>
                         </td>
                       </tr>
                     ))}
@@ -210,16 +250,21 @@ export default function SiberAdminTerminali() {
                     {kullanicilar.map((kul) => (
                       <tr key={kul._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                         <td className="p-5 font-bold text-white">{kul.email}</td>
-                        <td className="p-5 text-cyan-400 font-black text-[9px] tracking-widest uppercase">{kul.rol}</td>
-                        <td className="p-5 text-slate-500">{kul.kayit}</td>
+                        <td className="p-5 text-cyan-400 font-black text-[9px] tracking-widest uppercase">{kul.rol || 'kullanici'}</td>
+                        <td className="p-5 text-slate-500">{new Date(kul.createdAt || Date.now()).toLocaleDateString()}</td>
                         <td className="p-5">
-                          <span className={`px-3 py-1 rounded text-[9px] font-black uppercase ${kul.durum === 'aktif' ? 'bg-[#00f260]/10 text-[#00f260]' : 'bg-red-500/10 text-red-500'}`}>
-                            {kul.durum}
+                          <span className={`px-3 py-1 rounded text-[9px] font-black uppercase ${kul.durum === 'aktif' || !kul.durum ? 'bg-[#00f260]/10 text-[#00f260]' : 'bg-red-500/10 text-red-500'}`}>
+                            {kul.durum || 'aktif'}
                           </span>
                         </td>
                         <td className="p-5 text-right">
                           {kul.email !== MASTER_ADMIN_EMAIL && (
-                             <button onClick={() => handleKullaniciBanla(kul.email)} className="bg-red-500 border border-red-500 text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase hover:scale-105 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.4)]">AĞDAN AT (BAN)</button>
+                             <button 
+                               onClick={() => handleKullaniciBanla(kul.email, kul.durum || 'aktif')} 
+                               className={`${kul.durum === 'banli' ? 'bg-amber-500 border-amber-500 text-black' : 'bg-red-500 border-red-500 text-white'} px-4 py-1.5 rounded-lg text-[9px] font-black uppercase hover:scale-105 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.4)]`}
+                             >
+                               {kul.durum === 'banli' ? 'BANI KALDIR' : 'AĞDAN AT (BAN)'}
+                             </button>
                           )}
                         </td>
                       </tr>
