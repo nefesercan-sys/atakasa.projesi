@@ -108,6 +108,8 @@ export default function Home() {
     } catch (e) { alert("Sinyal koptu."); }
   };
 
+  const handleArama = () => router.push(`/kesfet?ara=${searchTerm}`);
+
   // 🃏 REUSABLE VARLIK KARTI
   const BorsaKarti = ({ ilan }: { ilan: any }) => (
     <div className="min-w-[280px] md:min-w-[320px] bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#00f260]/50 transition-all duration-500 shadow-2xl group flex flex-col snap-center">
@@ -181,8 +183,8 @@ export default function Home() {
 
         {/* 💠 ÜST BÖLÜM: DİNAMİK KAYDIRILABİLİR VİTRİNLER */}
         <KaydirilabilirVitrin baslik="Yeni Eklenenler" renk="text-cyan-400" veri={ilanlar.slice(0, 8)} />
-        <KaydirilabilirVitrin baslik="Fiyatı Düşenler" renk="text-red-500" veri={ilanlar.filter(i => i.degisimYuzdesi < 0)} />
-        <KaydirilabilirVitrin baslik="Fiyatı Yükselenler" renk="text-[#00f260]" veri={ilanlar.filter(i => i.degisimYuzdesi > 0)} />
+        <KaydirilabilirVitrin baslik="Fiyatı Düşenler" renk="text-red-500" veri={ilanlar.filter(i => (i.degisimYuzdesi || 0) < 0)} />
+        <KaydirilabilirVitrin baslik="Fiyatı Yükselenler" renk="text-[#00f260]" veri={ilanlar.filter(i => (i.degisimYuzdesi || 0) > 0)} />
         <KaydirilabilirVitrin baslik="En Çok Takaslar" renk="text-amber-400" veri={ilanlar.slice().reverse().slice(0, 8)} />
 
         {/* 🏢 TÜM PİYASA VE KATEGORİ VİTRİNLERİ */}
@@ -191,6 +193,77 @@ export default function Home() {
           
           {sektorler.map((s) => (
             <div key={s.slug} className="group">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 border-l-4 border-[#00f260] pl-6">
+                <div>
+                  <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white">{s.ad} <span className="text-white opacity-20">Endeksi.</span></h3>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className={`px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 ${s.renk} text-[10px] font-black tracking-widest uppercase`}>
+                      Ortalama Değişim: {s.degisim}% {s.degisim.startsWith('+') ? '▲' : '▼'}
+                    </span>
+                    <span className="text-slate-600 text-[9px] font-bold uppercase tracking-widest">Canlı Piyasa Verisi</span>
+                  </div>
+                </div>
+                <button onClick={() => router.push(`/kategori/${s.slug}`)} className="bg-white text-black px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#00f260] transition-all">Tümünü İncele</button>
+              </div>
+              
+              <div className="flex overflow-x-auto gap-6 pb-12 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden px-2">
+                {ilanlar.filter(i => i.kategori === s.ad).length > 0 ? (
+                  ilanlar.filter(i => i.kategori === s.ad).map((i) => <BorsaKarti key={i._id} ilan={i} />)
+                ) : (
+                  <div className="w-full bg-[#0a0a0a] border border-white/[0.03] rounded-[3rem] py-20 text-center flex flex-col items-center justify-center">
+                    <span className="text-4xl mb-4 grayscale opacity-20">📉</span>
+                    <p className="text-slate-600 font-bold uppercase text-[9px] tracking-[0.3em]">Bu Sektörde Henüz Aktif Emir Yok.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* 🚀 MODALLAR (TAKAS / SATIN AL) */}
+      {seciliIlan && modalTuru && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-lg w-full shadow-[0_0_50px_rgba(0,242,96,0.2)] relative flex flex-col animate-in zoom-in-95">
+            <button onClick={closeModal} className="absolute top-6 right-6 w-10 h-10 bg-white/5 hover:bg-white/10 text-white rounded-full flex items-center justify-center transition-colors">✕</button>
+            <div className="flex items-center gap-4 border-b border-white/10 pb-6 mb-6">
+              <img src={getResim(seciliIlan)} className="w-20 h-20 rounded-2xl object-cover border border-white/5" alt="Varlık" />
+              <div>
+                <p className="text-[#00f260] text-[10px] font-black uppercase tracking-widest mb-1">{modalTuru === 'takas' ? 'SİBER TAKAS TEKLİFİ' : 'GÜVENLİ SATIN ALMA'}</p>
+                <h3 className="text-white font-bold text-lg leading-tight mb-1">{seciliIlan.title || seciliIlan.baslik}</h3>
+                <p className="text-gray-400 font-black">{Number(seciliIlan.price || seciliIlan.fiyat).toLocaleString()} ₺</p>
+              </div>
+            </div>
+            {modalTuru === "takas" ? (
+              <div className="space-y-4">
+                <label className="text-cyan-400 text-[10px] font-black uppercase tracking-widest block">1. Vereceğiniz Varlığı Seçin</label>
+                <select value={secilenBenimIlanim} onChange={(e) => setSecilenBenimIlanim(e.target.value)} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none focus:border-cyan-500">
+                  <option value="">-- Cüzdanınızdan Seçin --</option>
+                  {benimIlanlarim.map(b => <option key={b._id} value={`${b._id}|${b.title || b.baslik}`}>{b.title || b.baslik}</option>)}
+                </select>
+                <label className="text-[#00f260] text-[10px] font-black uppercase tracking-widest block pt-2">2. Nakit Ekle (₺) - Opsiyonel</label>
+                <input type="number" placeholder="Örn: 5000" value={eklenecekNakit} onChange={(e) => setEklenecekNakit(e.target.value)} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none focus:border-[#00f260]" />
+                <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim} className="w-full mt-6 bg-cyan-500 text-black py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:scale-105 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50">🚀 TEKLİFİ FIRLAT</button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-[#00f260]/5 border border-[#00f260]/20 p-5 rounded-2xl mb-4 flex justify-between items-center">
+                  <span className="text-[#00f260] text-[10px] font-black uppercase tracking-widest">ÖDENECEK TUTAR</span>
+                  <span className="text-3xl font-black text-white">{Number(seciliIlan.price || seciliIlan.fiyat).toLocaleString()} ₺</span>
+                </div>
+                <input type="text" placeholder="Ad Soyad" className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none" />
+                <textarea placeholder="Teslimat Adresi" className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none h-20 resize-none"></textarea>
+                <button className="w-full mt-4 bg-[#00f260] text-black py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,242,96,0.3)]">✅ ÖDEMEYİ TAMAMLA</button>
+              </div>
+            )}
+            <p className="text-center text-gray-600 text-[9px] mt-6 uppercase font-bold tracking-widest">Siber Havuz Koruması Altındadır.</p>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}            <div key={s.slug} className="group">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 border-l-4 border-[#00f260] pl-6">
                 <div>
                   <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white">{s.ad} <span className="text-white opacity-20">Endeksi.</span></h3>
