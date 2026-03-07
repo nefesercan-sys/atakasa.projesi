@@ -8,16 +8,38 @@ const connectDB = async () => {
   await mongoose.connect(process.env.MONGODB_URI);
 };
 
-// 🔄 TAKAS ŞEMASI (Verilerin şablonu)
+// 🔄 TAKAS ŞEMASI (Borsa ve Escrow Uyumlu Zırhlı Versiyon)
 const TakasSchema = new mongoose.Schema({
   gonderenEmail: { type: String, required: true }, 
   aliciEmail: { type: String, required: true },    
   hedefIlanId: { type: String, required: true },   
   hedefIlanBaslik: { type: String, required: true },
+  hedefIlanFiyat: { type: Number, required: true, default: 0 }, // 💰 YENİ: %1 komisyon kesintisi için eklendi
   teklifEdilenIlanId: { type: String, required: true }, 
   teklifEdilenIlanBaslik: { type: String, required: true },
   eklenenNakit: { type: Number, default: 0, min: 0 }, 
-  durum: { type: String, default: "bekliyor", enum: ["bekliyor", "kabul", "red", "iptal"] }
+  
+  // 🛡️ YENİ BORSA DURUMLARI (Genişletildi)
+  durum: { 
+    type: String, 
+    default: "bekliyor", 
+    enum: [
+      "bekliyor",          // Teklif atıldı
+      "kabul",             // Teklif kabul edildi, teminat bekleniyor
+      "red",               // Teklif reddedildi
+      "teminat_odendi",    // İki taraf da depozitoyu yatırdı (%1 kesildi)
+      "kargoda",           // Kargo butonu tıklandı
+      "teslim_edildi",     // Takas başarıyla bitti
+      "iptal_istendi",     // Bir taraf iptal butonuna bastı
+      "iptal_onaylandi"    // Ürünler geri alındı, para iade edildi
+    ] 
+  },
+  
+  // 💰 YENİ ESCROW (HAVUZ) TAKİP SİSTEMİ
+  gonderenTeminatOdediMi: { type: Boolean, default: false },
+  aliciTeminatOdediMi: { type: Boolean, default: false },
+  kesilenKomisyonTutari: { type: Number, default: 0 }
+
 }, { timestamps: true });
 
 const Takas = mongoose.models.Takas || mongoose.model("Takas", TakasSchema);
@@ -41,7 +63,7 @@ export async function GET(req) {
   }
 }
 
-// 🚀 POST: Yeni teklifi veritabanına yazar (ÇÖKMEYEN ZIRHLI VERSİYON)
+// 🚀 POST: Yeni teklifi veritabanına yazar
 export async function POST(req) {
   try {
     await connectDB();
@@ -64,6 +86,7 @@ export async function POST(req) {
       aliciEmail: karsiHedefEmail,
       hedefIlanId: data.hedefIlanId,
       hedefIlanBaslik: data.hedefIlanBaslik,
+      hedefIlanFiyat: Number(data.hedefIlanFiyat) || 0, // 💰 Fiyatı sisteme kaydet
       teklifEdilenIlanId: data.teklifEdilenIlanId,
       teklifEdilenIlanBaslik: data.teklifEdilenIlanBaslik,
       eklenenNakit: Math.abs(Number(data.eklenenNakit)) || 0,
@@ -99,8 +122,11 @@ export async function PUT(req) {
       return NextResponse.json({ error: "Siber İhlal: Başkasının takasına müdahale edemezsiniz!" }, { status: 403 });
     }
 
-    // 🛡️ ZIRH 3: Durum manipülasyonu engeli
-    const gecerliDurumlar = ["bekliyor", "kabul", "red", "iptal"];
+    // 🛡️ ZIRH 3: Yeni Borsa Durumları Manipülasyon Engeli
+    const gecerliDurumlar = [
+      "bekliyor", "kabul", "red", "teminat_odendi", 
+      "kargoda", "teslim_edildi", "iptal_istendi", "iptal_onaylandi"
+    ];
     if (!gecerliDurumlar.includes(yeniDurum)) {
        return NextResponse.json({ error: "Geçersiz sinyal!" }, { status: 400 });
     }
