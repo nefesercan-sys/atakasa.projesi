@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "@/lib/mongodb";
-import Varlik from "@/models/Varlik";
+// 🛰️ Siber Pusula: Projenin orijinal klasör yapısına göre yollar mühürlendi
+import { connectMongoDB } from "../../../lib/mongodb";
+import Varlik from "../../../models/Varlik";
 
 export const dynamic = "force-dynamic"; // 📡 CANLI VERİ ZORUNLULUĞU
 
 // 🔍 GET: GELİŞMİŞ BORSA VE FİLTRELEME MOTORU
-export async function GET(req) {
+export async function GET(req: Request) {
   try {
     await connectMongoDB();
     const { searchParams } = new URL(req.url);
@@ -16,15 +17,15 @@ export async function GET(req) {
     const sirala = searchParams.get("sirala"); // ucuz, pahali, yeni, degisim
 
     // 🛡️ SORGULAMA RADARI
-    let matchStage = { aktif: true };
-    if (sektor) matchStage.kategori = sektor; // Senin sisteminde kategori sektör olarak kullanılıyor
+    let matchStage: any = { aktif: true };
+    if (sektor) matchStage.kategori = sektor; 
     if (kategori) matchStage.kategori = kategori;
 
     // 📈 SIRALAMA ALGORİTMASI
-    let sortStage = { createdAt: -1 };
+    let sortStage: any = { createdAt: -1 };
     if (sirala === "ucuz") sortStage = { fiyat: 1 };
     if (sirala === "pahali") sortStage = { fiyat: -1 };
-    if (sirala === "degisim") sortStage = { eskiFiyat: 1 }; // Fiyatı düşenleri başa çek
+    if (sirala === "degisim") sortStage = { eskiFiyat: 1 }; // Düşüşte olanlar
 
     // 🌪️ AGGREGATION (BİRLEŞTİRME) İŞLEMİ
     const ilanlar = await Varlik.aggregate([
@@ -66,7 +67,7 @@ export async function GET(req) {
 }
 
 // 🛡️ PUT: FİYAT GÜNCELLEME VE ESKİ FİYAT MÜHÜRLEME
-export async function PUT(req) {
+export async function PUT(req: Request) {
   try {
     await connectMongoDB();
     const data = await req.json();
@@ -78,7 +79,7 @@ export async function PUT(req) {
     if (data.fiyat && Number(data.fiyat) !== mevcutVarlik.fiyat) {
       mevcutVarlik.eskiFiyat = mevcutVarlik.fiyat;
       mevcutVarlik.fiyat = Number(data.fiyat);
-      mevcutVarlik.fiyatGuncellemeTarihi = Date.now();
+      mevcutVarlik.fiyatGuncellemeTarihi = new Date();
     }
 
     // Diğer güncellemeleri yap
