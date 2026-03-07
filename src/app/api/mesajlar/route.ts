@@ -71,6 +71,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Kendinize mesaj gönderemezsiniz." }, { status: 400 });
     }
 
+    // 🛡️ ZIRH: SPAM / DoS KALKANI (Son 3 saniye içinde mesaj atmış mı?)
+    const sonMesaj = await Mesaj.findOne({ gonderenEmail }).sort({ createdAt: -1 });
+    
+    if (sonMesaj) {
+      const gecenSure = Date.now() - new Date(sonMesaj.createdAt).getTime();
+      if (gecenSure < 3000) { // 3000 milisaniye = 3 saniye
+        return NextResponse.json({ error: "Sinyal çok hızlı! Lütfen 3 saniye bekleyin." }, { status: 429 });
+      }
+    }
+
+    // Her şey güvenliyse mesajı mühürle
     const yeniMesaj = await Mesaj.create({
       gonderenEmail,
       aliciEmail: data.aliciEmail.toLowerCase(),
