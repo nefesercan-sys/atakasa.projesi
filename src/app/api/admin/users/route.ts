@@ -15,26 +15,34 @@ export async function GET() {
   }
 }
 
-// 🛡️ PUT: Ajanı Banla / Banını Kaldır
-export async function PUT(req: Request) {
+// 🔥 DELETE: Ajanı Veritabanından ve Listeden Tamamen Sil
+export async function DELETE(req: Request) {
   try {
     await connectMongoDB();
-    const { email, durum, adminEmail } = await req.json();
+    
+    // URL'den email ve adminEmail bilgilerini alıyoruz
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get("email");
+    const adminEmail = searchParams.get("adminEmail");
 
     // 🚨 MASTER GÜVENLİK KONTROLÜ
     if (adminEmail !== "nefesercan@gmail.com") {
       return NextResponse.json({ error: "SİBER İHLAL: Erişim Reddedildi!" }, { status: 403 });
     }
 
-    const user = await User.findOne({ email });
-    if (!user) return NextResponse.json({ error: "Ajan bulunamadı." }, { status: 404 });
+    if (!email) {
+      return NextResponse.json({ error: "Silinecek ajan belirtilmedi." }, { status: 400 });
+    }
 
-    // Kullanıcının sistem durumunu güncelle (banli veya aktif)
-    user.durum = durum; 
-    await user.save();
+    // Kullanıcıyı bul ve tamamen yok et
+    const silinenKullanici = await User.findOneAndDelete({ email });
+    
+    if (!silinenKullanici) {
+      return NextResponse.json({ error: "Ajan zaten silinmiş veya bulunamadı." }, { status: 404 });
+    }
 
-    return NextResponse.json({ message: "Siber kalkan başarıyla uygulandı." }, { status: 200 });
+    return NextResponse.json({ message: "Ajan siber ağdan tamamen silindi." }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: "İşlem başarısız." }, { status: 500 });
+    return NextResponse.json({ error: "İmha işlemi başarısız." }, { status: 500 });
   }
 }
