@@ -1,196 +1,180 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-
-// 🌟 DİNAMİK SLOGANLAR
-const SLOGANLAR = [
-  "At takasa daha fazla kazan!",
-  "Elinde tutma, takasa at!",
-  "Takasa at, değer yarat!",
-  "At takasa, hızlı sat!",
-  "Özgürce, güvende takas yap!",
-  "Dilediğin ürünü bul, at takasa!"
-];
 
 export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
   
-  // 📡 ANA STATE'LER
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [ilanlar, setIlanlar] = useState<any[]>([]); 
-  const [borsaVerisi, setBorsaVerisi] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  // 🎛️ FİLTRE VE KATEGORİ STATE'LERİ
-  const [seciliKategori, setSeciliKategori] = useState("Hepsi");
-  const [altFiltre, setAltFiltre] = useState("yeni"); // yeni, dusen, yukselen, takas
-  const [aktifSlogan, setAktifSlogan] = useState(0);
-
-  // 🎛️ MODAL VE FORM STATE'LERİ
-  const [seciliIlan, setSeciliIlan] = useState<any>(null);
-  const [modalTuru, setModalTuru] = useState<"takas" | "satinal" | null>(null);
-  const [benimIlanlarim, setBenimIlanlarim] = useState<any[]>([]);
-  const [secilenBenimIlanim, setSecilenBenimIlanim] = useState("");
-  const [eklenecekNakit, setEklenecekNakit] = useState("");
+  const [aktifFiltre, setAktifFiltre] = useState("Hepsi");
 
   // 📂 TÜM SEKTÖRLER VE SİMÜLE EDİLMİŞ BORSA VERİLERİ
   const sektorler = [
-    { ad: "Hepsi", slug: "hepsi", degisim: "+5.4", renk: "text-[#00f260]" },
     { ad: "Elektronik", slug: "elektronik", degisim: "+4.2", renk: "text-[#00f260]" },
     { ad: "Emlak", slug: "emlak", degisim: "+1.8", renk: "text-[#00f260]" },
     { ad: "Araç", slug: "arac", degisim: "-2.4", renk: "text-red-500" },
     { ad: "2. El", slug: "ikinci-el", degisim: "+0.5", renk: "text-white" },
-    { ad: "Sıfır Ürünler", slug: "sifir-urun", degisim: "+6.1", renk: "text-[#00f260]" },
+    { ad: "Sıfır Ürün", slug: "sifir-urun", degisim: "+6.1", renk: "text-[#00f260]" },
     { ad: "Mobilya", slug: "mobilya", degisim: "-1.1", renk: "text-red-500" },
     { ad: "Makine", slug: "makine", degisim: "+3.3", renk: "text-[#00f260]" },
     { ad: "Tekstil", slug: "tekstil", degisim: "-0.9", renk: "text-red-500" },
     { ad: "Oyuncak", slug: "oyuncak", degisim: "+0.0", renk: "text-slate-500" },
     { ad: "El Sanatları", slug: "el-sanatlari", degisim: "+12.4", renk: "text-[#00f260]" },
     { ad: "Kitap", slug: "kitap", degisim: "-0.4", renk: "text-red-500" },
-    { ad: "Antika Eserler", slug: "antika", degisim: "+15.8", renk: "text-[#00f260]" },
+    { ad: "Antika", slug: "antika", degisim: "+15.8", renk: "text-[#00f260]" },
     { ad: "Kırtasiye", slug: "kirtasiye", degisim: "+0.2", renk: "text-white" },
-    { ad: "Doğal Ürünler", slug: "dogal-urun", degisim: "+2.5", renk: "text-[#00f260]" },
+    { ad: "Doğal Ürün", slug: "dogal-urun", degisim: "+2.5", renk: "text-[#00f260]" },
     { ad: "Kozmetik", slug: "kozmetik", degisim: "-3.2", renk: "text-red-500" },
     { ad: "Petshop", slug: "petshop", degisim: "+1.1", renk: "text-white" },
     { ad: "Oyun/Konsol", slug: "oyun-konsol", degisim: "+8.7", renk: "text-[#00f260]" },
   ];
 
-  // 🔄 SLOGAN DÖNGÜSÜ
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAktifSlogan((prev) => (prev + 1) % SLOGANLAR.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 📡 SİBER VERİ ÇEKME
   useEffect(() => {
     setIsLoaded(true);
     const piyasaVerisiCek = async () => {
       try {
         const res = await fetch("/api/varliklar");
         const data = await res.json();
-        // Mock veri değişimi ekleyelim test için (Gerçekte API'den gelmeli)
-        const enrichedData = (Array.isArray(data) ? data : []).map(item => ({
-            ...item,
-            degisimYuzdesi: item.degisimYuzdesi || (Math.random() * 20 - 10).toFixed(1), // -10 ile +10 arası mock yüzde
-            createdAt: item.createdAt || new Date(Date.now() - Math.random() * 10000000000).toISOString()
-        }));
-        setIlanlar(enrichedData);
-
-        const borsaRes = await fetch("/api/borsa/analiz");
-        if (borsaRes.ok) {
-          const bData = await borsaRes.json();
-          setBorsaVerisi(bData);
-        }
+        setIlanlar(Array.isArray(data) ? data : []);
       } catch (err) { console.error("Sinyal koptu:", err); } 
       finally { setLoading(false); }
     };
     piyasaVerisiCek();
   }, []);
 
-  // 🛡️ KULLANICININ KENDİ İLANLARINI AYIKLAMA
-  useEffect(() => {
-    if (session?.user?.email && ilanlar.length > 0) {
-      const kullaniciEmail = session.user.email.toLowerCase();
-      const benimkiler = ilanlar.filter((i: any) => (i.sellerEmail || i.satici || "").toLowerCase() === kullaniciEmail);
-      setBenimIlanlarim(benimkiler);
-    }
-  }, [session, ilanlar]);
-
   const getResim = (ilan: any) => {
     if (!ilan) return "https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK";
     return ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK";
   };
 
-  const openModal = (ilan: any, tur: "takas" | "satinal") => {
-    if (!session) return router.push("/giris");
-    if ((ilan.satici || ilan.sellerEmail || "").toLowerCase() === session.user?.email?.toLowerCase()) return alert("Kendi varlığınızla işlem yapamazsınız!");
-    setSeciliIlan(ilan);
-    setModalTuru(tur);
-  };
-
-  const closeModal = () => { setSeciliIlan(null); setModalTuru(null); };
-
-  const handleTakasGonder = async () => {
-    if (!secilenBenimIlanim) return alert("Lütfen vereceğiniz varlığı seçin!");
-    const [id, baslik] = secilenBenimIlanim.split("|");
-    try {
-      const res = await fetch("/api/takas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          aliciEmail: seciliIlan.sellerEmail || seciliIlan.satici,
-          hedefIlanId: seciliIlan._id,
-          hedefIlanBaslik: seciliIlan.title || seciliIlan.baslik,
-          hedefIlanFiyat: seciliIlan.price || seciliIlan.fiyat,
-          teklifEdilenIlanId: id,
-          teklifEdilenIlanBaslik: baslik,
-          eklenenNakit: eklenecekNakit || 0,
-        })
-      });
-      if (res.ok) { alert("⚡ TEKLİF İLETİLDİ!"); closeModal(); }
-    } catch (e) { alert("Sinyal koptu."); }
-  };
-
   const handleArama = () => router.push(`/kesfet?ara=${searchTerm}`);
 
-  // 🗂️ FİLTRELEME MANTIĞI (Kategori ve Alt Filtrelere Göre)
-  const filtrelenmisIlanlar = useMemo(() => {
-    let sonuc = [...ilanlar];
-    
-    // Kategori Filtresi
-    if (seciliKategori !== "Hepsi") {
-      sonuc = sonuc.filter(i => i.kategori === seciliKategori);
+  // 🃏 REUSABLE SİBER BORSA KARTI
+  const BorsaKarti = ({ ilan }: { ilan: any }) => (
+    <div className="min-w-[280px] md:min-w-[320px] bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#00f260]/50 transition-all duration-500 shadow-2xl group flex flex-col snap-center">
+      <div className="relative h-48 w-full overflow-hidden bg-[#030712]">
+        <img src={getResim(ilan)} alt={ilan.baslik} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-transform duration-700" />
+        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border border-white/10">
+          {ilan.kategori || "VARLIK"}
+        </div>
+        <div className="absolute top-3 right-3 bg-[#00f260]/20 backdrop-blur-md text-[#00f260] px-2 py-1 rounded-lg text-[9px] font-black border border-[#00f260]/30">
+          STABİL
+        </div>
+      </div>
+      <div className="p-5 flex flex-col flex-1">
+        <h3 className="text-white font-black uppercase text-sm mb-1 truncate group-hover:text-[#00f260] transition-colors">{ilan.title || ilan.baslik}</h3>
+        <div className="flex justify-between items-end mb-4">
+          <p className="text-[#00f260] font-black text-xl italic">{Number(ilan.price || ilan.fiyat).toLocaleString()} ₺</p>
+          <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest">📍 {ilan.sehir || "TÜRKİYE"}</p>
+        </div>
+        <div className="mt-auto grid grid-cols-2 gap-2">
+          <button className="bg-[#00f260]/10 text-[#00f260] py-2.5 rounded-xl text-[9px] font-black uppercase text-center hover:bg-[#00f260] hover:text-black transition-all border border-[#00f260]/20">🔄 TAKAS</button>
+          <button className="bg-white/5 text-white py-2.5 rounded-xl text-[9px] font-black uppercase text-center hover:bg-white hover:text-black transition-all border border-white/10">🛒 SATIN AL</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // 🌊 KAYDIRILABİLİR REYON BİLEŞENİ
+  const KaydirilabilirVitrin = ({ baslik, renk, veri }: { baslik: string, renk: string, veri: any[] }) => (
+    <div className="mb-16">
+      <div className="flex justify-between items-end mb-6 px-2">
+        <h2 className={`text-3xl md:text-5xl font-black italic tracking-tighter uppercase`}>{baslik.split(' ')[0]} <span className={renk}>{baslik.split(' ').slice(1).join(' ')}.</span></h2>
+        <span className="text-slate-600 text-[10px] uppercase font-bold tracking-[0.3em] hidden md:block">Kaydır →</span>
+      </div>
+      <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden px-2">
+        {veri.length > 0 ? veri.map((i) => <BorsaKarti key={i._id} ilan={i} />) : <div className="text-slate-700 font-bold uppercase text-xs p-10">Veri Bekleniyor...</div>}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#00f260] selection:text-black italic pb-20 overflow-x-hidden">
       
-      // Alt Filtreler (Sadece kategori seçiliyse aktif)
-      if (altFiltre === "yeni") sonuc.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      if (altFiltre === "dusen") sonuc.sort((a, b) => Number(a.degisimYuzdesi) - Number(b.degisimYuzdesi));
-      if (altFiltre === "yukselen") sonuc.sort((a, b) => Number(b.degisimYuzdesi) - Number(a.degisimYuzdesi));
-      if (altFiltre === "takas") sonuc.sort((a, b) => (b.takasSayisi || 0) - (a.takasSayisi || 0));
-    } else {
-      // Kategori "Hepsi" ise karma akış (Instagram gibi, en yeniden eskiye)
-      sonuc.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
+      {/* 🌌 SİBER KATMANLAR */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] blur-[150px] rounded-full"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-cyan-600 blur-[150px] rounded-full"></div>
+      </div>
 
-    return sonuc;
-  }, [ilanlar, seciliKategori, altFiltre]);
+      <main className="relative z-10 max-w-[1600px] mx-auto px-4 pt-20">
+        
+        {/* 🚀 HERO: MARKA VE SLOGAN */}
+        <div className={`text-center mb-20 transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <h1 className="text-7xl md:text-[11rem] font-black tracking-tighter uppercase leading-none mb-4 italic">
+            <span className="text-white">A</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-cyan-500 drop-shadow-[0_0_40px_rgba(0,242,96,0.4)]">TAKASA</span>
+            <span className="text-white">.</span>
+          </h1>
+          <p className="text-slate-500 tracking-[0.5em] text-xs md:text-sm font-bold uppercase mb-12">
+            Sıradan İlanlar Değil, <span className="text-white">Varlık Borsası.</span>
+          </p>
 
-  // 🃏 REUSABLE VARLIK KARTI (Fiyat Değişim Yüzdesi Eklendi)
-  const BorsaKarti = ({ ilan }: { ilan: any }) => {
-    const degisim = Number(ilan.degisimYuzdesi || 0);
-    const degisimRengi = degisim > 0 ? "bg-[#00f260]/20 text-[#00f260] border-[#00f260]/50" : degisim < 0 ? "bg-red-500/20 text-red-400 border-red-500/50" : "bg-slate-500/20 text-slate-300 border-slate-500/50";
-    
-    return (
-      <div className="min-w-[280px] w-full md:min-w-[320px] bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/5 rounded-[2rem] overflow-hidden hover:border-[#00f260]/50 transition-all duration-500 shadow-xl group flex flex-col snap-center relative">
-        {/* Yüzdesel Değişim Badge */}
-        <div className={`absolute top-4 right-4 z-20 px-3 py-1 rounded-full text-[11px] font-black border backdrop-blur-md ${degisimRengi}`}>
-          {degisim > 0 ? '▲' : degisim < 0 ? '▼' : '—'} {Math.abs(degisim)}%
-        </div>
-
-        <div className="relative h-56 w-full overflow-hidden bg-[#030712] cursor-pointer" onClick={() => router.push(`/varlik/${ilan._id}`)}>
-          <img src={getResim(ilan)} alt={ilan.baslik} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-transform duration-700" />
-          <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10 text-white shadow-lg">{ilan.kategori || "VARLIK"}</div>
-        </div>
-        <div className="p-5 flex flex-col flex-1">
-          <h3 className="text-white font-black uppercase text-base mb-2 truncate group-hover:text-[#00f260] transition-colors cursor-pointer" onClick={() => router.push(`/varlik/${ilan._id}`)}>{ilan.title || ilan.baslik}</h3>
-          <div className="flex justify-between items-end mb-5">
-            <p className="text-[#00f260] font-black text-2xl tracking-tighter">{Number(ilan.price || ilan.fiyat).toLocaleString()} <span className="text-sm">₺</span></p>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">📍 {ilan.sehir || "TÜRKİYE"}</p>
-          </div>
-          <div className="mt-auto grid grid-cols-2 gap-3">
-            <button onClick={() => openModal(ilan, "takas")} className="bg-gradient-to-r from-[#00f260]/10 to-cyan-500/10 text-white py-3 rounded-xl text-[10px] font-black uppercase text-center hover:from-[#00f260] hover:to-cyan-500 hover:text-black transition-all border border-white/10 hover:border-transparent flex items-center justify-center gap-2">
-              <span className="text-lg">🔄</span> TAKAS
-            </button>
-            <button onClick={() => openModal(ilan, "satinal")} className="bg-white/5 text-white py-3 rounded-xl text-[10px] font-black uppercase text-center hover:bg-white hover:text-black transition-all border border-white/10 flex items-center justify-center gap-2">
-              <span className="text-lg">🛒</span> SATIN AL
-            </button>
+          {/* Gelişmiş Arama */}
+          <div className="max-w-4xl mx-auto relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#00f260] to-cyan-600 rounded-[3rem] blur opacity-15 group-focus-within:opacity-40 transition duration-1000"></div>
+            <div className="relative flex items-center bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-2 shadow-2xl transition-all">
+              <input 
+                type="text" placeholder="Borsada varlık ara (iPhone, Tarla, BMW)..."
+                className="w-full bg-transparent border-none px-8 py-5 text-white text-base outline-none placeholder:text-slate-600 font-medium"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleArama()}
+              />
+              <button onClick={handleArama} className="hidden md:block bg-white text-black font-black tracking-widest px-10 py-5 rounded-[2.5rem] hover:bg-[#00f260] transition-colors uppercase text-xs">RADARI ÇALIŞTIR</button>
+            </div>
           </div>
         </div>
+
+        {/* 🏢 SEKTÖR ENDEKSLERİ (GRID) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-24">
+          {sektorler.map((s) => (
+            <div key={s.slug} onClick={() => router.push(`/kategori/${s.slug}`)} className="bg-[#0a0a0a] border border-white/5 p-5 rounded-[2rem] hover:border-[#00f260]/40 transition-all group cursor-pointer shadow-lg hover:-translate-y-1">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-slate-500 text-[8px] font-black uppercase tracking-widest">ENDEKS</span>
+                <span className={`${s.renk} text-[10px] font-black`}>{s.degisim}%</span>
+              </div>
+              <p className="text-white font-black uppercase text-[11px] group-hover:text-[#00f260] transition-colors">{s.ad}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 💠 KAYDIRILABİLİR BÖLÜMLER */}
+        <KaydirilabilirVitrin baslik="Yeni Eklenenler" renk="text-cyan-400" veri={ilanlar.slice(0, 8)} />
+        <KaydirilabilirVitrin baslik="Fiyatı Düşenler" renk="text-red-500" veri={ilanlar.filter(i => (i.degisim || 0) < 0)} />
+        <KaydirilabilirVitrin baslik="Fiyatı Yükselenler" renk="text-[#00f260]" veri={ilanlar.filter(i => (i.degisim || 0) > 0)} />
+        <KaydirilabilirVitrin baslik="En Çok Takas Edilenler" renk="text-amber-400" veri={ilanlar.slice().reverse().slice(0, 8)} />
+
+        {/* 🌐 TÜM PİYASA */}
+        <div className="pt-20 border-t border-white/5">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
+            <h2 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase">Tüm <span className="text-white">Piyasa.</span></h2>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+              {["Hepsi", "Araç", "Elektronik", "Emlak", "Antika"].map((f) => (
+                <button key={f} onClick={() => setAktifFiltre(f)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${aktifFiltre === f ? 'bg-white text-black' : 'bg-transparent border border-white/10 text-slate-500 hover:text-white'}`}>{f}</button>
+              ))}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[1, 2, 3, 4].map(n => <div key={n} className="h-96 bg-white/5 rounded-[2.5rem] animate-pulse"></div>)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {ilanlar.map((ilan) => <BorsaKarti key={ilan._id} ilan={ilan} />)}
+            </div>
+          )}
+        </div>
+
+      </main>
+    </div>
+  );
+}        </div>
       </div>
     );
   };
