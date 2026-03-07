@@ -347,8 +347,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* 📱 SİBER MOBİL ALT BAR (NAVİGASYON) */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#0a0a0a]/90 backdrop-blur-3xl border border-white/10 px-8 py-4 rounded-full flex gap-8 shadow-[0_20px_50px_rgba(0,0,0,0.8)] md:hidden">
+      {/* 📱 SİBER MOBİL ALT BAR (NAVİGASYON) - Yansıma düzeltildi */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#0a0a0a]/90 backdrop-blur-3xl border border-white/10 px-8 py-4 rounded-full flex gap-8 md:hidden shadow-2xl shadow-black/80 shadow-[#00f260]/10">
          <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors"><span className="text-lg">🏠</span><span className="text-[8px] font-black uppercase tracking-widest">VİTRİN</span></button>
          <button onClick={() => {setAktifKategori("Hepsi"); window.scrollTo({top: 0, behavior: 'smooth'});}} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors"><span className="text-lg">📂</span><span className="text-[8px] font-black uppercase tracking-widest">SEKTÖR</span></button>
          <button onClick={() => router.push('/varlik-ekle')} className="relative -top-6 bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-[0_0_30px_rgba(0,242,96,0.5)]">⚡</button>
