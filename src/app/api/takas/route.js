@@ -51,7 +51,7 @@ export async function POST(req) {
     const email = session.user.email.toLowerCase();
     const data = await req.json();
 
-    // 🚨 KRİTİK ZIRH: Eğer hedefin e-postası boş gelirse (eski ilan vs), sistemi çökertme, güvenliğe al!
+    // 🚨 KRİTİK ZIRH: Eğer hedefin e-postası boş gelirse sistemi çökertme
     const karsiHedefEmail = data.aliciEmail ? data.aliciEmail.toLowerCase() : "bilinmeyen@satici.com";
 
     // Kendi kendine teklif etme engeli
@@ -77,19 +77,38 @@ export async function POST(req) {
   }
 }
 
-// 🔄 PUT: Teklifi Kabul Et veya Reddet
+// 🛡️ PUT: Teklifi Kabul Et veya Reddet (HACKLENEZ IDOR ZIRHI EKLENDİ)
 export async function PUT(req) {
   try {
     await connectDB();
+    const session = await getServerSession();
+    
+    // 🛡️ ZIRH 1: Oturum Kontrolü
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Yetkisiz Erişim!" }, { status: 401 });
+    }
+
+    const email = session.user.email.toLowerCase();
     const { takasId, yeniDurum } = await req.json();
 
     const takas = await Takas.findById(takasId);
-    if (!takas) return NextResponse.json({ error: "Bulunamadı." }, { status: 404 });
+    if (!takas) return NextResponse.json({ error: "Varlık bulunamadı." }, { status: 404 });
+
+    // 🛡️ ZIRH 2: IDOR Koruması (Sadece takasın gerçek alıcısı veya göndereni durumu değiştirebilir)
+    if (takas.aliciEmail !== email && takas.gonderenEmail !== email) {
+      return NextResponse.json({ error: "Siber İhlal: Başkasının takasına müdahale edemezsiniz!" }, { status: 403 });
+    }
+
+    // 🛡️ ZIRH 3: Durum manipülasyonu engeli
+    const gecerliDurumlar = ["bekliyor", "kabul", "red", "iptal"];
+    if (!gecerliDurumlar.includes(yeniDurum)) {
+       return NextResponse.json({ error: "Geçersiz sinyal!" }, { status: 400 });
+    }
 
     takas.durum = yeniDurum;
     await takas.save();
 
-    return NextResponse.json({ message: "Durum güncellendi." }, { status: 200 });
+    return NextResponse.json({ message: "Durum güvenle güncellendi." }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: "İşlem başarısız." }, { status: 500 });
   }
