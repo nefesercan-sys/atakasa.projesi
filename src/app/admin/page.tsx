@@ -22,7 +22,6 @@ export default function SiberAdminTerminali() {
   const [takaslar, setTakaslar] = useState<any[]>([]);
 
   useEffect(() => {
-    // 🛡️ Yetki Kontrolü
     if (status === "unauthenticated") {
       router.push("/giris");
     } else if (status === "authenticated") {
@@ -35,11 +34,9 @@ export default function SiberAdminTerminali() {
     }
   }, [status, router]);
 
-  // 📡 GERÇEK VERİLERİ ÇEKME MOTORU
   const siberAgiTara = async () => {
     setLoading(true);
     try {
-      // 1. İlanları Çek
       let cekilenIlanlar = [];
       const resIlan = await fetch("/api/varliklar");
       if (resIlan.ok) {
@@ -48,7 +45,6 @@ export default function SiberAdminTerminali() {
         setIlanlar(cekilenIlanlar);
       }
       
-      // 2. Takasları Çek 
       let cekilenTakaslar = [];
       const resTakas = await fetch("/api/takas");
       if (resTakas.ok) {
@@ -57,7 +53,6 @@ export default function SiberAdminTerminali() {
         setTakaslar(cekilenTakaslar);
       }
 
-      // 3. Kullanıcıları Çek
       let cekilenKullanicilar = [];
       const resUsers = await fetch("/api/admin/users");
       if (resUsers.ok) {
@@ -65,7 +60,6 @@ export default function SiberAdminTerminali() {
         setKullanicilar(cekilenKullanicilar);
       }
 
-      // İstatistikleri Hesapla
       let toplamPara = 0;
       cekilenIlanlar.forEach((i: any) => toplamPara += Number(i.price || i.fiyat || 0));
 
@@ -76,46 +70,21 @@ export default function SiberAdminTerminali() {
         toplamHacim: `${toplamPara.toLocaleString()} ₺`
       });
 
-    } catch (error) {
-      console.error("Ağ Taraması Başarısız:", error);
-    }
+    } catch (error) { console.error("Ağ Taraması Başarısız:", error); }
     setLoading(false);
   };
 
-  // 🔥 SİBER YÖNETİCİ AKSİYONU: İLAN SİL
-  const handleIlanSil = async (id: string) => {
-    if(!confirm("Bu varlığı siber ağdan tamamen SİLMEK üzeresiniz. Onaylıyor musunuz?")) return;
-    try {
-      const res = await fetch(`/api/varliklar/${id}`, { method: 'DELETE' });
-      if(res.ok) {
-        alert("💥 Varlık başarıyla imha edildi!");
-        siberAgiTara(); // Paneli yenile
-      } else {
-        const err = await res.json();
-        alert(`Silme reddedildi: ${err.error || "Bilinmeyen hata"}`);
-      }
-    } catch (e) { alert("Sinyal koptu!"); }
-  };
-
-  // 🛡️ SİBER YÖNETİCİ AKSİYONU: KULLANICI BANLA / BAN KALDIR
-  const handleKullaniciBanla = async (email: string, mevcutDurum: string) => {
-    if(email === MASTER_ADMIN_EMAIL) return alert("Kendini banlayamazsın Komutan!");
-    
-    const yeniDurum = mevcutDurum === "banli" ? "aktif" : "banli";
-    const mesaj = yeniDurum === "banli" ? "MEN ETMEK (BANLAMAK)" : "AĞA GERİ ALMAK";
-
-    if(!confirm(`${email} ajanını sistemden ${mesaj} istiyor musun?`)) return;
+  // 🚀 SİBER AKSİYON: KULLANICIYI TAMAMEN SİL 
+  const handleKullaniciSil = async (email: string) => {
+    if(email === MASTER_ADMIN_EMAIL) return alert("Kendini silemezsin Komutan!");
+    if(!confirm(`🚨 DİKKAT: ${email} ajanını sistemden TAMAMEN SİLMEK istiyor musun?`)) return;
     
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, durum: yeniDurum, adminEmail: session?.user?.email })
-      });
-      
+      const res = await fetch(`/api/admin/users?email=${email}&adminEmail=${session?.user?.email}`, { method: "DELETE" });
       if(res.ok) {
-        alert(`⚡ İşlem Başarılı: Kullanıcı ${yeniDurum} yapıldı!`);
-        siberAgiTara(); // Paneli yenile
+        alert(`⚡ İşlem Başarılı: ${email} ağdan tamamen silindi!`);
+        setKullanicilar(prev => prev.filter(k => k.email !== email)); // Ekrandan anında sil
+        siberAgiTara(); 
       } else {
         const err = await res.json();
         alert(`İşlem reddedildi: ${err.error}`);
@@ -123,12 +92,30 @@ export default function SiberAdminTerminali() {
     } catch (e) { alert("Sinyal gönderilemedi."); }
   };
 
+  // 🔥 YENİ SİBER AKSİYON: İLANI (VARLIĞI) TAMAMEN SİL VE EKRANDAN YOK ET
+  const handleIlanSil = async (id: string, baslik: string) => {
+    if(!confirm(`🚨 DİKKAT: "${baslik}" adlı varlığı siber ağdan tamamen SİLMEK üzeresiniz. Bu işlem geri alınamaz! Onaylıyor musunuz?`)) return;
+    try {
+      const res = await fetch(`/api/varliklar/${id}`, { method: 'DELETE' });
+      if(res.ok) {
+        alert("💥 Varlık başarıyla imha edildi!");
+        // EKRANDAN ANINDA YOK ET
+        setIlanlar(prev => prev.filter(ilan => ilan._id !== id));
+        // İstatistiklerin güncellenmesi için ağı sessizce tara
+        siberAgiTara(); 
+      } else {
+        const err = await res.json();
+        alert(`Silme reddedildi: ${err.error || "Bilinmeyen hata"}`);
+      }
+    } catch (e) { alert("Sinyal koptu!"); }
+  };
+
   if (loading || status === "loading") return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#00f260] font-black animate-pulse tracking-[0.2em]">KUMANDA MERKEZİ BAŞLATILIYOR...</div>;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col md:flex-row">
       
-      {/* 🛡️ SOL PANEL: KONTROL MENÜSÜ */}
+      {/* 🛡️ SOL PANEL */}
       <div className="w-full md:w-64 bg-[#0a0a0a] border-r border-white/5 flex flex-col pt-8 z-20 shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
         <div className="px-6 mb-10 text-center md:text-left">
           <h1 className="text-3xl font-black italic tracking-tighter uppercase">A-TAKASA</h1>
@@ -138,7 +125,7 @@ export default function SiberAdminTerminali() {
         <nav className="flex flex-row md:flex-col gap-2 px-4 overflow-x-auto md:overflow-hidden no-scrollbar pb-4 md:pb-0">
           {[
             { id: "dashboard", icon: "📟", ad: "Radar (Özet)" },
-            { id: "varliklar", icon: "📦", ad: "Varlık Terminali" },
+            { id: "varliklar", icon: "📦", ad: "Varlık Terminali" }, // İLANLAR BURADA LİSTELENİYOR
             { id: "kullanicilar", icon: "👥", ad: "Ajanlar (Üyeler)" },
             { id: "takaslar", icon: "🔄", ad: "Borsa Emirleri" },
             { id: "ayarlar", icon: "⚙️", ad: "Sistem Ayarları" },
@@ -155,11 +142,11 @@ export default function SiberAdminTerminali() {
         </div>
       </div>
 
-      {/* 📡 SAĞ PANEL: MERKEZİ EKRAN */}
+      {/* 📡 SAĞ PANEL */}
       <div className="flex-1 bg-[#050505] p-4 md:p-10 h-screen overflow-y-auto relative">
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-[#00f260] opacity-[0.02] blur-[150px] rounded-full pointer-events-none"></div>
 
-        {/* 📟 SEKME 1: RADAR (DASHBOARD) */}
+        {/* 📟 SEKME 1: RADAR */}
         {aktifSekme === "dashboard" && (
           <div className="animate-in fade-in duration-500">
             <h2 className="text-3xl font-black italic uppercase mb-8">Siber <span className="text-[#00f260]">Rapor.</span></h2>
@@ -186,28 +173,24 @@ export default function SiberAdminTerminali() {
                 <p className="text-4xl font-black text-white">{istatistikler.aktifTakas}</p>
               </div>
             </div>
-            
-            <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-3xl">
-               <h3 className="text-red-500 font-black text-xs uppercase tracking-widest mb-2">🚨 Sistem Uyarıları</h3>
-               <p className="text-slate-400 text-sm">Şu an ağda olağandışı bir durum tespit edilmedi. Bütün siber kalkanlar devrede.</p>
-            </div>
           </div>
         )}
 
-        {/* 📦 SEKME 2: VARLIK TERMİNALİ */}
+        {/* 📦 SEKME 2: VARLIK TERMİNALİ (İLAN YÖNETİMİ) */}
         {aktifSekme === "varliklar" && (
           <div className="animate-in slide-in-from-right duration-500">
             <h2 className="text-3xl font-black italic uppercase mb-8">Varlık <span className="text-[#00f260]">Terminali.</span></h2>
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] overflow-hidden">
+            <p className="text-slate-500 text-xs mb-6">Ağdaki tüm ilanları buradan inceleyebilir veya kurallara aykırı olanları kalıcı olarak silebilirsiniz.</p>
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-white/5 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                      <th className="p-5">Varlık</th>
-                      <th className="p-5">Değer</th>
-                      <th className="p-5">Satıcı</th>
-                      <th className="p-5">Tarih</th>
-                      <th className="p-5 text-right">Aksiyon</th>
+                      <th className="p-5">Varlık Başlığı</th>
+                      <th className="p-5">Fiyat / Değer</th>
+                      <th className="p-5">Yükleyen Ajan (Satıcı)</th>
+                      <th className="p-5">Kayıt Tarihi</th>
+                      <th className="p-5 text-right">Müdahale</th>
                     </tr>
                   </thead>
                   <tbody className="text-xs">
@@ -215,11 +198,15 @@ export default function SiberAdminTerminali() {
                       <tr key={ilan._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                         <td className="p-5 font-bold text-white uppercase">{ilan.title || ilan.baslik}</td>
                         <td className="p-5 text-[#00f260] font-black">{Number(ilan.price || ilan.fiyat).toLocaleString()} ₺</td>
-                        <td className="p-5 text-slate-400">{ilan.sellerEmail || ilan.satici}</td>
+                        <td className="p-5 text-cyan-400 font-bold text-[10px] tracking-widest">{ilan.sellerEmail || ilan.satici}</td>
                         <td className="p-5 text-slate-500">{new Date(ilan.createdAt).toLocaleDateString()}</td>
-                        <td className="p-5 text-right">
-                          <button onClick={() => window.open(`/varlik/${ilan._id}`, '_blank')} className="bg-cyan-500/10 text-cyan-400 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase mr-2 hover:bg-cyan-500 hover:text-black transition-colors">İncele</button>
-                          <button onClick={() => handleIlanSil(ilan._id)} className="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-red-500 hover:text-white transition-colors shadow-lg">SİL</button>
+                        <td className="p-5 text-right whitespace-nowrap">
+                          <button onClick={() => window.open(`/varlik/${ilan._id}`, '_blank')} className="bg-cyan-500/10 text-cyan-400 px-4 py-2 rounded-lg text-[9px] font-black uppercase mr-2 hover:bg-cyan-500 hover:text-black transition-colors">
+                            🔍 İncele
+                          </button>
+                          <button onClick={() => handleIlanSil(ilan._id, ilan.title || ilan.baslik)} className="bg-red-500 border border-red-500 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase hover:scale-105 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+                            AĞDAN SİL
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -234,7 +221,7 @@ export default function SiberAdminTerminali() {
         {aktifSekme === "kullanicilar" && (
           <div className="animate-in slide-in-from-right duration-500">
             <h2 className="text-3xl font-black italic uppercase mb-8">Ajan <span className="text-cyan-400">Veritabanı.</span></h2>
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] overflow-hidden">
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -242,7 +229,6 @@ export default function SiberAdminTerminali() {
                       <th className="p-5">Ajan E-Posta</th>
                       <th className="p-5">Rol</th>
                       <th className="p-5">Kayıt Tarihi</th>
-                      <th className="p-5">Ağ Durumu</th>
                       <th className="p-5 text-right">Siber Kalkan</th>
                     </tr>
                   </thead>
@@ -252,18 +238,13 @@ export default function SiberAdminTerminali() {
                         <td className="p-5 font-bold text-white">{kul.email}</td>
                         <td className="p-5 text-cyan-400 font-black text-[9px] tracking-widest uppercase">{kul.rol || 'kullanici'}</td>
                         <td className="p-5 text-slate-500">{new Date(kul.createdAt || Date.now()).toLocaleDateString()}</td>
-                        <td className="p-5">
-                          <span className={`px-3 py-1 rounded text-[9px] font-black uppercase ${kul.durum === 'aktif' || !kul.durum ? 'bg-[#00f260]/10 text-[#00f260]' : 'bg-red-500/10 text-red-500'}`}>
-                            {kul.durum || 'aktif'}
-                          </span>
-                        </td>
                         <td className="p-5 text-right">
                           {kul.email !== MASTER_ADMIN_EMAIL && (
                              <button 
-                               onClick={() => handleKullaniciBanla(kul.email, kul.durum || 'aktif')} 
-                               className={`${kul.durum === 'banli' ? 'bg-amber-500 border-amber-500 text-black' : 'bg-red-500 border-red-500 text-white'} px-4 py-1.5 rounded-lg text-[9px] font-black uppercase hover:scale-105 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.4)]`}
+                               onClick={() => handleKullaniciSil(kul.email)} 
+                               className="bg-red-500 border border-red-500 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase hover:scale-105 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.4)]"
                              >
-                               {kul.durum === 'banli' ? 'BANI KALDIR' : 'AĞDAN AT (BAN)'}
+                               AĞDAN TAMAMEN SİL
                              </button>
                           )}
                         </td>
@@ -280,7 +261,7 @@ export default function SiberAdminTerminali() {
         {aktifSekme === "ayarlar" && (
            <div className="animate-in zoom-in-95 duration-500">
               <h2 className="text-3xl font-black italic uppercase mb-8">Sistem <span className="text-white">Ayarları.</span></h2>
-              <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2rem] max-w-2xl">
+              <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2rem] max-w-2xl shadow-2xl">
                  <label className="text-cyan-400 text-[10px] font-black uppercase tracking-widest block mb-2">Borsa Komisyon Oranı (%)</label>
                  <input type="number" defaultValue={2.5} className="w-full bg-[#030712] border border-white/10 text-white text-sm p-4 rounded-xl mb-6 outline-none focus:border-cyan-500" />
                  
