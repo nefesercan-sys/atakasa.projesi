@@ -347,25 +347,27 @@ export default function Home() {
         </div>
       )}
 
-      {/* 📱 SİBER MOBİL ALT BAR (NAVİGASYON) - Yansıma Kökten Çözüldü */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-[400px] z-[200] bg-[#080808] border border-white/10 px-6 py-3 rounded-full flex justify-between items-center md:hidden shadow-[0_10px_40px_rgba(0,0,0,0.9)]">
-         <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors">
-           <span className="text-xl">🏠</span><span className="text-[8px] font-black uppercase tracking-widest">VİTRİN</span>
+      {/* 📱 SİBER MOBİL ALT BAR (NAVİGASYON) - Yansıma Sorunu Kesin Çözüm */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[400px] z-[200] bg-[#050505] border border-white/10 px-6 py-3 rounded-full flex justify-between items-center md:hidden">
+         <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+           <span className="text-xl">🏠</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">VİTRİN</span>
          </button>
-         <button onClick={() => {setAktifKategori("Hepsi"); window.scrollTo({top: 0, behavior: 'smooth'});}} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors">
-           <span className="text-xl">📂</span><span className="text-[8px] font-black uppercase tracking-widest">SEKTÖR</span>
-         </button>
-         
-         {/* ANA BUTON (⚡) Ekrana tam oturması için zırhlandı */}
-         <button onClick={() => router.push('/varlik-ekle')} className="relative -top-5 bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-[0_0_20px_rgba(0,242,96,0.4)] shrink-0 border-4 border-[#080808]">
-           ⚡
+         <button onClick={() => {setAktifKategori("Hepsi"); window.scrollTo({top: 0, behavior: 'smooth'});}} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+           <span className="text-xl">📂</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">SEKTÖR</span>
          </button>
          
-         <button onClick={() => router.push('/mesajlar')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors">
-           <span className="text-xl">💬</span><span className="text-[8px] font-black uppercase tracking-widest">MESAJ</span>
+         {/* ANA BUTON (⚡) - Yukarı kaldırıldı, parlama sadece butona özel yapıldı */}
+         <div className="relative -top-6">
+            <button onClick={() => router.push('/varlik-ekle')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
+              ⚡
+            </button>
+         </div>
+         
+         <button onClick={() => router.push('/mesajlar')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+           <span className="text-xl">💬</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">MESAJ</span>
          </button>
-         <button onClick={() => router.push('/panel')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors">
-           <span className="text-xl">👤</span><span className="text-[8px] font-black uppercase tracking-widest">PANEL</span>
+         <button onClick={() => router.push('/panel')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+           <span className="text-xl">👤</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">PANEL</span>
          </button>
       </div>
     </div>
