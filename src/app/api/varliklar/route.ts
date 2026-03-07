@@ -5,16 +5,31 @@ import Varlik from "../../../models/Varlik";
 
 export const dynamic = "force-dynamic"; // 📡 CANLI VERİ ZORUNLULUĞU
 
-// 🔍 GET: GELİŞMİŞ BORSA VE FİLTRELEME MOTORU
+// 🛡️ SİBER KALKAN: NoSQL Enjeksiyon Temizleyici Algoritma
+// Dışarıdan gelen verilerdeki "$" ve "." gibi tehlikeli MongoDB operatörlerini yok eder.
+const siberTemizleyici = (veri: any): any => {
+  if (veri instanceof Object) {
+    for (const key in veri) {
+      if (/^\$/.test(key)) {
+        delete veri[key]; // $ komutlarını imha et
+      } else {
+        siberTemizleyici(veri[key]);
+      }
+    }
+  }
+  return veri;
+};
+
+// 🔍 GET: GELİŞMİŞ BORSA VE FİLTRELEME MOTORU (ZIRHLANDI)
 export async function GET(req: Request) {
   try {
     await connectMongoDB();
     const { searchParams } = new URL(req.url);
 
-    // 📡 Filtre Parametrelerini Yakala
-    const sektor = searchParams.get("sektor");
-    const kategori = searchParams.get("kategori");
-    const sirala = searchParams.get("sirala"); // ucuz, pahali, yeni, degisim
+    // 📡 Filtre Parametrelerini Yakala ve Temizle
+    const sektor = siberTemizleyici(searchParams.get("sektor"));
+    const kategori = siberTemizleyici(searchParams.get("kategori"));
+    const sirala = siberTemizleyici(searchParams.get("sirala")); // ucuz, pahali, yeni, degisim
 
     // 🛡️ SORGULAMA RADARI
     let matchStage: any = { aktif: true };
@@ -66,14 +81,19 @@ export async function GET(req: Request) {
   }
 }
 
-// 🛡️ PUT: FİYAT GÜNCELLEME VE ESKİ FİYAT MÜHÜRLEME
+// 🛡️ PUT: FİYAT GÜNCELLEME VE ESKİ FİYAT MÜHÜRLEME (ZIRHLANDI)
 export async function PUT(req: Request) {
   try {
     await connectMongoDB();
-    const data = await req.json();
+    const rawData = await req.json();
+    
+    // 1. ZIRH: Dışarıdan gelen tüm JSON verisini NoSQL enjeksiyonuna karşı temizle
+    const data = siberTemizleyici(rawData);
+
+    if (!data.id) return NextResponse.json({ error: "Siber İhlal: Varlık kimliği eksik." }, { status: 400 });
 
     const mevcutVarlik = await Varlik.findById(data.id);
-    if (!mevcutVarlik) return NextResponse.json({ error: "Varlık bulunamadı" }, { status: 404 });
+    if (!mevcutVarlik) return NextResponse.json({ error: "Varlık bulunamadı." }, { status: 404 });
 
     // 💸 Fiyat Değişimi Tespit Edilirse Eski Fiyatı Arşive Al
     if (data.fiyat && Number(data.fiyat) !== mevcutVarlik.fiyat) {
@@ -82,13 +102,23 @@ export async function PUT(req: Request) {
       mevcutVarlik.fiyatGuncellemeTarihi = new Date();
     }
 
-    // Diğer güncellemeleri yap
-    Object.assign(mevcutVarlik, data);
+    // 2. ZIRH: MASS ASSIGNMENT (Toplu Atama) KORUMASI
+    // Object.assign(mevcutVarlik, data) KULLANILAMAZ! Hackerlar satici alanini hackleyebilir.
+    // Sadece izin verilen güvenli alanların güncellenmesine izin verilir:
+    const guvenliAlanlar = ["baslik", "title", "aciklama", "description", "kategori", "sehir", "resimler", "images"];
+    
+    guvenliAlanlar.forEach((alan) => {
+      if (data[alan] !== undefined) {
+        mevcutVarlik[alan] = data[alan];
+      }
+    });
+
     await mevcutVarlik.save();
 
-    return NextResponse.json({ message: "Borsa verisi güncellendi" }, { status: 200 });
+    return NextResponse.json({ message: "Borsa verisi güvenli şekilde güncellendi." }, { status: 200 });
 
   } catch (error) {
-    return NextResponse.json({ error: "İşlem başarısız" }, { status: 500 });
+    console.error("Güncelleme Hatası:", error);
+    return NextResponse.json({ error: "İşlem başarısız oldu." }, { status: 500 });
   }
 }
