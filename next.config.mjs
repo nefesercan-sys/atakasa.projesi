@@ -19,7 +19,7 @@ const nextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN' // Sitenin başka sitelerde iframe olarak açılmasını engeller (Clickjacking koruması)
+            value: 'SAMEORIGIN' // Sitenin başka sitelerde iframe olarak açılmasını engeller
           },
           {
             key: 'X-Content-Type-Options',
@@ -33,6 +33,7 @@ const nextConfig = {
       },
     ]
   },
-}
+};
 
-module.exports = nextConfig
+// 🛠️ DÜZELTİLEN KISIM BURASI: ES Module yapısına uygun dışa aktarma
+export default nextConfig;
