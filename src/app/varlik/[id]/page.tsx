@@ -28,8 +28,10 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   const [eklenecekNakit, setEklenecekNakit] = useState("");
   const [takasMesaji, setTakasMesaji] = useState("");
 
-  // 🛒 SİPARİŞ STATE'LERİ
-  const [siparisForm, setSiparisForm] = useState({ adSoyad: "", adres: "", odemeYontemi: "kredi_karti" });
+  // 🛒 YENİLENMİŞ SİPARİŞ STATE'LERİ VE YASAL ZIRH
+  const [siparisForm, setSiparisForm] = useState({ adSoyad: "", telefon: "", adres: "", not: "", odemeYontemi: "kredi_karti" });
+  const [kabulSozlesme, setKabulSozlesme] = useState(false);
+  const [kabulYasalZirh, setKabulYasalZirh] = useState(false);
 
   // ⭐ CANLI YORUM VE PUAN STATE'LERİ
   const [yorumlar, setYorumlar] = useState<any[]>([]);
@@ -153,9 +155,11 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     } catch (error) { alert("Yorum motoru yanıt vermiyor."); }
   };
 
-  // 🚀 SİPARİŞ MOTORU
+  // 🚀 SİPARİŞ MOTORU (YENİLENDİ: Yasal Kontroller Eklendi)
   const handleSiparisTamamla = async () => {
-    if (!siparisForm.adSoyad || !siparisForm.adres) return alert("Lütfen teslimat bilgilerini doldurun!");
+    if (!siparisForm.adSoyad || !siparisForm.adres || !siparisForm.telefon) return alert("Lütfen teslimat ve iletişim bilgilerini eksiksiz doldurun!");
+    if (!kabulSozlesme || !kabulYasalZirh) return alert("🚨 İşleme devam etmek için Yasal Zırh ve Mesafeli Satış Sözleşmesini onaylamalısınız!");
+
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -164,9 +168,12 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
           listingId: ilan._id || ilan.id,
           sellerEmail: ilan.sellerEmail || ilan.satici?.email || ilan.userId || ilan.satici,
           adSoyad: siparisForm.adSoyad,
+          telefon: siparisForm.telefon,
           adres: siparisForm.adres,
+          not: siparisForm.not,
           odemeYontemi: siparisForm.odemeYontemi,
-          fiyat: ilan.price || ilan.fiyat
+          fiyat: ilan.price || ilan.fiyat,
+          durum: "bekliyor" // Panele düşmesi için
         })
       });
       if (res.ok) { alert("📦 SİPARİŞ ONAYLANDI!"); router.push("/panel"); } 
@@ -316,20 +323,41 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
              </div>
            )}
 
+           {/* 🛒 SİPARİŞ SEKME İÇERİĞİ (GÜNCELLENDİ) */}
            {aktifSekme === "satinal" && (
              <div className="flex flex-col h-full animate-in slide-in-from-bottom duration-500">
                 <h3 className="text-xl font-black text-white italic uppercase mb-6 border-b border-white/5 pb-4">GÜVENLİ <span className="text-[#00f260]">SATIN ALMA</span> KASASI</h3>
+                
                 <div className="bg-[#00f260]/5 border border-[#00f260]/20 p-6 rounded-2xl mb-6 flex justify-between items-center shadow-inner">
                    <span className="text-[#00f260] text-[10px] font-black uppercase tracking-widest">VARLIK BEDELİ:</span>
                    <span className="text-3xl font-black text-white">{Number(ilan.price || ilan.fiyat).toLocaleString()} ₺</span>
                 </div>
-                <input type="text" placeholder="AD SOYAD" value={siparisForm.adSoyad} onChange={(e)=>setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-[10px] p-4 rounded-xl mb-4 outline-none focus:border-[#00f260]" />
-                <textarea placeholder="TESLİMAT ADRESİ" value={siparisForm.adres} onChange={(e)=>setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-[10px] p-4 rounded-xl mb-4 h-24 outline-none focus:border-[#00f260] resize-none" />
-                <select value={siparisForm.odemeYontemi} onChange={(e)=>setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-[10px] p-4 rounded-xl mb-8 outline-none focus:border-[#00f260] appearance-none">
-                   <option value="kredi_karti">💳 KREDİ KARTI (SİBER HAVUZ)</option>
-                   <option value="havale">🏦 HAVALE / EFT</option>
-                   <option value="kapida_odeme">📦 KAPIDA ÖDEME</option>
-                </select>
+                
+                <div className="space-y-4 mb-6">
+                  <input type="text" placeholder="AD SOYAD" value={siparisForm.adSoyad} onChange={(e)=>setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-[10px] p-4 rounded-xl outline-none focus:border-[#00f260]" />
+                  <input type="tel" placeholder="TELEFON NUMARASI" value={siparisForm.telefon} onChange={(e)=>setSiparisForm({...siparisForm, telefon: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-[10px] p-4 rounded-xl outline-none focus:border-[#00f260]" />
+                  <textarea placeholder="TESLİMAT ADRESİ" value={siparisForm.adres} onChange={(e)=>setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-[10px] p-4 rounded-xl h-20 outline-none focus:border-[#00f260] resize-none" />
+                  <textarea placeholder="SİPARİŞ NOTU (İsteğe Bağlı)" value={siparisForm.not} onChange={(e)=>setSiparisForm({...siparisForm, not: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-[10px] p-4 rounded-xl h-16 outline-none focus:border-[#00f260] resize-none" />
+                  
+                  <select value={siparisForm.odemeYontemi} onChange={(e)=>setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-[10px] p-4 rounded-xl outline-none focus:border-[#00f260] appearance-none">
+                     <option value="kredi_karti">💳 KREDİ KARTI (SİBER HAVUZ)</option>
+                     <option value="havale">🏦 HAVALE / EFT</option>
+                     <option value="kapida_odeme">📦 KAPIDA ÖDEME</option>
+                  </select>
+                </div>
+
+                {/* HUKUKİ ONAY KUTUCUKLARI */}
+                <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-3 mb-6">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input type="checkbox" checked={kabulSozlesme} onChange={(e) => setKabulSozlesme(e.target.checked)} className="mt-1 accent-[#00f260] w-4 h-4 shrink-0" />
+                    <span className="text-slate-400 text-[9px] uppercase leading-tight group-hover:text-white transition-colors">Mesafeli Satış Sözleşmesi'ni okudum, anladım ve kabul ediyorum. Tüm sorumluluk tarafıma aittir.</span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input type="checkbox" checked={kabulYasalZirh} onChange={(e) => setKabulYasalZirh(e.target.checked)} className="mt-1 accent-[#00f260] w-4 h-4 shrink-0" />
+                    <span className="text-slate-400 text-[9px] uppercase leading-tight group-hover:text-white transition-colors"><span className="text-[#00f260] font-bold">🛡️ Yasal Zırh:</span> Bu işlem siber kalkan güvencesindedir. Teslimat tamamlanana kadar para havuza aktarılır. Onaylıyorum.</span>
+                  </label>
+                </div>
+
                 <button onClick={handleSiparisTamamla} className="w-full mt-auto bg-[#00f260] text-black py-5 rounded-2xl font-black uppercase tracking-widest text-[12px] hover:scale-[1.02] transition-all shadow-[0_0_30px_rgba(0,242,96,0.3)]">
                   ✅ İŞLEMİ MÜHÜRLE VE SATIN AL
                 </button>
