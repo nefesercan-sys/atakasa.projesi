@@ -2,81 +2,200 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function Home() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  
+  // 📡 ANA STATE'LER
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [ilanlar, setIlanlar] = useState<any[]>([]); 
   const [borsaVerisi, setBorsaVerisi] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [aktifFiltre, setAktifFiltre] = useState("Hepsi");
-  const router = useRouter();
 
-  // 📡 SİBER VERİ VE BORSA ANALİZ OPERASYONU
+  // 🎛️ MODAL VE FORM STATE'LERİ
+  const [seciliIlan, setSeciliIlan] = useState<any>(null);
+  const [modalTuru, setModalTuru] = useState<"takas" | "satinal" | null>(null);
+  const [benimIlanlarim, setBenimIlanlarim] = useState<any[]>([]);
+  
+  // Takas Formu
+  const [secilenBenimIlanim, setSecilenBenimIlanim] = useState("");
+  const [eklenecekNakit, setEklenecekNakit] = useState("");
+  
+  // Satın Al Formu
+  const [siparisForm, setSiparisForm] = useState({ adSoyad: "", adres: "", odemeYontemi: "kredi_karti" });
+
+  // 📡 SİBER VERİ ÇEKME
   useEffect(() => {
     setIsLoaded(true);
     const piyasaVerisiCek = async () => {
       try {
-        // 1. Tüm Varlıklar
         const res = await fetch("/api/varliklar");
         const data = await res.json();
-        setIlanlar(Array.isArray(data) ? data : []);
+        const gelenIlanlar = Array.isArray(data) ? data : [];
+        setIlanlar(gelenIlanlar);
 
-        // 2. Borsa Analiz Merkezi (Yeni API)
         const borsaRes = await fetch("/api/borsa/analiz");
         if (borsaRes.ok) {
           const bData = await borsaRes.json();
           setBorsaVerisi(bData);
         }
-      } catch (err) {
-        console.error("Siber sinyal koptu:", err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { console.error("Sinyal koptu:", err); } 
+      finally { setLoading(false); }
     };
     piyasaVerisiCek();
   }, []);
+
+  // 🛡️ KULLANICININ KENDİ İLANLARINI AYIKLAMA (Takas için)
+  useEffect(() => {
+    if (session?.user?.email && ilanlar.length > 0) {
+      const kullaniciEmail = session.user.email.toLowerCase();
+      const benimkiler = ilanlar.filter((i: any) => {
+        const satici = (i.sellerEmail || i.satici || "").toLowerCase();
+        return satici === kullaniciEmail;
+      });
+      setBenimIlanlarim(benimkiler);
+    }
+  }, [session, ilanlar]);
 
   const getResim = (ilan: any) => {
     if (!ilan) return "https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK";
     return ilan.resimler?.[0] || ilan.images?.[0] || ilan.media?.images?.[0] || "https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK";
   };
 
-  const handleKategoriGit = (slug: string) => router.push(`/kategori/${slug}`);
   const handleArama = () => router.push(`/kesfet?ara=${searchTerm}`);
+  const handleKategoriGit = (slug: string) => router.push(`/kategori/${slug}`);
+
+  // 🛡️ MODAL AÇMA KONTROLÜ
+  const openModal = (ilan: any, tur: "takas" | "satinal") => {
+    if (!session) return router.push("/giris");
+    const kullaniciEmail = session.user?.email?.toLowerCase();
+    const saticiEmail = (ilan.satici || ilan.sellerEmail || "").toLowerCase();
+    
+    if (kullaniciEmail === saticiEmail) {
+      return alert("SİBER ENGEL: Kendi varlığınızla işlem yapamazsınız!");
+    }
+    setSeciliIlan(ilan);
+    setModalTuru(tur);
+  };
+
+  const closeModal = () => {
+    setSeciliIlan(null);
+    setModalTuru(null);
+    setSecilenBenimIlanim("");
+    setEklenecekNakit("");
+    setSiparisForm({ adSoyad: "", adres: "", odemeYontemi: "kredi_karti" });
+  };
+
+  // 🚀 TAKAS API BAĞLANTISI
+  const handleTakasGonder = async () => {
+    if (!secilenBenimIlanim) return alert("Lütfen vereceğiniz varlığı seçin!");
+    
+    const [teklifIlanId, teklifIlanBaslik] = secilenBenimIlanim.split("|");
+    
+    try {
+      const res = await fetch("/api/takas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aliciEmail: seciliIlan.sellerEmail || seciliIlan.satici,
+          hedefIlanId: seciliIlan._id || seciliIlan.id,
+          hedefIlanBaslik: seciliIlan.title || seciliIlan.baslik,
+          hedefIlanFiyat: seciliIlan.price || seciliIlan.fiyat || 0,
+          teklifEdilenIlanId: teklifIlanId,
+          teklifEdilenIlanBaslik: teklifIlanBaslik,
+          eklenenNakit: eklenecekNakit || 0,
+        })
+      });
+      if (res.ok) { 
+        alert("⚡ SİBER TEKLİF BAŞARIYLA İLETİLDİ!"); 
+        closeModal(); 
+      } else { 
+        const err = await res.json(); 
+        alert(`Hata: ${err.error}`); 
+      }
+    } catch (error) { alert("Takas motoru yanıt vermiyor."); }
+  };
+
+  // 🛒 SATIN ALMA API BAĞLANTISI
+  const handleSiparisTamamla = async () => {
+    if (!siparisForm.adSoyad || !siparisForm.adres) return alert("Lütfen teslimat bilgilerini eksiksiz doldurun!");
+    
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId: seciliIlan._id || seciliIlan.id,
+          sellerEmail: seciliIlan.sellerEmail || seciliIlan.satici,
+          adSoyad: siparisForm.adSoyad,
+          adres: siparisForm.adres,
+          odemeYontemi: siparisForm.odemeYontemi,
+          fiyat: seciliIlan.price || seciliIlan.fiyat
+        })
+      });
+      if (res.ok) { 
+        alert("📦 SATIN ALMA İŞLEMİ ONAYLANDI!"); 
+        closeModal(); 
+      } else { 
+        alert("Sipariş oluşturulamadı."); 
+      }
+    } catch (error) { alert("Sipariş ağına ulaşılamadı."); }
+  };
+
+  // 🃏 YENİ NESİL VARLIK KARTI BİLEŞENİ
+  const BorsaKarti = ({ ilan }: { ilan: any }) => (
+    <div className="bg-[#0f0f0f] border border-gray-800/80 rounded-2xl overflow-hidden group hover:border-[#00f260]/50 hover:-translate-y-1 transition-all duration-300 shadow-lg flex flex-col snap-center min-w-[280px] md:min-w-[0]">
+      <div className="relative h-48 bg-gray-900 overflow-hidden cursor-pointer" onClick={() => router.push(`/varlik/${ilan._id}`)}>
+        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[9px] font-bold px-3 py-1.5 rounded-lg z-10 uppercase tracking-widest">
+          {ilan.kategori || "VARLIK"}
+        </div>
+        <div className="absolute top-3 right-3 bg-[#00f260]/20 backdrop-blur-md border border-[#00f260]/50 text-[#00f260] text-[10px] font-bold px-2 py-1 rounded-md z-10">
+          {ilan.degisimYuzdesi > 0 ? `▲ %${ilan.degisimYuzdesi}` : ilan.degisimYuzdesi < 0 ? `▼ %${Math.abs(ilan.degisimYuzdesi)}` : "STABİL"}
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] to-transparent z-0 opacity-80"></div>
+        <img src={getResim(ilan)} alt={ilan.baslik} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+      </div>
+      
+      <div className="p-5 flex flex-col flex-1">
+        <h3 className="text-white font-bold text-lg mb-1 truncate cursor-pointer hover:text-[#00f260]" onClick={() => router.push(`/varlik/${ilan._id}`)}>
+          {ilan.title || ilan.baslik}
+        </h3>
+        <div className="flex justify-between items-end mb-5">
+          <div className="text-[#00f260] text-xl font-black">{Number(ilan.price || ilan.fiyat).toLocaleString()} ₺</div>
+          <div className="text-gray-500 text-[9px] uppercase tracking-widest flex items-center gap-1 font-bold">
+            <span className="text-red-500 text-sm">📍</span> {ilan.sehir || "TÜRKİYE"}
+          </div>
+        </div>
+        
+        <div className="mt-auto grid grid-cols-2 gap-2">
+          <button onClick={() => openModal(ilan, "takas")} className="bg-[#00f260]/10 text-[#00f260] border border-[#00f260]/30 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#00f260] hover:text-black transition-all">
+            🔄 TAKAS
+          </button>
+          <button onClick={() => openModal(ilan, "satinal")} className="bg-transparent border border-gray-700 text-white py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
+            🛒 SATIN AL
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#00f260] selection:text-black italic">
+    <div className="min-h-screen bg-[#050505] text-white relative overflow-hidden font-sans pb-20">
       
-      {/* 🌌 SİBER KATMANLAR (Glow Effects) */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-[#00f260] opacity-[0.03] blur-[150px] rounded-full"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[70vw] h-[70vw] bg-blue-600 opacity-[0.03] blur-[150px] rounded-full"></div>
-      </div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-[#00f260] opacity-[0.03] blur-[120px] rounded-full pointer-events-none"></div>
 
-      {/* 📟 1. BÖLÜM: SİBER BORSA BANDI (TICKER) */}
-      <div className="relative z-50 bg-black border-y border-[#00f260]/20 py-3 overflow-hidden flex items-center shadow-[0_0_30px_rgba(0,242,96,0.1)]">
-        <div className="flex whitespace-nowrap gap-12 text-[10px] font-black tracking-[0.2em] uppercase">
-          <div className="animate-[marquee_40s_linear_infinite] flex gap-12 items-center">
+      {/* 📟 CANLI BORSA BANDI */}
+      <div className="relative z-50 bg-black/50 backdrop-blur-md border-b border-[#00f260]/20 py-2.5 flex items-center shadow-lg">
+        <div className="flex whitespace-nowrap gap-12 text-[10px] font-black tracking-[0.2em] uppercase w-full overflow-hidden">
+          <div className="animate-[marquee_30s_linear_infinite] flex gap-12 items-center">
             {borsaVerisi?.enCokDusenler?.map((v: any) => (
               <span key={v._id} className="flex items-center gap-2">
-                <span className="text-slate-500">{v.baslik}</span>
-                <span className="text-red-500 font-bold">▼ %{v.degisimYuzdesi}</span>
-                <span className="text-[#00f260]">{v.fiyat.toLocaleString()} ₺</span>
-              </span>
-            ))}
-            {borsaVerisi?.enCokArtanler?.map((v: any) => (
-              <span key={v._id} className="flex items-center gap-2">
-                <span className="text-slate-500">{v.baslik}</span>
-                <span className="text-[#00f260] font-bold">▲ %{v.degisimYuzdesi}</span>
-                <span className="text-[#00f260]">{v.fiyat.toLocaleString()} ₺</span>
-              </span>
-            ))}
-            {/* Tekrar Döngüsü İçin Kopya Veriler */}
-            {borsaVerisi?.enCokDusenler?.map((v: any) => (
-              <span key={v._id + "_copy"} className="flex items-center gap-2">
-                <span className="text-slate-500">{v.baslik}</span>
-                <span className="text-red-500 font-bold">▼ %{v.degisimYuzdesi}</span>
+                <span className="text-gray-500">{v.baslik}</span>
+                <span className="text-red-500">▼ %{v.degisimYuzdesi}</span>
                 <span className="text-[#00f260]">{v.fiyat.toLocaleString()} ₺</span>
               </span>
             ))}
@@ -84,143 +203,187 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 🚀 2. BÖLÜM: HERO & SEARCH */}
-      <div className={`relative z-10 pt-20 pb-16 px-6 text-center transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <h1 className="text-7xl md:text-[12rem] font-black tracking-tighter uppercase leading-none mb-4">
-          <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">A</span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-500 drop-shadow-[0_0_40px_rgba(0,242,96,0.6)]">TAKASA</span>
-          <span className="text-white">.</span>
-        </h1>
-        <p className="text-slate-500 text-xs md:text-sm font-bold tracking-[0.4em] uppercase mb-12">
-          Sıradan İlanlar Değil, <span className="text-white">Varlık Borsası.</span>
-        </p>
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 relative z-10">
+        
+        {/* 🚀 HERO BÖLÜMÜ */}
+        <div className={`text-center mb-16 transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <h1 className="text-6xl md:text-[9rem] font-black tracking-tighter mb-4 italic leading-none">
+            <span className="text-white">A</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400 drop-shadow-[0_0_20px_rgba(0,242,96,0.4)]">TAKASA.</span>
+          </h1>
+          <p className="text-gray-400 tracking-[0.3em] text-xs md:text-sm font-bold uppercase mb-10">
+            Sıradan ilanlar değil, <span className="text-white">Varlık Borsası.</span>
+          </p>
 
-        <div className="relative w-full max-w-4xl mx-auto group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-[#00f260] to-blue-600 rounded-[3rem] blur opacity-10 group-focus-within:opacity-40 transition duration-1000"></div>
-          <div className="relative flex items-center bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[3rem] p-3 shadow-2xl transition-all hover:border-white/20">
-            <input 
-              type="text"
-              placeholder="Piyasada varlık ara (iPhone, Tarla, BMW)..."
-              className="w-full bg-transparent border-none px-8 py-6 text-white text-lg font-medium outline-none placeholder:text-slate-600"
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleArama()}
-            />
-            <button onClick={handleArama} className="hidden md:block bg-white text-black font-black tracking-widest px-12 py-6 rounded-[2.5rem] hover:bg-[#00f260] transition-all duration-500">
-              VARLIĞI BUL
-            </button>
+          <div className="max-w-3xl mx-auto relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#00f260] to-green-900 rounded-full blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
+            <div className="relative flex items-center bg-[#111] border border-gray-800 rounded-full p-2 backdrop-blur-xl">
+              <span className="pl-6 text-[#00f260] text-xl">✨</span>
+              <input 
+                type="text" 
+                placeholder="Piyasada varlık ara (iPhone, Tarla, BMW)..." 
+                className="w-full bg-transparent border-none text-white px-4 py-3 outline-none placeholder-gray-600 text-sm md:text-base font-medium"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleArama()}
+              />
+              <button onClick={handleArama} className="hidden md:block bg-white text-black font-black tracking-widest px-8 py-4 rounded-full hover:bg-[#00f260] hover:scale-105 transition-all duration-300 uppercase text-xs">
+                VARLIĞI BUL
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 🏢 3. BÖLÜM: SEKTÖR ENDEKSLERİ */}
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6 mb-24">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {borsaVerisi?.sektorEndeksleri?.map((s: any) => (
-            <div key={s._id} onClick={() => handleKategoriGit(s._id.toLowerCase())} className="bg-[#0a0a0a] border border-white/5 p-6 rounded-3xl hover:border-[#00f260]/40 transition-all group cursor-pointer shadow-lg">
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{s._id}</span>
-                <span className="text-[#00f260] text-[10px] font-bold">▲ %{((s.toplamHacim / 1000000) * 1.2).toFixed(1)}</span>
+        {/* 📊 İSTATİSTİK KARTLARI */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
+          {borsaVerisi?.sektorEndeksleri?.slice(0, 4).map((stat: any, idx: number) => (
+            <div key={idx} onClick={() => handleKategoriGit(stat._id.toLowerCase())} className="bg-[#0a0a0a] border border-gray-800 rounded-3xl p-6 hover:border-[#00f260]/40 transition-all duration-300 group cursor-pointer shadow-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-500 text-[10px] font-black uppercase tracking-wider">{stat._id}</span>
+                <span className="text-[#00f260] text-[10px] font-bold bg-[#00f260]/10 px-2 py-1 rounded-md">📈 TREND</span>
               </div>
-              <p className="text-2xl font-black text-white group-hover:text-[#00f260] transition-colors">
-                {Math.round(s.ortalamaFiyat).toLocaleString()} ₺
-              </p>
-              <p className="text-slate-600 text-[8px] font-bold mt-1 uppercase tracking-tighter">{s.toplamVarlik} Aktif Emir</p>
+              <div className="text-2xl font-black text-white group-hover:text-[#00f260] transition-colors">{Math.round(stat.ortalamaFiyat).toLocaleString()} ₺</div>
+              <div className="text-gray-600 text-[9px] mt-2 font-bold uppercase">{stat.toplamVarlik} Aktif Emir</div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* 💠 4. BÖLÜM: CANLI AKIŞ & FİLTRELEME */}
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-          <h2 className="text-5xl font-black italic tracking-tighter uppercase leading-none">Canlı <span className="text-[#00f260]">Akış.</span></h2>
-          
-          <div className="flex flex-wrap gap-2 bg-[#0a0a0a] p-2 rounded-2xl border border-white/5">
-            {["Hepsi", "Düşüştekiler", "En Yeniler", "Popüler"].map((f) => (
-              <button 
-                key={f} 
-                onClick={() => setAktifFiltre(f)}
-                className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${aktifFiltre === f ? 'bg-white text-black shadow-lg' : 'text-slate-500 hover:text-white'}`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[1, 2, 3, 4].map(i => <div key={i} className="h-[450px] bg-white/[0.02] border border-white/5 rounded-[3rem] animate-pulse"></div>)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {ilanlar.map((ilan) => (
-              <div key={ilan._id} className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#00f260]/40 transition-all shadow-2xl group flex flex-col p-3">
-                
-                <div className="relative h-60 w-full rounded-[2rem] overflow-hidden bg-[#030712]">
-                  <img src={getResim(ilan)} alt={ilan.baslik} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
-                  
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className="bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[8px] font-black uppercase border border-white/10 tracking-widest">
-                      {ilan.kategori || "Varlık"}
-                    </span>
-                  </div>
-
-                  <div className="absolute top-4 right-4 flex flex-col items-end gap-1">
-                    {ilan.degisimYuzdesi < 0 ? (
-                      <span className="bg-red-500 text-white px-2 py-1 rounded-lg text-[10px] font-black shadow-[0_0_15px_rgba(239,68,68,0.5)]">
-                        📉 %{Math.abs(ilan.degisimYuzdesi)} DÜŞÜŞ
-                      </span>
-                    ) : (
-                      <span className="bg-[#00f260] text-black px-2 py-1 rounded-lg text-[10px] font-black shadow-[0_0_15px_rgba(0,242,96,0.3)]">
-                        📈 %{ilan.degisimYuzdesi || '0.0'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="text-white font-black uppercase text-sm mb-2 truncate group-hover:text-[#00f260] transition-colors tracking-tighter">{ilan.title || ilan.baslik}</h3>
-                  <div className="flex justify-between items-end mb-5">
-                    <p className="text-[#00f260] font-black text-2xl italic tracking-tighter">{Number(ilan.price || ilan.fiyat).toLocaleString()} ₺</p>
-                    <p className="text-slate-600 text-[9px] font-bold uppercase tracking-widest">📍 {ilan.sehir || "Türkiye"}</p>
-                  </div>
-
-                  <div className="mt-auto space-y-2">
-                    <div className="flex gap-2">
-                      <Link href={`/varlik/${ilan._id}?islem=takas`} className="flex-1 bg-cyan-500/10 text-cyan-400 py-3 rounded-2xl text-[9px] font-black uppercase text-center hover:bg-cyan-500 hover:text-black transition-all border border-cyan-500/20">
-                        🔄 Takas
-                      </Link>
-                      <Link href={`/varlik/${ilan._id}?islem=satinal`} className="flex-1 bg-[#00f260]/10 text-[#00f260] py-3 rounded-xl text-[9px] font-black uppercase text-center hover:bg-[#00f260] hover:text-black transition-all border border-[#00f260]/20">
-                        🛒 Satın Al
-                      </Link>
-                    </div>
-                    <Link href={`/varlik/${ilan._id}?islem=incele`} className="w-full bg-white/5 text-slate-400 py-3 rounded-2xl text-[9px] font-black uppercase text-center hover:bg-white/10 hover:text-white transition-all border border-white/5">
-                      📊 İNCELE & ANALİZ ET
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* 💠 YATAY KAYDIRMALI BÖLÜMLER */}
+        {borsaVerisi?.enCokDusenler?.length > 0 && (
+           <div className="mb-16">
+             <div className="flex justify-between items-end mb-6">
+               <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase">Dibe <span className="text-red-500">Vuranlar.</span></h2>
+             </div>
+             <div className="flex overflow-x-auto gap-6 pb-6 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden">
+               {borsaVerisi.enCokDusenler.map((ilan: any) => <BorsaKarti key={ilan._id} ilan={ilan} />)}
+             </div>
+           </div>
         )}
-      </div>
 
-      {/* 🚀 5. BÖLÜM: ALT SEKTÖR HAVUZLARI */}
-      <div className="mt-32 border-t border-white/5 pt-20 max-w-[1400px] mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="bg-gradient-to-br from-[#0a0a0a] to-blue-900/10 p-12 rounded-[3rem] border border-white/5 relative overflow-hidden group">
-            <h4 className="text-4xl font-black uppercase italic mb-4">Elektronik <span className="text-blue-400">Havuzu.</span></h4>
-            <p className="text-slate-400 text-sm mb-8">Bu sektördeki toplam takas hacmi son 24 saatte %14 arttı. Elindeki cihazı nakde veya başka bir varlığa çevir.</p>
-            <Link href="/kategori/elektronik" className="text-xs font-black uppercase tracking-widest text-white border-b-2 border-blue-400 pb-1 group-hover:border-white transition-all">Tüm Cihazları İncele →</Link>
+        <div className="mb-16">
+          <div className="flex justify-between items-end mb-6">
+            <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase">Taze <span className="text-[#00f260]">Kanlar.</span></h2>
           </div>
-          <div className="bg-gradient-to-br from-[#0a0a0a] to-[#00f260]/10 p-12 rounded-[3rem] border border-white/5 relative overflow-hidden group">
-            <h4 className="text-4xl font-black uppercase italic mb-4">Otomobil <span className="text-[#00f260]">Endeksi.</span></h4>
-            <p className="text-slate-400 text-sm mb-8">Piyasa değeri en çok artan araçlar ve takas teklifine en açık olan modeller burada listeleniyor.</p>
-            <Link href="/kategori/otomobil" className="text-xs font-black uppercase tracking-widest text-white border-b-2 border-[#00f260] pb-1 group-hover:border-white transition-all">Tüm Araçları İncele →</Link>
+          <div className="flex overflow-x-auto gap-6 pb-6 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden">
+            {ilanlar.slice(0, 8).map((ilan: any) => <BorsaKarti key={ilan._id} ilan={ilan} />)}
           </div>
         </div>
-      </div>
+
+        {/* 💠 TÜM PİYASA (GRID) */}
+        <div className="border-t border-gray-800 pt-12">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+            <h2 className="text-4xl md:text-5xl font-black italic tracking-tight uppercase">Tüm <span className="text-white">Piyasa.</span></h2>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 w-full md:w-auto">
+              {["Hepsi", "Araç", "Elektronik", "Emlak"].map((f) => (
+                <button key={f} onClick={() => setAktifFiltre(f)} className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${aktifFiltre === f ? 'bg-white text-black' : 'bg-transparent border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'}`}>
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {loading ? (
+             <div className="h-40 flex items-center justify-center text-[#00f260] animate-pulse font-black tracking-widest">SİBER AĞ TARANIYOR...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {ilanlar.map((ilan) => <BorsaKarti key={ilan._id} ilan={ilan} />)}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* 🚀 SİBER MODAL (TAKAS / SATIN AL PENCERESİ) YENİ NESİL API BAĞLANTILI */}
+      {seciliIlan && modalTuru && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-lg w-full shadow-[0_0_50px_rgba(0,242,96,0.2)] relative flex flex-col animate-in zoom-in-95 duration-300">
+            
+            <button onClick={closeModal} className="absolute top-6 right-6 w-10 h-10 bg-white/5 hover:bg-white/10 text-white rounded-full flex items-center justify-center transition-colors">✕</button>
+            
+            <div className="flex items-center gap-4 border-b border-white/10 pb-6 mb-6">
+              <img src={getResim(seciliIlan)} className="w-20 h-20 rounded-2xl object-cover border border-white/5" alt="Varlık" />
+              <div>
+                <p className="text-[#00f260] text-[10px] font-black uppercase tracking-widest mb-1">{modalTuru === 'takas' ? 'SİBER TAKAS TEKLİFİ' : 'GÜVENLİ SATIN ALMA'}</p>
+                <h3 className="text-white font-bold text-lg leading-tight mb-1">{seciliIlan.title || seciliIlan.baslik}</h3>
+                <p className="text-gray-400 font-black">{Number(seciliIlan.price || seciliIlan.fiyat).toLocaleString()} ₺</p>
+              </div>
+            </div>
+
+            {/* İÇERİK: TAKAS MODU */}
+            {modalTuru === "takas" ? (
+              <div className="space-y-4">
+                <label className="text-cyan-400 text-[10px] font-black uppercase tracking-widest block">1. Vereceğiniz Varlığı Seçin</label>
+                <select 
+                  value={secilenBenimIlanim}
+                  onChange={(e) => setSecilenBenimIlanim(e.target.value)}
+                  className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none focus:border-cyan-500"
+                >
+                  <option value="">-- Cüzdanınızdan Seçin --</option>
+                  {benimIlanlarim.map(bIlan => (
+                    <option key={bIlan._id} value={`${bIlan._id}|${bIlan.title || bIlan.baslik}`}>
+                      {bIlan.title || bIlan.baslik}
+                    </option>
+                  ))}
+                </select>
+                
+                {benimIlanlarim.length === 0 && (
+                  <p className="text-red-500 text-[10px] font-bold uppercase mt-1">Siber cüzdanınızda takas edilecek varlık bulunamadı!</p>
+                )}
+
+                <label className="text-[#00f260] text-[10px] font-black uppercase tracking-widest block pt-2">2. Nakit Ekle (₺) - Opsiyonel</label>
+                <input 
+                  type="number" 
+                  placeholder="Örn: 5000" 
+                  value={eklenecekNakit}
+                  onChange={(e) => setEklenecekNakit(e.target.value)}
+                  className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none focus:border-[#00f260]" 
+                />
+                
+                <button 
+                  onClick={handleTakasGonder} 
+                  disabled={!secilenBenimIlanim || benimIlanlarim.length === 0}
+                  className="w-full mt-6 bg-cyan-500 text-black py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:scale-105 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50"
+                >
+                  🚀 TEKLİFİ FIRLAT
+                </button>
+              </div>
+            ) : (
+            /* İÇERİK: SATIN AL MODU */
+              <div className="space-y-4">
+                 <div className="bg-[#00f260]/5 border border-[#00f260]/20 p-5 rounded-2xl mb-4 flex justify-between items-center">
+                    <span className="text-[#00f260] text-[10px] font-black uppercase tracking-widest">ÖDENECEK TUTAR</span>
+                    <span className="text-3xl font-black text-white">{Number(seciliIlan.price || seciliIlan.fiyat).toLocaleString()} ₺</span>
+                 </div>
+                 <input 
+                    type="text" 
+                    placeholder="Ad Soyad" 
+                    value={siparisForm.adSoyad}
+                    onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})}
+                    className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none focus:border-[#00f260]" 
+                 />
+                 <textarea 
+                    placeholder="Teslimat Adresi" 
+                    value={siparisForm.adres}
+                    onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})}
+                    className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none h-20 resize-none focus:border-[#00f260]"
+                 ></textarea>
+                 <select 
+                    value={siparisForm.odemeYontemi}
+                    onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})}
+                    className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-xl outline-none focus:border-[#00f260]"
+                 >
+                    <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
+                    <option value="havale">🏦 Havale / EFT</option>
+                 </select>
+                 <button onClick={handleSiparisTamamla} className="w-full mt-4 bg-[#00f260] text-black py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,242,96,0.4)]">
+                  ✅ GÜVENLİ ÖDEMEYİ TAMAMLA
+                 </button>
+              </div>
+            )}
+            
+            <p className="text-center text-gray-600 text-[9px] mt-6 uppercase font-bold tracking-widest">Siber Havuz Koruması Altındadır.</p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
