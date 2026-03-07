@@ -5,7 +5,33 @@ import Varlik from "../../../models/Varlik";
 
 export const dynamic = "force-dynamic"; // 📡 CANLI VERİ ZORUNLULUĞU
 
-// 🛡️ SİBER KALKAN: NoSQL Enjeksiyon Temizleyici Algoritma
+// 🛡️ SİBER KALKAN 1: Kaba Kuvvet (Brute Force) ve DDoS Radarı
+const requestCounts = new Map<string, number[]>();
+
+const checkRateLimit = (req: Request, limit: number, windowMs: number) => {
+  // Güvenlik: Vercel gibi ortamlarda gerçek IP adresini yakalamak için x-forwarded-for kullanılır.
+  const ip = req.headers.get("x-forwarded-for") || "unknown_ip";
+  const currentTime = Date.now();
+  
+  if (!requestCounts.has(ip)) {
+    requestCounts.set(ip, [currentTime]);
+    return true; // Sinyal Temiz
+  }
+
+  const userRequests = requestCounts.get(ip) || [];
+  // Sadece belirtilen zaman dilimi (windowMs) içindeki istekleri tut
+  const recentRequests = userRequests.filter(time => currentTime - time < windowMs);
+  recentRequests.push(currentTime);
+  requestCounts.set(ip, recentRequests);
+
+  // Belirlenen limiti aştıysa engelle
+  if (recentRequests.length > limit) {
+    return false; // SİBER İHLAL: Sınır aşıldı!
+  }
+  return true; // Sinyal Temiz
+};
+
+// 🛡️ SİBER KALKAN 2: NoSQL Enjeksiyon Temizleyici Algoritma
 // Dışarıdan gelen verilerdeki "$" ve "." gibi tehlikeli MongoDB operatörlerini yok eder.
 const siberTemizleyici = (veri: any): any => {
   if (veri instanceof Object) {
@@ -22,6 +48,12 @@ const siberTemizleyici = (veri: any): any => {
 
 // 🔍 GET: GELİŞMİŞ BORSA VE FİLTRELEME MOTORU (ZIRHLANDI)
 export async function GET(req: Request) {
+  // ⚡ RADAR AKTİF: 1 Dakikada (60000ms) maksimum 100 istek atılabilir.
+  if (!checkRateLimit(req, 100, 60000)) {
+    console.warn("⚠️ SİBER SALDIRI ENGELLENDİ: Aşırı GET isteği!");
+    return NextResponse.json({ error: "SİBER ENGEL: Çok fazla istek attınız. Sisteme aşırı yüklenmeyin, lütfen bekleyin." }, { status: 429 });
+  }
+
   try {
     await connectMongoDB();
     const { searchParams } = new URL(req.url);
@@ -83,6 +115,12 @@ export async function GET(req: Request) {
 
 // 🛡️ PUT: FİYAT GÜNCELLEME VE ESKİ FİYAT MÜHÜRLEME (ZIRHLANDI)
 export async function PUT(req: Request) {
+  // ⚡ RADAR AKTİF: 1 Dakikada (60000ms) maksimum 20 güncelleme (Spam engeli)
+  if (!checkRateLimit(req, 20, 60000)) {
+    console.warn("⚠️ SİBER SALDIRI ENGELLENDİ: Aşırı PUT (Güncelleme) isteği!");
+    return NextResponse.json({ error: "SİBER ENGEL: Çok fazla işlem denemesi. Lütfen bekleyin." }, { status: 429 });
+  }
+
   try {
     await connectMongoDB();
     const rawData = await req.json();
@@ -103,7 +141,6 @@ export async function PUT(req: Request) {
     }
 
     // 2. ZIRH: MASS ASSIGNMENT (Toplu Atama) KORUMASI
-    // Object.assign(mevcutVarlik, data) KULLANILAMAZ! Hackerlar satici alanini hackleyebilir.
     // Sadece izin verilen güvenli alanların güncellenmesine izin verilir:
     const guvenliAlanlar = ["baslik", "title", "aciklama", "description", "kategori", "sehir", "resimler", "images"];
     
