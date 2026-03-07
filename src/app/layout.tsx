@@ -6,6 +6,7 @@ import Link from "next/link";
 // ⚡ SİBER BİLEŞENLER
 import CyberNav from "../components/CyberNav";
 import AuthProvider from "../components/AuthProvider"; // 🔓 KİMLİK KALKANI AÇILDI!
+import { Analytics } from "@vercel/analytics/react"; // 📡 VERCEL TRAFİK RADARI EKLENDİ!
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -56,6 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CyberNav />
 
           </AuthProvider>
+          
+          {/* 📡 SİBER RADAR AKTİF (Tüm sayfaları anlık izler) */}
+          <Analytics />
 
       </body>
     </html>
