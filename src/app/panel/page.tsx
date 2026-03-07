@@ -19,10 +19,11 @@ export default function SiberBorsaPaneli() {
   const [gidenTakaslar, setGidenTakaslar] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 🛡️ GÜVENLİK DUVARI (SİBER YAMA UYGULANDI: /login yerine /giris)
   useEffect(() => {
     if (status === "authenticated") fetchBorsaVerileri();
-    else if (status === "unauthenticated") router.push("/login");
-  }, [status]);
+    else if (status === "unauthenticated") router.push("/giris");
+  }, [status, router]);
 
   const fetchBorsaVerileri = async () => {
     if (!session?.user?.email) return;
@@ -102,7 +103,7 @@ export default function SiberBorsaPaneli() {
   const getGosterilecekVeri = () => {
     let veri = aktifSekme === "gelen_teklifler" ? gelenTakaslar : gidenTakaslar;
     if (altFiltre !== "hepsi") {
-      veri = veri.filter(t => t.durum === altFiltre);
+      veri = veri.filter((t: any) => t.durum === altFiltre);
     }
     return veri;
   };
@@ -213,7 +214,7 @@ export default function SiberBorsaPaneli() {
                     </div>
                   </div>
 
-                  {/* 🚀 BORSA AKSİYON BUTONLARI (Duruma Göre Değişir) */}
+                  {/* 🚀 BORSA AKSİYON BUTONLARI */}
                   <div className="flex flex-wrap gap-3 mt-auto">
                     
                     {/* 1. Bekliyor Aşaması */}
