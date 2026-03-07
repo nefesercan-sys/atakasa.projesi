@@ -289,10 +289,11 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* 📱 SİBER MOBİL ALT MENÜ */}
+      {/* 📱 SİBER MOBİL ALT MENÜ (ZIRHLANDIRILDI) */}
       <nav className="fixed bottom-0 left-0 z-[500] w-full md:hidden">
         <div className="absolute bottom-0 w-full h-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-t border-white/[0.04] shadow-[0_-20px_40px_rgba(0,0,0,0.8)]"></div>
         <div className="relative flex justify-between items-end px-4 pb-3 h-24">
+          
           <Link href="/" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
             <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname === '/' && !activeModal ? 'grayscale-0' : 'grayscale opacity-50'}`}>🏠</span>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname === '/' && !activeModal ? 'text-[#00f260]' : 'text-slate-500'}`}>VİTRİN</span>
@@ -313,7 +314,8 @@ export default function CyberNav() {
             </button>
           </div>
 
-          <Link href="/mesajlar" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
+          {/* 🛡️ SİBER ZIRH: Eğer giriş yapılmadıysa MESAJ ikonuna tıklanınca GİRİŞ SAYFASINA (/giris) atar */}
+          <Link href={session ? "/mesajlar" : "/giris"} onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
             <div className="relative mb-1.5 transition-transform group-hover:scale-110">
               <span className={`text-2xl ${pathname.startsWith('/mesajlar') ? 'grayscale-0' : 'grayscale opacity-50'}`}>💬</span>
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00f260] rounded-full border-2 border-[#0a0a0a] animate-pulse"></span>
@@ -321,10 +323,12 @@ export default function CyberNav() {
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith('/mesajlar') ? 'text-[#00f260]' : 'text-slate-500'}`}>MESAJ</span>
           </Link>
 
-          <Link href="/panel" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
+          {/* 🛡️ SİBER ZIRH: Eğer giriş yapılmadıysa PANEL ikonuna tıklanınca GİRİŞ SAYFASINA (/giris) atar */}
+          <Link href={session ? "/panel" : "/giris"} onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
             <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname.startsWith('/panel') ? 'grayscale-0' : 'grayscale opacity-50'}`}>👤</span>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith('/panel') ? 'text-[#00f260]' : 'text-slate-500'}`}>PANEL</span>
           </Link>
+          
         </div>
       </nav>
     </React.Fragment>
