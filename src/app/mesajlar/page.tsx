@@ -19,12 +19,14 @@ function MesajlarIcerik() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [aktifKanal, setAktifKanal] = useState<string | null>(saticiEmail);
 
-  // 🛡️ GÜVENLİK DUVARI
+  // 🛡️ GÜVENLİK DUVARI (SİBER YAMA UYGULANDI: /login yerine /giris)
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
+    if (status === "unauthenticated") {
+      router.push("/giris");
+    }
   }, [status, router]);
 
-  // 📡 VERİ ÇEKME MOTORU (Yeni API ile Uyumlu)
+  // 📡 VERİ ÇEKME MOTORU 
   useEffect(() => {
     const mesajlariGetir = async () => {
       try {
@@ -37,7 +39,7 @@ function MesajlarIcerik() {
           // 2. Benzersiz Sohbet Kanallarını Oluştur
           const kanallar = data.reduce((acc: any[], m: any) => {
             const partner = m.gonderenEmail === session?.user?.email ? m.aliciEmail : m.gonderenEmail;
-            if (partner && !acc.find(k => k.email === partner)) acc.push({ email: partner });
+            if (partner && !acc.find((k: any) => k.email === partner)) acc.push({ email: partner });
             return acc;
           }, []);
           setSohbetKanallari(kanallar);
@@ -52,7 +54,7 @@ function MesajlarIcerik() {
     if (session?.user?.email) mesajlariGetir();
   }, [session]);
 
-  // 🚀 MESAJ MÜHÜRLEME (POST - Yeni API ile Uyumlu)
+  // 🚀 MESAJ MÜHÜRLEME (POST)
   const handleMesajGonder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mesaj.trim() || !aktifKanal) return;
@@ -62,9 +64,9 @@ function MesajlarIcerik() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          aliciEmail: aktifKanal,  // YENİ API KEY'İ
+          aliciEmail: aktifKanal,  
           ilanId: ilanId || null,
-          icerik: mesaj            // YENİ API KEY'İ
+          icerik: mesaj            
         }),
       });
 
@@ -82,7 +84,7 @@ function MesajlarIcerik() {
     }
   };
 
-  // Aktif kanal ile olan mesajları filtrele (Yeni API ile Uyumlu)
+  // Aktif kanal ile olan mesajları filtrele 
   const gosterilecekMesajlar = mesajGecmisi.filter(m => 
     (m.gonderenEmail === session?.user?.email && m.aliciEmail === aktifKanal) ||
     (m.gonderenEmail === aktifKanal && m.aliciEmail === session?.user?.email)
