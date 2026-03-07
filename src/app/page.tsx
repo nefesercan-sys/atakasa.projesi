@@ -28,7 +28,17 @@ export default function Home() {
     veriGetir();
   }, []);
 
-  // 🛡️ SLUG PARAMETRELERİ EKLENDİ (404 HATASINI ÇÖZER)
+  // 📸 SİBER GÖRSEL YAKALAMA RADARI
+  const getResim = (ilan: any) => {
+    if (!ilan) return "https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK";
+    if (ilan.resimler && ilan.resimler.length > 0) return ilan.resimler[0];
+    if (ilan.images && ilan.images.length > 0) return ilan.images[0];
+    if (ilan.media?.images && ilan.media.images.length > 0) return ilan.media.images[0];
+    if (typeof ilan.resim === 'string' && ilan.resim) return ilan.resim;
+    if (typeof ilan.image === 'string' && ilan.image) return ilan.image;
+    return "https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK";
+  };
+
   const kategoriler = [
     { isim: "Teknoloji Endeksi", ikon: "💻", trend: "+%14", slug: "urun-satis" },
     { isim: "Araç & Mobilite", ikon: "🚗", trend: "+%8", slug: "ikinci-el" },
@@ -38,7 +48,6 @@ export default function Home() {
     { isim: "Moda & Lüks", ikon: "💎", trend: "+%5", slug: "moda" }
   ];
 
-  // 🚀 KATEGORİYE ÖZEL YÖNLENDİRME MOTORU
   const handleKategoriGit = (slug: string) => {
     router.push(`/kategori/${slug}`);
   };
@@ -48,16 +57,16 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-slate-200 selection:bg-[#00f260] selection:text-black font-sans pb-20">
+    <div className="min-h-screen bg-[#050505] text-slate-200 selection:bg-[#00f260] selection:text-black font-sans pb-20 italic">
       
-      {/* 🌌 YUMUŞATILMIŞ ARKA PLAN IŞIKLARI */}
+      {/* 🌌 ARKA PLAN IŞIKLARI */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] opacity-[0.02] blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-blue-600 opacity-[0.02] blur-[150px] rounded-full"></div>
       </div>
 
-      {/* 📢 ELEGANT CANLI BANT */}
-      <div className="relative z-20 bg-[#00f260] border-b border-[#00f260] shadow-[0_0_20px_rgba(0,242,96,0.2)] py-2.5 overflow-hidden flex items-center">
+      {/* 📢 CANLI BANT */}
+      <div className="relative z-20 bg-[#00f260] border-b border-[#00f260] py-2.5 overflow-hidden flex items-center">
         <div className="animate-[marquee_25s_linear_infinite] whitespace-nowrap flex gap-12 text-[11px] font-black tracking-widest text-black uppercase">
           <span>🔥 İŞİNE YARAMIYOR MU? <strong className="text-white bg-black px-2 py-0.5 rounded">AT TAKASA, DEĞER YARAT!</strong></span>
           <span>⚡ <strong className="text-black">TAKAS ET, KÂR ET!</strong> Son 1 saatte 142 başarılı işlem.</span>
@@ -66,72 +75,51 @@ export default function Home() {
 
       {/* 🚀 HERO SECTION */}
       <div className={`relative z-10 pt-28 pb-20 px-6 md:px-12 flex flex-col items-center text-center transition-all duration-1000 transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-        
         <h1 className="text-7xl md:text-[10rem] font-black tracking-tighter uppercase leading-[0.85] mb-8 drop-shadow-2xl">
-          <span className="text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">A</span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400 drop-shadow-[0_0_30px_rgba(0,242,96,0.5)]">TAKAS</span>
-          <span className="text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">A.</span>
+          <span className="text-white">A</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400">TAKAS</span>
+          <span className="text-white">A.</span>
         </h1>
-        
-        <div className="flex flex-wrap justify-center gap-3 md:gap-5 mb-10 max-w-4xl mx-auto">
-          <div className="px-5 py-2.5 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-lg hover:border-[#00f260]/40 transition-colors">
-            <span className="text-slate-400 text-[10px] md:text-xs font-bold tracking-widest uppercase">Satamıyor musun? <strong className="text-white">At Takasa</strong></span>
-          </div>
-          <div className="px-5 py-2.5 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-lg hover:border-[#00f260]/40 transition-colors">
-            <span className="text-slate-400 text-[10px] md:text-xs font-bold tracking-widest uppercase">Elinde Tutma, <strong className="text-[#00f260]">Hemen Değiştir</strong></span>
-          </div>
-        </div>
-
-        {/* ⚡ ARAMA MOTORU */}
         <div className="relative w-full max-w-3xl z-30 group">
-          <div className="absolute -inset-1 bg-[#00f260] rounded-[2.5rem] blur-2xl opacity-0 group-focus-within:opacity-25 transition duration-1000"></div>
-          <div className="relative flex items-center bg-[#0a0a0a] border border-white/[0.08] rounded-[2.5rem] p-2.5 shadow-[0_30px_50px_rgba(0,0,0,0.6)] transition-all hover:border-white/[0.15]">
+          <div className="relative flex items-center bg-[#0a0a0a] border border-white/[0.08] rounded-[2.5rem] p-2.5 shadow-2xl transition-all hover:border-white/[0.15]">
             <span className="pl-6 text-[#00f260] text-xl">✨</span>
             <input 
               type="text"
-              placeholder="Piyasada varlık ara (Örn: MacBook, Arsa)..."
-              className="w-full bg-transparent border-none px-6 py-5 text-white text-base font-medium tracking-wide outline-none placeholder:text-slate-500"
+              placeholder="Piyasada varlık ara (MacBook, Arsa)..."
+              className="w-full bg-transparent border-none px-6 py-5 text-white text-base font-medium outline-none"
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleArama()}
             />
-            <button onClick={handleArama} className="hidden md:block bg-gradient-to-r from-white to-slate-200 text-black font-black tracking-widest px-10 py-5 rounded-[2rem] hover:scale-105 transition-all duration-300">
+            <button onClick={handleArama} className="hidden md:block bg-white text-black font-black tracking-widest px-10 py-5 rounded-[2rem] hover:scale-105 transition-all">
               DEĞİŞ TOKUŞ YAP
             </button>
           </div>
         </div>
       </div>
 
-      {/* 📊 ENDEKS KARTLARI (YÖNLENDİRME GÜNCELLENDİ) */}
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-12 mb-32">
+      {/* 📊 KATEGORİ ENDEKSLERİ */}
+      <div className="relative z-10 max-w-[1400px] mx-auto px-6 mb-32">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-6">
           Siber Piyasa Hacmi <div className="h-[1px] flex-1 bg-gradient-to-r from-white/[0.05] to-transparent"></div>
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {kategoriler.map((kat, idx) => (
-            <div 
-              key={idx} 
-              onClick={() => handleKategoriGit(kat.slug)} 
-              className="group relative bg-[#0a0a0a] border border-white/[0.04] rounded-3xl p-7 flex flex-col justify-between h-40 hover:border-[#00f260]/30 hover:-translate-y-1 transition-all duration-500 shadow-xl cursor-pointer"
-            >
+            <div key={idx} onClick={() => handleKategoriGit(kat.slug)} className="group bg-[#0a0a0a] border border-white/[0.04] rounded-3xl p-7 flex flex-col justify-between h-40 hover:border-[#00f260]/30 hover:-translate-y-1 transition-all cursor-pointer">
               <div className="flex justify-between items-start">
-                <span className="text-3xl opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500">{kat.ikon}</span>
+                <span className="text-3xl group-hover:scale-110 transition-all">{kat.ikon}</span>
                 <span className="text-[#00f260] font-bold text-[10px] bg-[#00f260]/10 px-3 py-1.5 rounded-full">{kat.trend}</span>
               </div>
-              <h3 className="font-semibold text-xs tracking-wide text-slate-300 group-hover:text-white transition-colors">{kat.isim}</h3>
+              <h3 className="font-semibold text-xs text-slate-300">{kat.isim}</h3>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 💠 CANLI TAHTA */}
+      {/* 💠 CANLI AKIŞ - BORSA VİTRİNİ */}
       <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
-          <div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-3">
-              Canlı <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400">Akış.</span>
-            </h2>
-          </div>
-        </div>
+        <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-12">
+          Canlı <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f260] to-emerald-400">Akış.</span>
+        </h2>
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -139,47 +127,57 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {ilanlar.length > 0 ? ilanlar.map((varlik) => (
-              <Link key={varlik._id} href={`/varlik/${varlik._id}`} className="group flex flex-col bg-[#0a0a0a] border border-white/[0.04] rounded-[2.5rem] p-3 hover:border-[#00f260]/20 hover:-translate-y-2 transition-all duration-500 shadow-2xl">
-                <div className="relative h-64 w-full rounded-[2rem] overflow-hidden bg-[#111]">
-                  {varlik.resimler?.[0] ? (
-                    <img src={varlik.resimler[0]} alt={varlik.baslik} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl opacity-10">🖼️</div>
-                  )}
-                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md border border-white/10 text-[#00f260] text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
-                    {varlik.kategori || "At Takasa"}
+            {ilanlar.map((ilan) => (
+              <div key={ilan._id} className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-cyan-500/50 transition-all shadow-lg group flex flex-col p-3">
+                
+                {/* Üst Kısım: Görsel ve Borsa Oranları */}
+                <div className="relative h-56 w-full rounded-[2rem] overflow-hidden bg-[#111]">
+                  <img src={getResim(ilan)} alt={ilan.baslik} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[8px] font-black uppercase border border-white/10">
+                      {ilan.kategori || "Varlık"}
+                    </span>
+                  </div>
+
+                  <div className="absolute top-4 right-4 flex flex-col items-end gap-1">
+                    <span className="bg-[#00f260] text-black px-2 py-1 rounded-lg text-[10px] font-black shadow-lg">
+                      📈 +%4.2
+                    </span>
+                    <span className="bg-amber-400 text-black px-2 py-1 rounded-lg text-[8px] font-black">
+                      ⭐ 4.8
+                    </span>
                   </div>
                 </div>
-                <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-white mb-4 group-hover:text-[#00f260] truncate">{varlik.baslik}</h3>
-                    <p className="text-[#00f260] font-black text-base">{Number(varlik.fiyat).toLocaleString()} ₺</p>
+
+                {/* Alt Kısım: Bilgiler ve Aksiyonlar */}
+                <div className="p-5 flex flex-col flex-1">
+                  <h3 className="text-white font-black uppercase text-sm mb-2 truncate">{ilan.title || ilan.baslik}</h3>
+                  <div className="flex justify-between items-end mb-4">
+                    <p className="text-[#00f260] font-black text-xl italic">{Number(ilan.price || ilan.fiyat).toLocaleString()} ₺</p>
+                    <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">📍 {ilan.sehir || "İzmir"}</p>
                   </div>
-                  <div className="pt-4 border-t border-white/[0.04] flex items-center justify-between text-xs text-slate-500 font-bold uppercase">
-                    <span>📍 {varlik.sehir}</span>
-                    <div className="w-10 h-10 rounded-full bg-white/[0.05] flex items-center justify-center group-hover:bg-[#00f260] group-hover:text-black transition-all">
-                      ➔
+
+                  {/* 🚀 3'LÜ SİBER AKSİYON BUTONLARI */}
+                  <div className="mt-auto flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <Link href={`/varlik/${ilan._id}?islem=takas`} className="flex-1 bg-cyan-500/10 text-cyan-400 py-3 rounded-xl text-[9px] font-black uppercase text-center hover:bg-cyan-500 hover:text-black transition-all border border-cyan-500/20">
+                        🔄 Takas Et
+                      </Link>
+                      <Link href={`/varlik/${ilan._id}?islem=satinal`} className="flex-1 bg-[#00f260]/10 text-[#00f260] py-3 rounded-xl text-[9px] font-black uppercase text-center hover:bg-[#00f260] hover:text-black transition-all border border-[#00f260]/20">
+                        🛒 Satın Al
+                      </Link>
                     </div>
+                    <Link href={`/varlik/${ilan._id}?islem=incele`} className="w-full bg-white/5 text-slate-300 py-3 rounded-xl text-[9px] font-black uppercase text-center hover:bg-white/10 transition-all border border-white/5">
+                      🔍 İncele & Detaylar
+                    </Link>
                   </div>
                 </div>
-              </Link>
-            )) : (
-              <div className="col-span-full py-20 text-center opacity-30">📡 Sinyal Bulunamadı.</div>
-            )}
+              </div>
+            ))}
           </div>
         )}
-
-        <div className="mt-16 flex justify-center">
-          <Link href="/kesfet" className="group relative inline-flex items-center justify-center px-10 py-6 text-sm md:text-base font-black tracking-widest text-black uppercase bg-gradient-to-r from-[#00f260] to-emerald-400 rounded-full overflow-hidden hover:scale-105 transition-all duration-300 shadow-[0_0_40px_rgba(0,242,96,0.3)]">
-            <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-20"></span>
-            <span className="relative flex items-center gap-3">
-              TÜM PİYASAYI KEŞFET <span className="text-2xl group-hover:translate-x-2 transition-transform">➔</span>
-            </span>
-          </Link>
-        </div>
       </div>
     </div>
   );
-} 
- 
+}
