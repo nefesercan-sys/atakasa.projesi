@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import User from '@/models/User'; 
+// 🚨 İŞTE VERCEL'İ KURTARAN O DÜZELTME:
+import User from '../../../../models/User'; 
 
 const connectDB = async () => {
   if (mongoose.connection.readyState >= 1) return;
