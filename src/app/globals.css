@@ -1,33 +1,42 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 5, 5, 5;
-  --background-end-rgb: 5, 5, 5;
+/* src/app/globals.css */
+@layer base {
+  body {
+    background-color: #050505; /* Arka plan rengi */
+    color: #fff;
+    @apply antialiased;
+  }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
-  overflow-x: hidden;
-}
+@layer utilities {
+  /* Noktalı Arka Plan Efekti */
+  .bg-dot-pattern {
+    background-image: radial-gradient(#ffffff11 1px, transparent 1px);
+    background-size: 20px 20px; /* Nokta sıklığı */
+  }
 
-/* 🟢 ATAKASA SİBER KAYDIRMA ÇUBUĞU (SCROLLBAR) */
-::-webkit-scrollbar {
-  width: 6px;
-}
+  /* Neon Parlama Efekti (Neon-Green) */
+  .neon-glow {
+    box-shadow: 0 0 15px rgba(0, 242, 96, 0.4);
+    border: 1px solid rgba(0, 242, 96, 0.6);
+  }
 
-::-webkit-scrollbar-track {
-  background: #050505;
-}
+  /* Neon Kategori Butonları İçin Güçlü Parlama */
+  .neon-glow-strong {
+    box-shadow: 0 0 25px rgba(0, 242, 96, 0.6);
+    border: 2px solid rgba(0, 242, 96, 0.8);
+  }
 
-::-webkit-scrollbar-thumb {
-  background: #00f260;
-  border-radius: 10px;
-}
+  /* Neon Fiyat Parlaması */
+  .neon-price {
+    text-shadow: 0 0 10px rgba(0, 242, 96, 0.8);
+    color: #00f260;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #00c24d;
+  /* Cam (Glassmorphism) Efekti */
+  .glass-panel {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
 }
