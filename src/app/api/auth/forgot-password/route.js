@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import User from '@/models/User'; // Kendi modelinin yolundan emin ol
+// 🚨 İŞTE DÜZELTİLEN SATIR BURASI (Göreceli yol kullanıldı)
+import User from '../../../../models/User'; 
 
 const connectDB = async () => {
   if (mongoose.connection.readyState >= 1) return;
