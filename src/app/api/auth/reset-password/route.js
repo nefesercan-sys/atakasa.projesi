@@ -1,41 +1,69 @@
+import mongoose from 'mongoose';
+import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import crypto from 'crypto'; // Token üretmek için
-// Kendi User modelini ve veritabanı bağlantını buraya ekle
+// VERCEL'İ ÇÖKERTEN HATA BURADA GİDERİLDİ (Göreceli Yol)
+import User from '../../../../models/User'; 
+
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+  } catch (err) {
+    console.error("Veritabanı bağlantı hatası:", err);
+  }
+};
 
 export async function POST(req) {
-  const { email } = await req.json();
-
-  // 1. Kullanıcıyı DB'de bul
-  // 2. Benzersiz bir token oluştur (Örn: crypto.randomBytes(32).toString('hex'))
-  // 3. Token'ı ve son kullanma tarihini (expiry) veritabanında bu kullanıcıya kaydet
-
-  // 4. E-posta Gönderim Ayarları
-  const transporter = nodemailer.createTransport({
-    service: 'gmail', // Veya kullandığın servis
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  const resetUrl = `https://www.atakasa.com/sifre-sifirla?token=${token}`;
-
-  const mailOptions = {
-    from: '"A-TAKASA Güvenlik" <no-reply@atakasa.com>',
-    to: email,
-    subject: 'Şifre Sıfırlama Talebi',
-    html: `
-      <h1>Şifrenizi mi unuttunuz?</h1>
-      <p>A-TAKASA hesabınız için şifre sıfırlama talebinde bulundunuz. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz:</p>
-      <a href="${resetUrl}" style="background-color: #00ff00; color: black; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Şifremi Sıfırla</a>
-      <p>Bu bağlantı 1 saat boyunca geçerlidir.</p>
-    `,
-  };
-
   try {
+    const { email } = await req.json();
+
+    if (!email) return Response.json({ error: "E-posta adresi gerekli." }, { status: 400 });
+
+    await connectDB();
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return Response.json({ error: "Bu e-posta adresiyle kayıtlı bir hesap bulunamadı." }, { status: 404 });
+
+    // Rastgele token oluştur ve veritabanına kaydet
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 3600000; // 1 Saat
+    await user.save();
+
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const resetUrl = `${baseUrl}/sifre-sifirla?token=${resetToken}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"A-TAKASA Güvenlik" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: 'A-TAKASA | Şifre Sıfırlama',
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #050505; color: #ffffff; padding: 40px; text-align: center; border-radius: 10px;">
+          <h1 style="color: #00f260; font-style: italic; text-transform: uppercase;">A-TAKASA.</h1>
+          <h2 style="color: #ffffff;">Şifre Sıfırlama Talebi</h2>
+          <p style="color: #888888; font-size: 14px; margin-bottom: 30px;">
+            Profil hesabı şifresini sıfırlamak için bir talep aldık. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.
+          </p>
+          <a href="${resetUrl}" style="background-color: #00f260; color: #000000; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">
+            Şifreyi Sıfırla ⚡
+          </a>
+        </div>
+      `,
+    };
+
     await transporter.sendMail(mailOptions);
-    return Response.json({ message: "Sıfırlama bağlantısı gönderildi." });
+    return Response.json({ message: "Sıfırlama e-postası gönderildi." }, { status: 200 });
+
   } catch (error) {
-    return Response.json({ error: "E-posta gönderilemedi." }, { status: 500 });
+    console.error("Şifremi unuttum hatası:", error);
+    return Response.json({ error: "Sinyal gönderilemedi." }, { status: 500 });
   }
 }
