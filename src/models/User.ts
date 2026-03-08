@@ -8,7 +8,11 @@ const userSchema = new Schema(
     role: { type: String, default: "Pro Broker" },
     image: { type: String },
     toplamHacim: { type: Number, default: 0 },
-    basariliIslem: { type: Number, default: 0 }
+    basariliIslem: { type: Number, default: 0 },
+    
+    // ⚡ ŞİFRE SIFIRLAMA PROTOKOLÜ İÇİN EKLENEN YENİ ALANLAR ⚡
+    resetPasswordToken: { type: String, required: false },
+    resetPasswordExpire: { type: Date, required: false }
   },
   { timestamps: true } // Ne zaman kayıt olduğunu otomatik tutar
 );
