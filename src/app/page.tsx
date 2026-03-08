@@ -13,10 +13,18 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // 🎛️ KATEGORİ VE FİLTRE STATE'LERİ
+  // 🎛️ KATEGORİ VE YENİ GELİŞMİŞ FİLTRE STATE'LERİ
   const [aktifKategori, setAktifKategori] = useState("Hepsi");
   const [aktifAltFiltre, setAktifAltFiltre] = useState("Yeni İlanlar");
   
+  // 🟢 YENİ EKLENEN RADAR FİLTRELERİ
+  const [aktifSehir, setAktifSehir] = useState("Tüm Şehirler");
+  const [minFiyat, setMinFiyat] = useState("");
+  const [maxFiyat, setMaxFiyat] = useState("");
+  const [sadeceTakaslik, setSadeceTakaslik] = useState(false);
+  const [filtreMenusuAcik, setFiltreMenusuAcik] = useState(false); 
+
+  const sehirler = ["Tüm Şehirler", "İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana", "Konya"];
   // 🛡️ MODAL STATE'LERİ
   const [seciliIlan, setSeciliIlan] = useState<any>(null);
   const [modalTuru, setModalTuru] = useState<"takas" | "satinal" | null>(null);
@@ -82,21 +90,21 @@ export default function Home() {
 
   const getResim = (ilan: any) => ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/600x400/030712/00f260?text=A-TAKASA";
 
-  // 🛠️ AKILLI FİLTRELEME (INSTAGRAM AKIŞI MANTIĞI)
+  // 🛠️ GELİŞMİŞ RADAR FİLTRELEME MOTORU (GÜNCELLENDİ)
   const filtrelenmisIlanlar = () => {
     let liste = [...ilanlar];
-    if (searchTerm) liste = liste.filter(i => (i.title || i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()));
     
-    if (aktifKategori === "Hepsi") {
-      liste.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else {
-      liste = liste.filter(i => (i.kategori || i.category) === aktifKategori);
-      switch (aktifAltFiltre) {
-        case "En Çok Fiyatı Düşenler": liste.sort((a, b) => (a.degisimYuzdesi || 0) - (b.degisimYuzdesi || 0)); break;
-        case "En Çok Yükselenler": liste.sort((a, b) => (b.degisimYuzdesi || 0) - (a.degisimYuzdesi || 0)); break;
-        case "En Çok Takas Edilenler": liste.sort((a, b) => (b.takasSayisi || 0) - (a.takasSayisi || 0)); break;
-        default: liste.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      }
+    if (searchTerm) liste = liste.filter(i => (i.title || i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) || (i.description || i.aciklama || "").toLowerCase().includes(searchTerm.toLowerCase()));
+    if (aktifKategori !== "Hepsi") liste = liste.filter(i => (i.kategori || i.category) === aktifKategori);
+    if (aktifSehir !== "Tüm Şehirler") liste = liste.filter(i => (i.sehir || i.city || "TÜRKİYE").toUpperCase() === aktifSehir.toUpperCase());
+    if (minFiyat) liste = liste.filter(i => Number(i.price || i.fiyat) >= Number(minFiyat));
+    if (maxFiyat) liste = liste.filter(i => Number(i.price || i.fiyat) <= Number(maxFiyat));
+
+    switch (aktifAltFiltre) {
+      case "En Çok Fiyatı Düşenler": liste.sort((a, b) => (a.degisimYuzdesi || 0) - (b.degisimYuzdesi || 0)); break;
+      case "En Çok Yükselenler": liste.sort((a, b) => (b.degisimYuzdesi || 0) - (a.degisimYuzdesi || 0)); break;
+      case "En Çok Takas Edilenler": liste.sort((a, b) => (b.takasSayisi || 0) - (a.takasSayisi || 0)); break;
+      default: liste.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return liste;
   };
