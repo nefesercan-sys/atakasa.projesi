@@ -231,14 +231,64 @@ export default function Home() {
                  <p className="text-[#00f260] text-[9px] font-black tracking-[0.2em] uppercase mt-1 animate-pulse">{aktifSlogan}</p>
                </div>
             </div>
-
-            {/* Arama Motoru */}
-            <div className="relative flex-1 w-full group max-w-xl">
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#00f260] to-cyan-600 rounded-[2rem] blur opacity-15 group-focus-within:opacity-40 transition duration-700"></div>
-              <input type="text" placeholder="Borsada varlık ara..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] px-6 py-4 outline-none focus:border-[#00f260] text-sm transition-all" onChange={(e) => setSearchTerm(e.target.value)} />
-              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black tracking-widest uppercase animate-pulse">RADAR</span>
+{/* Arama Motoru ve Filtre Açma Butonu */}
+            <div className="flex w-full md:w-auto gap-2 max-w-xl flex-1">
+              <div className="relative flex-1 group">
+                <input type="text" placeholder="Varlık veya kelime ara..." value={searchTerm} className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] px-6 py-4 outline-none focus:border-[#00f260] text-sm transition-all" onChange={(e) => setSearchTerm(e.target.value)} />
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black tracking-widest uppercase">🔍</span>
+              </div>
+              <button 
+                onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)} 
+                className={`px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260] shadow-[0_0_15px_rgba(0,242,96,0.4)]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}
+              >
+                🛠️ RADAR
+              </button>
             </div>
           </div>
+
+          {/* 🟢 GELİŞMİŞ RADAR (FİLTRE) MENÜSÜ */}
+          {filtreMenusuAcik && (
+            <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-6 animate-in slide-in-from-top duration-300 shadow-[0_0_30px_rgba(0,242,96,0.1)]">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                
+                {/* Şehir Filtresi */}
+                <div className="flex flex-col">
+                  <label className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-2">BÖLGE / ŞEHİR</label>
+                  <select value={aktifSehir} onChange={(e) => setAktifSehir(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-cyan-500">
+                    {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                {/* Min Fiyat */}
+                <div className="flex flex-col">
+                  <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MİN TAVAN (₺)</label>
+                  <input type="number" placeholder="Örn: 1000" value={minFiyat} onChange={(e) => setMinFiyat(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-[#00f260]" />
+                </div>
+
+                {/* Max Fiyat */}
+                <div className="flex flex-col">
+                  <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MAX TABAN (₺)</label>
+                  <input type="number" placeholder="Örn: 50000" value={maxFiyat} onChange={(e) => setMaxFiyat(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-[#00f260]" />
+                </div>
+
+                {/* Sadece Takaslık - Tıklanabilir Kutu */}
+                <div className="flex items-end">
+                   <button 
+                     onClick={() => setSadeceTakaslik(!sadeceTakaslik)}
+                     className={`w-full py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${sadeceTakaslik ? 'bg-amber-500/20 text-amber-500 border-amber-500' : 'bg-[#050505] text-slate-500 border-white/10 hover:border-amber-500/50'}`}
+                   >
+                     {sadeceTakaslik ? '🔄 SADECE TAKASA AÇIK OLANLAR' : '🔄 TAKAS DURUMU FARK ETMEZ'}
+                   </button>
+                </div>
+
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-white/5 flex justify-end gap-3">
+                 <button onClick={() => {setAktifSehir("Tüm Şehirler"); setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false);}} className="px-6 py-2 rounded-lg text-slate-500 text-[10px] font-black uppercase hover:text-white transition-colors">Sıfırla</button>
+                 <button onClick={() => setFiltreMenusuAcik(false)} className="px-8 py-2 bg-[#00f260] text-black rounded-lg text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(0,242,96,0.4)]">Taramayı Başlat</button>
+              </div>
+            </div>
+          )}
 
           {/* Kategoriler */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mask-linear-right">
