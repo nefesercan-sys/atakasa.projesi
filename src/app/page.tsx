@@ -7,6 +7,7 @@ import Link from "next/link";
 export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
+  
   const [ilanlar, setIlanlar] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,9 +54,10 @@ export default function Home() {
     veriCek();
   }, []);
 
+  // 🛡️ VERCEL HATASINI ÇÖZEN SATIR: session?.user?.email olarak güncellendi.
   useEffect(() => {
     if (session?.user?.email && ilanlar.length > 0) {
-      setBenimIlanlarim(ilanlar.filter((i: any) => (i.sellerEmail || i.satici || "").toLowerCase() === session.user.email.toLowerCase()));
+      setBenimIlanlarim(ilanlar.filter((i: any) => (i.sellerEmail || i.satici || "").toLowerCase() === session.user?.email?.toLowerCase()));
     }
   }, [session, ilanlar]);
 
