@@ -24,7 +24,6 @@ if (process.env.NODE_ENV === "development") {
   clientPromise = client.connect();
 }
 
-// Eski kodlarla uyumlu — connectMongoDB olarak da kullanılabilir
 export async function connectMongoDB(): Promise<Db> {
   const connectedClient = await clientPromise;
   return connectedClient.db();
