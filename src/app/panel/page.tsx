@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useSession, signOut } from "next-auth/react"; 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import useSWR from "swr"; // 🚀 SWR SİHİRBAZI EKLENDİ
+import useSWR from "swr";
 
 // 📡 SWR VERİ ÇEKME MOTORU
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -20,13 +20,13 @@ export default function SiberBorsaPaneli() {
   const [kargoKoduForm, setKargoKoduForm] = useState("");
   const [sifreForm, setSifreForm] = useState({ eski: "", yeni: "", tekrar: "" });
 
-  // 📡 SWR CANLI RADAR BAĞLANTILARI (Her 3 saniyede bir arka planda sessizce taranır)
+  // 📡 SWR CANLI RADAR BAĞLANTILARI
   const { data: walletData } = useSWR(aktifEmail ? `/api/wallet` : null, fetcher, { refreshInterval: 3000 });
   const { data: listingsData } = useSWR(aktifEmail ? `/api/listings` : null, fetcher, { refreshInterval: 3000 });
   const { data: takasData, mutate: mutateTakas } = useSWR(aktifEmail ? `/api/takas` : null, fetcher, { refreshInterval: 3000 });
   const { data: ordersData, mutate: mutateOrders } = useSWR(aktifEmail ? `/api/orders?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
 
-  // 🔄 VERİLERİ SWR'DAN AYRIŞTIRMA (Artık hepsi canlı ve anlık!)
+  // 🔄 VERİLERİ SWR'DAN AYRIŞTIRMA
   const bakiye = walletData?.balance || 0;
   const ilanlarim = listingsData ? listingsData.filter((i: any) => (i.sellerEmail || i.userId || "").toLowerCase() === aktifEmail) : [];
   
@@ -51,7 +51,7 @@ export default function SiberBorsaPaneli() {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ takasId, yeniDurum })
       });
-      if (res.ok) mutateTakas(); // SWR: Ekranı sayfayı yenilemeden anında değiştir!
+      if (res.ok) mutateTakas();
     } catch (error) { alert("Sinyal koptu."); }
   };
 
@@ -66,7 +66,7 @@ export default function SiberBorsaPaneli() {
       if (res.ok) {
         alert("⚡ SİPARİŞ DURUMU GÜNCELLENDİ!");
         setKargoKoduForm(""); 
-        mutateOrders(); // SWR: Ekranı sayfayı yenilemeden anında değiştir!
+        mutateOrders();
       } else { alert("Güncelleme reddedildi."); }
     } catch (error) { alert("Ağ arızası."); }
   };
@@ -102,7 +102,7 @@ export default function SiberBorsaPaneli() {
     if (aktifSekme === "giden_teklifler") veri = gidenTakaslar;
     if (aktifSekme === "gelen_siparisler") veri = gelenSiparisler;
     if (aktifSekme === "giden_siparisler") veri = gidenSiparisler;
-    if (altFiltre !== "hepsi") veri = veri.filter(t => t.durum === altFiltre);
+    if (altFiltre !== "hepsi") veri = veri.filter((t: any) => t.durum === altFiltre);
     return veri;
   };
 
@@ -111,7 +111,7 @@ export default function SiberBorsaPaneli() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans italic flex flex-col md:flex-row">
       
-      {/* 🧭 SOL PANEL: KUMANDA MERKEZİ (SIDEBAR) */}
+      {/* 🧭 SOL PANEL: KUMANDA MERKEZİ */}
       <div className="w-full md:w-72 bg-[#0a0a0a]/90 backdrop-blur-xl border-r border-white/5 flex flex-col pt-24 z-20 shadow-[20px_0_50px_rgba(0,0,0,0.5)] md:h-screen md:sticky md:top-0">
         <div className="px-8 mb-10 text-center md:text-left">
           <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">A-TAKASA<span className="text-[#00f260]">.</span></h1>
@@ -121,9 +121,9 @@ export default function SiberBorsaPaneli() {
         <nav className="flex flex-row md:flex-col gap-2 px-6 overflow-x-auto md:overflow-y-auto no-scrollbar pb-6 md:pb-0">
           {[
             { id: "ozet_radar", icon: "📟", ad: "Siber Radar" },
-            { id: "gelen_siparisler", icon: "📦", ad: "Satışlarım", bildirim: gelenSiparisler.filter(s=>s.durum==='bekliyor').length },
-            { id: "giden_siparisler", icon: "🛒", ad: "Aldıklarım", bildirim: gidenSiparisler.filter(s=>s.durum==='kargoda').length },
-            { id: "gelen_teklifler", icon: "🔄", ad: "Gelen Takaslar", bildirim: gelenTakaslar.filter(t=>t.durum==='bekliyor').length },
+            { id: "gelen_siparisler", icon: "📦", ad: "Satışlarım", bildirim: gelenSiparisler.filter((s: any)=>s.durum==='bekliyor').length },
+            { id: "giden_siparisler", icon: "🛒", ad: "Aldıklarım", bildirim: gidenSiparisler.filter((s: any)=>s.durum==='kargoda').length },
+            { id: "gelen_teklifler", icon: "🔄", ad: "Gelen Takaslar", bildirim: gelenTakaslar.filter((t: any)=>t.durum==='bekliyor').length },
             { id: "giden_teklifler", icon: "🚀", ad: "Yaptığım Takaslar" },
             { id: "ilanlarim", icon: "💎", ad: "Siber Varlıklarım" },
             { id: "guvenlik", icon: "🛡️", ad: "Kalkan (Güvenlik)" },
@@ -149,7 +149,7 @@ export default function SiberBorsaPaneli() {
       <div className="flex-1 bg-[#050505] p-4 md:p-12 md:pt-24 relative overflow-x-hidden min-h-screen">
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-[#00f260] opacity-[0.03] blur-[150px] rounded-full pointer-events-none"></div>
 
-        {/* 📟 SEKME 1: SİBER RADAR (ÖZET) */}
+        {/* 📟 SEKME 1: SİBER RADAR */}
         {aktifSekme === "ozet_radar" && (
           <div className="animate-in fade-in duration-500">
             <h2 className="text-4xl md:text-6xl font-black italic uppercase mb-10 tracking-tighter">Siber <span className="text-[#00f260]">Radar.</span></h2>
@@ -163,16 +163,16 @@ export default function SiberBorsaPaneli() {
                 <div className="absolute -right-10 -top-10 text-9xl opacity-5 group-hover:scale-110 transition-transform">💎</div>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Piyasadaki Varlıklarım</p>
                 <p className="text-5xl font-black text-white">{ilanlarim.length} <span className="text-xl text-slate-500">Adet</span></p>
-                <p className="text-cyan-400 text-[10px] font-black mt-4 uppercase">Toplam: {ilanlarim.reduce((a, i) => a + Number(i.price || i.fiyat), 0).toLocaleString()} ₺</p>
+                <p className="text-cyan-400 text-[10px] font-black mt-4 uppercase">Toplam: {ilanlarim.reduce((a: number, i: any) => a + Number(i.price || i.fiyat), 0).toLocaleString()} ₺</p>
               </div>
               
-              {/* 🚀 CANLI RADARA DÖNÜŞTÜRÜLEN KART VE SİBER KÖPRÜ */}
+              {/* 🚀 CANLI RADARA DÖNÜŞTÜRÜLEN KART */}
               <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group hover:border-[#00f260]/40 transition-colors">
                 <div className="absolute -right-10 -top-10 text-9xl opacity-5 group-hover:scale-110 transition-transform">📦</div>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Bekleyen İşlemler</p>
                 <div className="flex items-center gap-4">
                   <p className="text-5xl font-black text-white">
-                    {gelenSiparisler.filter(s=>s.durum==='bekliyor').length + gelenTakaslar.filter(t=>t.durum==='bekliyor').length} 
+                    {gelenSiparisler.filter((s: any)=>s.durum==='bekliyor').length + gelenTakaslar.filter((t: any)=>t.durum==='bekliyor').length} 
                   </p>
                   <span className="w-3 h-3 bg-[#00f260] rounded-full animate-ping shadow-[0_0_15px_rgba(0,242,96,1)]"></span>
                 </div>
@@ -182,7 +182,6 @@ export default function SiberBorsaPaneli() {
                   Siber Panele Git →
                 </Link>
               </div>
-
             </div>
           </div>
         )}
@@ -220,13 +219,11 @@ export default function SiberBorsaPaneli() {
            </div>
         )}
 
-        {/* 📟 İŞLEM TAHTASI (TAKASLAR VE SİPARİŞLER) */}
+        {/* 📟 İŞLEM TAHTASI */}
         {["gelen_teklifler", "giden_teklifler", "gelen_siparisler", "giden_siparisler"].includes(aktifSekme) && (
           <div className="animate-in fade-in duration-500">
-            
-            {/* Alt Filtre Menüsü */}
             <div className="flex gap-2 mb-10 overflow-x-auto no-scrollbar pb-2">
-              {["hepsi", "bekliyor", "kabul", "onaylandi", "kargoda", "teslim_edildi", "iptal"].map(durum => (
+              {["hepsi", "bekliyor", "kabul", "onaylandi", "kargoda", "teslim_edildi", "iptal"].map((durum: string) => (
                 <button key={durum} onClick={() => setAltFiltre(durum)} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${altFiltre === durum ? 'bg-white text-black shadow-lg' : 'bg-[#0a0a0a] text-slate-500 border border-white/5 hover:text-white'}`}>
                   {durum.replace("_", " ")}
                 </button>
