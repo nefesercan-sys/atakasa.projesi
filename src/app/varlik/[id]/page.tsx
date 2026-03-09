@@ -21,7 +21,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   const [eklenecekNakit, setEklenecekNakit] = useState("");
   const [takasMesaji, setTakasMesaji] = useState("");
 
-  // 🛒 SİPARİŞ STATE'LERİ (YENİ EKLENEN TELEFON VE NOT ALANLARI)
+  // 🛒 SİPARİŞ STATE'LERİ (Detaylı Form İçin)
   const [siparisForm, setSiparisForm] = useState({ 
     adSoyad: "", 
     telefon: "", 
@@ -320,7 +320,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
              </div>
            )}
 
-           {/* 3. LÜKS SATIN AL EKRANI (TAM İSTEDİĞİN GİBİ) */}
+           {/* 3. LÜKS SATIN AL EKRANI (TAM İSTEDİĞİN DETAYLI FORM) */}
            {aktifSekme === "satinal" && (
              <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
                 
@@ -342,7 +342,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                   <span className="text-3xl font-black text-white">{Number(ilan.price || ilan.fiyat || 0).toLocaleString()} ₺</span>
                 </div>
 
-                {/* Form Alanları */}
+                {/* Detaylı Form Alanları */}
                 <div className="space-y-4 mb-6">
                   <input type="text" placeholder="Teslim Alacak Ad Soyad" value={siparisForm.adSoyad} onChange={(e)=>setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-[#030712] border border-white/5 text-white text-sm p-4 rounded-xl outline-none focus:border-[#00f260] transition-colors" />
                   <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e)=>setSiparisForm({...siparisForm, telefon: e.target.value})} className="w-full bg-[#030712] border border-white/5 text-white text-sm p-4 rounded-xl outline-none focus:border-[#00f260] transition-colors" />
