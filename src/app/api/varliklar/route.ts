@@ -114,3 +114,4 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "İşlem başarısız." }, { status: 500 });
   }
 }
+ 
