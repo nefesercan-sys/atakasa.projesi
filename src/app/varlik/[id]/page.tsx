@@ -66,9 +66,12 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
 
       // 2. KENDİ İLANLARINI AYIKLA (Aynı veriden, veritabanını yormadan!)
       if (session?.user?.email) {
+        // 🛡️ TPYESCRIPT ZIRHI BURADA: E-postayı güvenli bir değişkene kilitledik!
+        const guvenliEmail = session.user.email.toLowerCase();
+        
         const benimkiler = liste.filter((i: any) => {
            const sEmail = (typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
-           return sEmail === session.user.email.toLowerCase();
+           return sEmail === guvenliEmail;
         });
         setBenimIlanlarim(benimkiler);
       }
