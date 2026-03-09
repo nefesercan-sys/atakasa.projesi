@@ -1,28 +1,29 @@
-import mongoose from "mongoose";
+// src/lib/mongodb.ts
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+import { MongoClient } from "mongodb";
 
-if (!MONGODB_URI) {
-  throw new Error("SİBER HATA: Lütfen .env.local dosyasına MONGODB_URI ekleyin!");
+const uri = process.env.MONGODB_URI as string;
+
+if (!uri) {
+  throw new Error("MONGODB_URI environment variable tanımlanmamış.");
 }
 
-// Global önbellek (Cache) kullanarak Vercel'in sürekli yeni bağlantı açıp sistemi yormasını engelliyoruz
-let cached = (global as any).mongoose;
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+declare global {
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-export const connectMongoDB = async () => {
-  if (cached.conn) return cached.conn;
-  
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => {
-      console.log("⚡ SİBER BAŞARI: MongoDB Motoru Ateşlendi!");
-      return mongoose;
-    });
+if (process.env.NODE_ENV === "development") {
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(uri);
+    global._mongoClientPromise = client.connect();
   }
-  
-  cached.conn = await cached.promise;
-  return cached.conn;
-};
+  clientPromise = global._mongoClientPromise;
+} else {
+  client = new MongoClient(uri);
+  clientPromise = client.connect();
+}
+
+export default clientPromise;
