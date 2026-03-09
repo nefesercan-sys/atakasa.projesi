@@ -1,51 +1,53 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../lib/mongodb"; 
-import User from "../../../models/User"; 
+import { connectMongoDB } from "../../../lib/mongodb";
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
-    // 1. Veritabanına Siber Bağlantı Kur
-    await connectMongoDB();
     const { email } = await req.json();
 
     if (!email) {
-      return NextResponse.json({ message: "E-posta adresi eksik." }, { status: 400 });
+      return NextResponse.json({ message: "Geçerli bir e-posta adresi girin." }, { status: 400 });
     }
 
-    // 2. Kullanıcıyı Radarda Bul
-    const user = await User.findOne({ email });
+    // 1. Senin Orijinal Veritabanı Bağlantın
+    const db = await connectMongoDB();
+    
+    const user = await db.collection("users").findOne({ email });
     if (!user) {
       return NextResponse.json({ message: "Bu e-posta sistemde bulunamadı." }, { status: 404 });
     }
 
-    // 3. Eşsiz Siber Jeton (Token) Oluştur
-    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    
-    // 4. Jetonu Kullanıcı Verisine Mühürle (1 Saat Ömrü Var)
-    user.forgotPasswordToken = token;
-    user.forgotPasswordTokenExpiry = Date.now() + 3600000; 
-    await user.save();
+    // Eski şifre sıfırlama taleplerini temizle
+    await db.collection("password_resets").deleteMany({ email });
 
-    // 🛡️ SİBER KALKAN: "undefined" hatasını tamamen yok eden zırh!
-    // Vercel'den NEXTAUTH_URL bulamazsa, public url'ye bakar, onu da bulamazsa direkt atakasa.com'a yönlendirir.
+    // 2. Senin Orijinal Jeton (Token) Motorun
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 3600000); // 1 saat
+
+    await db.collection("password_resets").insertOne({
+      email,
+      token,
+      expires,
+    });
+
+    // 🛡️ 3. SİBER KALKAN: "undefined" hatasını tamamen yok eden zırh!
     const siteAdresi = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://atakasa.com";
-    
-    // Kusursuz Sıfırlama Linki:
     const resetUrl = `${siteAdresi}/sifre-yenile?token=${token}&email=${encodeURIComponent(email)}`;
 
-    // 5. Siber Postacı (Nodemailer) Motoru
+    // 4. Senin Orijinal Siber Postacı (SMTP) Ayarların
     const transporter = nodemailer.createTransport({
       service: "gmail", 
       auth: {
-        user: process.env.EMAIL_USER, // Vercel'deki e-posta adresin
-        pass: process.env.EMAIL_PASS, // Vercel'deki e-posta uygulama şifren
+        user: process.env.SMTP_USER, // Senin sistemindeki orijinal isim
+        pass: process.env.SMTP_PASS, // Senin sistemindeki orijinal isim
       },
     });
 
-    // 6. Şık ve Siber E-Posta Şablonu
+    // 5. Şık ve Siber E-Posta Şablonu
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"A-TAKASA" <${process.env.SMTP_USER}>`,
       to: email,
       subject: "⚡ A-TAKASA Güvenlik Ağı - Şifre Sıfırlama Protokolü",
       html: `
@@ -60,13 +62,13 @@ export async function POST(req: Request) {
       `,
     };
 
-    // 7. Ateşle!
+    // Ateşle!
     await transporter.sendMail(mailOptions);
 
     return NextResponse.json({ message: "Siber sinyal e-posta kutunuza fırlatıldı!" }, { status: 200 });
 
   } catch (error) {
     console.error("Siber Posta Hatası:", error);
-    return NextResponse.json({ message: "Sistem yanıt vermiyor, lütfen tekrar deneyin." }, { status: 500 });
+    return NextResponse.json({ message: "Siber ağda bir hata oluştu, lütfen tekrar deneyin." }, { status: 500 });
   }
 }
