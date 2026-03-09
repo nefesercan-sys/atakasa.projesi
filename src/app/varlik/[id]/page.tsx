@@ -171,7 +171,9 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     } catch (error) { alert("Sipariş ağına ulaşılamadı."); }
   };
 
+  // 🎯 SİBER GÖRSEL RADARI EKLENDİ!
   const getResim = (ilan: any) => {
+    if (ilan?.resimler?.[0]) return ilan.resimler[0];
     if (ilan?.media?.images?.[0]) return ilan.media.images[0];
     if (ilan?.images?.[0]) return ilan.images[0];
     if (typeof ilan?.image === 'string' && ilan.image) return ilan.image;
