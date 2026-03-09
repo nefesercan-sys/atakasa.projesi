@@ -1,30 +1,40 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import mongoose from "mongoose";
 
-const OrderSchema = new Schema({
-  buyer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  seller: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+const orderSchema = new mongoose.Schema({
+  // TEMEL BİLGİLER (Senin Trade.ts yapınla tam uyumlu String model)
+  productId: { type: String, required: true },
+  buyerEmail: { type: String, required: true },
+  sellerEmail: { type: String, required: true },
   
-  // Ödeme ve Fiyat Bilgisi
-  totalPrice: { type: Number, required: true },
-  paymentStatus: { 
-    type: String, 
-    enum: ['Bekliyor', 'Ödendi', 'İade Edildi'], 
-    default: 'Bekliyor' 
+  // FİYAT VE ÖDEME DURUMU
+  price: { type: Number, required: true },
+  paymentStatus: {
+    type: String,
+    enum: [
+      "bekliyor", 
+      "odendi", 
+      "iade_edildi"
+    ],
+    default: "bekliyor"
   },
 
-  // Anlık Durum Takibi (Panelin kalbi burası)
+  // SİBER PANEL İÇİN ANLIK SİPARİŞ DURUMU (STATUS)
   status: {
     type: String,
-    enum: ['İşleme Alındı', 'Onaylandı', 'Kargoya Verildi', 'Teslim Edildi', 'İptal Edildi'],
-    default: 'İşleme Alındı'
+    enum: [
+      "isleme_alindi",   
+      "onaylandi",       
+      "kargolandi",      
+      "teslim_edildi",   
+      "iptal_edildi"     
+    ],
+    default: "isleme_alindi"
   },
 
-  // Kargo ve Adres
-  shippingAddress: { type: String, required: true },
+  // TESLİMAT BİLGİLERİ
   trackingNumber: { type: String, default: null },
+  shippingAddress: { type: String, required: true },
 
-}, { timestamps: true }); // createdAt ve updatedAt otomatik eklenir
+}, { timestamps: true });
 
-const Order = models.Order || model('Order', OrderSchema);
-export default Order;
+export default mongoose.models.Order || mongoose.model("Order", orderSchema);
