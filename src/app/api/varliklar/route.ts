@@ -2,11 +2,8 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "../../../lib/mongodb";
 import Varlik from "../../../models/Varlik";
 
-// 🚀 SİBER TURBO ÖNBELLEK: "force-dynamic" iptal edildi! 
-// Vercel'e "Verileri 5 saniyede bir güncelle, her tıklamada veritabanını yorma" emri verildi!
-export const revalidate = 5; 
+export const revalidate = 5;
 
-// 🛡️ SİBER KALKAN: Kaba Kuvvet (Brute Force) Radarı
 const requestCounts = new Map<string, number[]>();
 
 const checkRateLimit = (req: Request, limit: number, windowMs: number) => {
@@ -30,7 +27,6 @@ const siberTemizleyici = (veri: any): any => {
   return veri;
 };
 
-// 🔍 GET: ULTRA HIZLI BORSA MOTORU (Turbo Şarj Edildi 🚀)
 export async function GET(req: Request) {
   if (!checkRateLimit(req, 150, 60000)) {
     return NextResponse.json({ error: "Sisteme aşırı yüklenmeyin." }, { status: 429 });
@@ -40,28 +36,23 @@ export async function GET(req: Request) {
     await connectMongoDB();
     const { searchParams } = new URL(req.url);
 
-    // 🎯 Eğer Frontend sadece 1 ilanı soruyorsa (İncele Sayfası), hedefi kilitle!
     const id = searchParams.get("id");
-    
-    // 🔓 SİBER KİLİT AÇILDI: Artık 'aktif: true' şartı yok, veritabanındaki her şeyi çekecek!
-    let query: any = {}; 
-    
+    let query: any = {};
+
     if (id) {
-      query._id = id; // Tüm veritabanı yerine sadece bu ID'yi ara
+      query._id = id;
     } else {
-      // Sadece ana sayfadaysak filtreleri uygula
       const sektor = searchParams.get("sektor");
       if (sektor) query.kategori = siberTemizleyici(sektor);
     }
 
-    // 🚀 AGGREGATE YERİNE LEAN() KULLANILDI (100 Kat Daha Hızlı)
-    // Ana sayfada browser çökmesin diye .limit(100) eklendi (En yeni 100 ilan)
+    // ✅ populate eklendi — satici artık email ve name ile geliyor
     const ilanlar = await Varlik.find(query)
+      .populate("satici", "email name")
       .sort({ createdAt: -1 })
-      .limit(id ? 1 : 100) 
+      .limit(id ? 1 : 100)
       .lean();
 
-    // 🧬 Borsa Verisine Dönüştür (Hızlı JS Mapping)
     const borsaVeriliIlanlar = ilanlar.map((ilan: any) => {
       let degisimYuzdesi = 0;
       if (ilan.eskiFiyat > 0 && ilan.fiyat !== ilan.eskiFiyat) {
@@ -70,7 +61,11 @@ export async function GET(req: Request) {
       return {
         ...ilan,
         _id: ilan._id.toString(),
-        satici: ilan.sellerEmail || ilan.satici?.email || ilan.satici, // Ağır lookup iptal, veriyi direkt al
+        // ✅ satici artık populate edilmiş obje — email doğru geliyor
+        satici: ilan.satici,
+        saticiEmail: (ilan.satici as any)?.email || ilan.sellerEmail || "",
+        saticiAd: (ilan.satici as any)?.name || "",
+        sellerEmail: (ilan.satici as any)?.email || ilan.sellerEmail || "",
         degisimYuzdesi: Number(degisimYuzdesi.toFixed(1)),
         borsaDurumu: degisimYuzdesi < 0 ? "DÜŞÜŞ" : degisimYuzdesi > 0 ? "YÜKSELİŞ" : "STABİL",
       };
@@ -84,7 +79,6 @@ export async function GET(req: Request) {
   }
 }
 
-// 🛡️ PUT: FİYAT GÜNCELLEME VE ESKİ FİYAT MÜHÜRLEME (Orijinal Kalkan)
 export async function PUT(req: Request) {
   if (!checkRateLimit(req, 20, 60000)) {
     return NextResponse.json({ error: "Çok fazla işlem denemesi." }, { status: 429 });
