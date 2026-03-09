@@ -33,7 +33,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   const [ortalamaPuan, setOrtalamaPuan] = useState(0);
   const [yeniPuan, setYeniPuan] = useState(5);
   const [yeniYorumMetni, setYeniYorumMetni] = useState("");
-
   const [resolvedParams, setResolvedParams] = useState<any>(null);
 
   useEffect(() => {
@@ -55,7 +54,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
         const data = await res.json();
         setIlan(data);
         if (data) {
-          const saticiMail = data.sellerEmail || data.satici?.email || data.userId;
+          const saticiMail = data.satici?.email || data.sellerEmail || data.userId;
           fetchSaticiYorumlari(saticiMail);
         }
       } else {
@@ -70,12 +69,12 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
 
   const fetchBenimIlanlarim = async () => {
     try {
-      const res = await fetch(`/api/listings`);
+      const res = await fetch(`/api/varliklar`);
       if (res.ok) {
         const data = await res.json();
         let liste = Array.isArray(data) ? data : data.data || data.ilanlar || [];
         const benimkiler = liste.filter((i: any) => {
-          const sEmail = (typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
+          const sEmail = (i.satici?.email || i.satici || "").toString().toLowerCase();
           return sEmail === session?.user?.email?.toLowerCase();
         });
         setBenimIlanlarim(benimkiler);
@@ -97,13 +96,13 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   const handleYorumGonder = async () => {
     if (!yeniYorumMetni.trim()) return alert("Boş sinyal gönderilemez!");
     try {
-      const saticiMail = ilan.sellerEmail || ilan.satici?.email || ilan.userId;
+      const saticiMail = ilan.satici?.email || ilan.sellerEmail || ilan.userId;
       const res = await fetch("/api/yorumlar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           saticiEmail: saticiMail,
-          ilanId: ilan._id || ilan.id,
+          ilanId: ilan._id,
           puan: yeniPuan,
           icerik: yeniYorumMetni
         })
@@ -134,10 +133,10 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          aliciEmail: ilan.sellerEmail || ilan.satici?.email || ilan.userId,
-          hedefIlanId: ilan._id || ilan.id,
-          hedefIlanBaslik: ilan.title || ilan.baslik,
-          hedefIlanFiyat: ilan.price || ilan.fiyat || 0,
+          aliciEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId,
+          hedefIlanId: ilan._id,
+          hedefIlanBaslik: ilan.baslik || ilan.title,
+          hedefIlanFiyat: ilan.fiyat || ilan.price || 0,
           teklifEdilenIlanId: teklifIlanId,
           teklifEdilenIlanBaslik: teklifIlanBaslik,
           eklenenNakit: eklenecekNakit || 0,
@@ -156,14 +155,14 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          listingId: ilan._id || ilan.id,
-          sellerEmail: ilan.sellerEmail || ilan.satici?.email || ilan.userId,
+          listingId: ilan._id,
+          sellerEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId,
           adSoyad: siparisForm.adSoyad,
           telefon: siparisForm.telefon,
           adres: siparisForm.adres,
           siparisNotu: siparisForm.siparisNotu,
           odemeYontemi: siparisForm.odemeYontemi,
-          fiyat: ilan.price || ilan.fiyat
+          fiyat: ilan.fiyat || ilan.price
         })
       });
       if (res.ok) { alert("📦 SİPARİŞ ONAYLANDI!"); router.push("/panel"); }
@@ -172,6 +171,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   };
 
   const getResim = (ilan: any) => {
+    if (ilan?.resimler?.[0]) return ilan.resimler[0];
     if (ilan?.media?.images?.[0]) return ilan.media.images[0];
     if (ilan?.images?.[0]) return ilan.images[0];
     if (typeof ilan?.image === 'string' && ilan.image) return ilan.image;
@@ -192,7 +192,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     </div>
   );
 
-  const ilaninSahibiyim = session?.user?.email?.toLowerCase() === (ilan.sellerEmail || ilan.satici?.email || ilan.userId)?.toLowerCase();
+  const ilaninSahibiyim = session?.user?.email?.toLowerCase() === (ilan.satici?.email || ilan.sellerEmail || ilan.userId)?.toLowerCase();
 
   return (
     <div className="min-h-screen bg-[#020202] py-8 md:py-24 px-4 text-white font-sans selection:bg-[#00f260] selection:text-black">
@@ -201,17 +201,16 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
         {/* SOL PANEL */}
         <div className="w-full lg:w-1/2 bg-[#030712] border-r border-white/5 p-6 md:p-8 flex flex-col relative">
           <div className="relative group rounded-3xl overflow-hidden shadow-2xl mb-8 bg-zinc-950">
-            <img src={getResim(ilan)} alt={ilan.title} className="w-full h-auto max-h-[450px] object-cover opacity-90 group-hover:scale-105 transition-transform duration-700" />
+            <img src={getResim(ilan)} alt={ilan.baslik || ilan.title} className="w-full h-auto max-h-[450px] object-cover opacity-90 group-hover:scale-105 transition-transform duration-700" />
           </div>
 
-          <div className="mt-auto bg-white/5 p-6 rounded-3xl border border-white/5 max-h-96 overflow-y-auto scrollbar-hide">
+          <div className="mt-auto bg-white/5 p-6 rounded-3xl border border-white/5 max-h-96 overflow-y-auto">
             <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
               <h3 className="text-cyan-400 font-black text-[10px] uppercase tracking-widest">Satıcı Güven Puanı</h3>
               <span className="text-amber-400 text-lg font-black tracking-widest">
                 {ortalamaPuan > 0 ? renderYildizlar(ortalamaPuan) : "YENİ"}
               </span>
             </div>
-
             <div className="space-y-4 mb-6">
               {yorumlar.length === 0 ? (
                 <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest text-center py-4 bg-black/40 rounded-xl">Henüz değerlendirme yok.</p>
@@ -228,7 +227,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                 ))
               )}
             </div>
-
             {session?.user && !ilaninSahibiyim && (
               <div className="bg-[#000000] p-5 rounded-2xl border border-cyan-500/20">
                 <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-3">Satıcıyı Değerlendir</p>
@@ -237,12 +235,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                     <button key={star} onClick={() => setYeniPuan(star)} className={`text-3xl transition-all ${yeniPuan >= star ? 'text-amber-400 scale-110' : 'text-zinc-700 hover:text-amber-400/50'}`}>★</button>
                   ))}
                 </div>
-                <textarea
-                  value={yeniYorumMetni}
-                  onChange={(e) => setYeniYorumMetni(e.target.value)}
-                  placeholder="İşlem nasıldı? Güvenilir miydi?"
-                  className="w-full bg-[#050505] text-white text-xs p-4 rounded-xl border border-white/10 focus:border-cyan-500 transition-colors h-20 resize-none mb-3 outline-none"
-                />
+                <textarea value={yeniYorumMetni} onChange={(e) => setYeniYorumMetni(e.target.value)} placeholder="İşlem nasıldı? Güvenilir miydi?" className="w-full bg-[#050505] text-white text-xs p-4 rounded-xl border border-white/10 focus:border-cyan-500 transition-colors h-20 resize-none mb-3 outline-none" />
                 <button onClick={handleYorumGonder} className="w-full bg-cyan-900/30 border border-cyan-800/50 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-900/50 transition-all">
                   YORUMU GÖNDER
                 </button>
@@ -273,16 +266,16 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
           {aktifSekme === "incele" && (
             <div className="flex flex-col h-full">
               <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-6">
-                {ilan.title || ilan.baslik || "İsimsiz Varlık"}
+                {ilan.baslik || ilan.title || "İsimsiz Varlık"}
               </h1>
               <div className="text-[#00f260] font-black text-4xl mb-8 border-b border-white/5 pb-6">
-                {Number(ilan.price || ilan.fiyat || 0).toLocaleString()} <span className="text-2xl text-zinc-500 italic">₺</span>
+                {Number(ilan.fiyat || ilan.price || 0).toLocaleString()} <span className="text-2xl text-zinc-500 italic">₺</span>
               </div>
               <p className="text-zinc-400 text-sm mb-8 leading-relaxed flex-1 font-medium whitespace-pre-line">
-                {ilan.description || ilan.aciklama || "Açıklama belirtilmemiş."}
+                {ilan.aciklama || ilan.description || "Açıklama belirtilmemiş."}
               </p>
               {!ilaninSahibiyim && (
-                <Link href={`/mesajlar?satici=${ilan.sellerEmail || ilan.satici?.email || ilan.userId}&ilan=${ilan._id || ilan.id}`} className="w-full bg-white/5 text-white py-5 rounded-2xl border border-white/10 font-black uppercase tracking-widest text-[11px] hover:bg-white/10 transition-all flex justify-center items-center gap-2 mt-auto">
+                <Link href={`/mesajlar?satici=${ilan.satici?.email || ilan.sellerEmail || ilan.userId}&ilan=${ilan._id}`} className="w-full bg-white/5 text-white py-5 rounded-2xl border border-white/10 font-black uppercase tracking-widest text-[11px] hover:bg-white/10 transition-all flex justify-center items-center gap-2 mt-auto">
                   <MessageCircle size={18} /> SATICIYA MESAJ GÖNDER
                 </Link>
               )}
@@ -297,7 +290,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
               <select onChange={(e) => setSecilenBenimIlanim(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-sm p-5 rounded-2xl outline-none focus:border-cyan-500 transition-colors mb-6 appearance-none">
                 <option value="">-- Kendi İlanlarınızdan Birini Seçin --</option>
                 {benimIlanlarim.map(bIlan => (
-                  <option key={bIlan._id} value={`${bIlan._id}|${bIlan.title || bIlan.baslik}`}>{bIlan.title || bIlan.baslik}</option>
+                  <option key={bIlan._id} value={`${bIlan._id}|${bIlan.baslik || bIlan.title}`}>{bIlan.baslik || bIlan.title}</option>
                 ))}
               </select>
               <label className="text-[#00f260] text-[10px] font-black uppercase tracking-widest block mb-2">2. Üstüne Eklenecek Nakit (₺) - Opsiyonel:</label>
@@ -319,13 +312,13 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                 </div>
                 <div>
                   <div className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-1">GÜVENLİ SATIN ALMA</div>
-                  <h3 className="text-white font-bold text-sm line-clamp-1">{ilan.title || ilan.baslik}</h3>
-                  <div className="text-white font-black text-lg">{Number(ilan.price || ilan.fiyat || 0).toLocaleString()} ₺</div>
+                  <h3 className="text-white font-bold text-sm line-clamp-1">{ilan.baslik || ilan.title}</h3>
+                  <div className="text-white font-black text-lg">{Number(ilan.fiyat || ilan.price || 0).toLocaleString()} ₺</div>
                 </div>
               </div>
               <div className="flex justify-between items-center border border-[#00f260]/30 bg-[#00f260]/5 rounded-2xl p-5 mb-6">
                 <span className="text-[#00f260] font-black text-[11px] uppercase tracking-widest">ÖDENECEK TUTAR</span>
-                <span className="text-3xl font-black text-white">{Number(ilan.price || ilan.fiyat || 0).toLocaleString()} ₺</span>
+                <span className="text-3xl font-black text-white">{Number(ilan.fiyat || ilan.price || 0).toLocaleString()} ₺</span>
               </div>
               <div className="space-y-4 mb-6">
                 <input type="text" placeholder="Teslim Alacak Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-[#030712] border border-white/5 text-white text-sm p-4 rounded-xl outline-none focus:border-[#00f260] transition-colors" />
@@ -350,7 +343,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                     MESAFELİ SATIŞ SÖZLEŞMESİ'Nİ OKUDUM VE KABUL EDİYORUM.
                   </p>
                 </label>
-                <label className="flex items-start gap-3 cursor-pointer group">
+                <label className="flex items-start gap-3">
                   <div className="relative flex items-center justify-center mt-0.5 shrink-0">
                     <input type="checkbox" checked={true} readOnly className="appearance-none w-5 h-5 border-2 border-white bg-white rounded-md" />
                     <ShieldCheck size={12} className="absolute text-black pointer-events-none" />
