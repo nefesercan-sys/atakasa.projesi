@@ -1,32 +1,42 @@
-import { MongoClient, Db } from "mongodb";
+import mongoose from "mongoose";
 
-const uri = process.env.MONGODB_URI as string;
+const MONGODB_URI = process.env.MONGODB_URI as string;
 
-if (!uri) {
-  throw new Error("MONGODB_URI ortam değişkeni tanımlanmamış.");
+if (!MONGODB_URI) {
+  throw new Error("SİBER UYARI: MONGODB_URI ortam değişkeni bulunamadı!");
 }
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+// Global scope'da mongoose objesini saklayarak bağlantı havuzunu (connection pool) koruyoruz.
+let cached = (global as any).mongoose;
 
-declare global {
-  var _mongoClientPromise: Promise<MongoClient> | undefined;
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
-if (process.env.NODE_ENV === "development") {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri);
-    global._mongoClientPromise = client.connect();
+export const connectMongoDB = async () => {
+  // Eğer daha önceden açılmış sağlam bir kapı (bağlantı) varsa, direkt onu kullan (Sıfır bekleme!)
+  if (cached.conn) {
+    return cached.conn;
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri);
-  clientPromise = client.connect();
-}
 
-export async function connectMongoDB(): Promise<Db> {
-  const connectedClient = await clientPromise;
-  return connectedClient.db();
-}
+  // Eğer kapı açılmaya başlanmış ama henüz tam açılmamışsa, o işlemi bekle
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false, // Hız için buffer'ı kapat
+      maxPoolSize: 10,       // Aynı anda 10 otoyol şeridi aç
+    };
 
-export default clientPromise;
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      return mongoose;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+};
