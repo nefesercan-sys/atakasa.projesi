@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation"; 
 import Link from "next/link";
@@ -10,7 +10,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
 
   const [ilan, setIlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [aktifSekme, setAktifSekme] = useState("incele"); // Çökmez varsayılan state
+  const [aktifSekme, setAktifSekme] = useState("incele"); 
 
   // 🔄 TAKAS STATE'LERİ
   const [benimIlanlarim, setBenimIlanlarim] = useState<any[]>([]);
@@ -28,61 +28,58 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   const [yeniYorumMetni, setYeniYorumMetni] = useState("");
 
   const [resolvedParams, setResolvedParams] = useState<any>(null);
+  const veriCekildiMi = useRef(false); // 🚀 TURBO: Çift çalışmayı engelleyen siber kilit!
 
   useEffect(() => {
-    // 🛡️ SİBER ZIRH: Next.js'i çökertmeden URL parametresini güvenlice okuma
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const islemParam = urlParams.get("islem");
       if (islemParam) setAktifSekme(islemParam);
     }
-
     const unwrapParams = async () => { const p = await params; setResolvedParams(p); };
     unwrapParams();
   }, [params]);
 
   useEffect(() => {
-    if (resolvedParams?.id) {
-      fetchIlanDetay();
-      if (session?.user?.email) fetchBenimIlanlarim();
+    // Sadece ID belli olduğunda ve daha önce çekilmediyse çalışır!
+    if (resolvedParams?.id && !veriCekildiMi.current) {
+      siberTurboMotorunuCalistir();
     }
   }, [resolvedParams, session]);
 
-  const fetchIlanDetay = async () => {
+  // 🚀 SİBER TURBO MOTORU: Veritabanına saniyede 4 kez gitmek yerine SADECE 1 KEZ gider!
+  const siberTurboMotorunuCalistir = async () => {
+    veriCekildiMi.current = true; // Kilitlendi, bir daha gereksiz yere çalışmayacak.
     try {
-      // 🎯 SİBER FREKANS AYARI: Artık doğru kanala (varliklar) bağlanıyor!
       const res = await fetch(`/api/varliklar`); 
       const data = await res.json();
       let liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
+      
+      // 1. İLAN DETAYINI AYIKLA
       const seciliIlan = liste.find((i: any) => i._id === resolvedParams.id || i.id === resolvedParams.id);
       setIlan(seciliIlan);
       
-      // İlanı bulduğumuz an, satıcının canlı puanlarını çekmek için siber radarı çalıştır!
       if (seciliIlan) {
         const saticiMail = seciliIlan.sellerEmail || seciliIlan.satici?.email || seciliIlan.userId || seciliIlan.satici;
         if (typeof saticiMail === 'string') fetchSaticiYorumlari(saticiMail);
       }
-    } catch (error) { console.error("Varlık çekilemedi:", error); }
-    setLoading(false);
-  };
 
-  const fetchBenimIlanlarim = async () => {
-    try {
-      // 🎯 SİBER FREKANS AYARI: Kendi ilanlarını da doğru kanaldan (varliklar) çekiyor!
-      const res = await fetch(`/api/varliklar`);
-      if (res.ok) {
-        const data = await res.json();
-        let liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
+      // 2. KENDİ İLANLARINI AYIKLA (Aynı veriden, veritabanını yormadan!)
+      if (session?.user?.email) {
         const benimkiler = liste.filter((i: any) => {
            const sEmail = (typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
-           return sEmail === session?.user?.email?.toLowerCase();
+           return sEmail === session.user.email.toLowerCase();
         });
         setBenimIlanlarim(benimkiler);
       }
-    } catch (error) { console.error("Varlıklar çekilemedi."); }
+
+    } catch (error) { 
+      console.error("Turbo Motor Çöktü:", error); 
+      veriCekildiMi.current = false; // Hata olursa kilidi aç ki tekrar deneyebilsin
+    }
+    setLoading(false);
   };
 
-  // 📡 SATICI PUANLARINI ÇEKEN RADAR
   const fetchSaticiYorumlari = async (saticiEmail: string) => {
     try {
       const res = await fetch(`/api/yorumlar?satici=${saticiEmail}`);
@@ -94,7 +91,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     } catch (err) { console.error("Yorum radarı koptu."); }
   };
 
-  // 🚀 YORUM FIRLATMA MOTORU
   const handleYorumGonder = async () => {
     if (!yeniYorumMetni.trim()) return alert("Boş sinyal gönderilemez!");
     try {
@@ -102,25 +98,17 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
       const res = await fetch("/api/yorumlar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          saticiEmail: saticiMail,
-          ilanId: ilan._id || ilan.id,
-          puan: yeniPuan,
-          icerik: yeniYorumMetni
-        })
+        body: JSON.stringify({ saticiEmail: saticiMail, ilanId: ilan._id || ilan.id, puan: yeniPuan, icerik: yeniYorumMetni })
       });
       const result = await res.json();
       if (res.ok) {
         alert("⚡ YILDIZLAR MÜHÜRLENDİ!");
         setYeniYorumMetni("");
-        fetchSaticiYorumlari(saticiMail); // Ekrani anında güncelle
-      } else {
-        alert(`❌ Siber Kalkan: ${result.error}`);
-      }
+        fetchSaticiYorumlari(saticiMail); 
+      } else { alert(`❌ Siber Kalkan: ${result.error}`); }
     } catch (error) { alert("Yorum motoru yanıt vermiyor."); }
   };
 
-  // Siber İletişim Engelleyici
   const iletisimBilgisiIceriyorMu = (metin: string) => {
     const telefonRegex = /(\b(05|5)\d{2}[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}\b)/;
     const mailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/;
@@ -134,16 +122,11 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     const [teklifIlanId, teklifIlanBaslik] = secilenBenimIlanim.split("|");
     try {
       const res = await fetch("/api/takas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           aliciEmail: ilan.sellerEmail || ilan.satici?.email || ilan.userId || ilan.satici,
-          hedefIlanId: ilan._id || ilan.id,
-          hedefIlanBaslik: ilan.title || ilan.baslik,
-          hedefIlanFiyat: ilan.price || ilan.fiyat || 0,
-          teklifEdilenIlanId: teklifIlanId,
-          teklifEdilenIlanBaslik: teklifIlanBaslik,
-          eklenenNakit: eklenecekNakit || 0,
+          hedefIlanId: ilan._id || ilan.id, hedefIlanBaslik: ilan.title || ilan.baslik, hedefIlanFiyat: ilan.price || ilan.fiyat || 0,
+          teklifEdilenIlanId: teklifIlanId, teklifEdilenIlanBaslik: teklifIlanBaslik, eklenenNakit: eklenecekNakit || 0,
         })
       });
       if (res.ok) { alert("⚡ SİBER TEKLİF İLETİLDİ!"); router.push("/panel"); } 
@@ -155,15 +138,10 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     if (!siparisForm.adSoyad || !siparisForm.adres) return alert("Lütfen teslimat bilgilerini doldurun!");
     try {
       const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          listingId: ilan._id || ilan.id,
-          sellerEmail: ilan.sellerEmail || ilan.satici?.email || ilan.userId || ilan.satici,
-          adSoyad: siparisForm.adSoyad,
-          adres: siparisForm.adres,
-          odemeYontemi: siparisForm.odemeYontemi,
-          fiyat: ilan.price || ilan.fiyat
+          listingId: ilan._id || ilan.id, sellerEmail: ilan.sellerEmail || ilan.satici?.email || ilan.userId || ilan.satici,
+          adSoyad: siparisForm.adSoyad, adres: siparisForm.adres, odemeYontemi: siparisForm.odemeYontemi, fiyat: ilan.price || ilan.fiyat
         })
       });
       if (res.ok) { alert("📦 SİPARİŞ ONAYLANDI!"); router.push("/panel"); } 
@@ -171,7 +149,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     } catch (error) { alert("Sipariş ağına ulaşılamadı."); }
   };
 
-  // 🎯 SİBER GÖRSEL RADARI EKLENDİ!
   const getResim = (ilan: any) => {
     if (ilan?.resimler?.[0]) return ilan.resimler[0];
     if (ilan?.media?.images?.[0]) return ilan.media.images[0];
@@ -180,15 +157,11 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     return "https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK";
   };
 
-  // Yıldız Çizme Algoritması
-  const renderYildizlar = (puan: number) => {
-    return "⭐".repeat(Math.round(puan)) + "☆".repeat(5 - Math.round(puan));
-  };
+  const renderYildizlar = (puan: number) => "⭐".repeat(Math.round(puan)) + "☆".repeat(5 - Math.round(puan));
 
   if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#00f260] font-black animate-pulse">VARLIK ÇÖZÜMLENİYOR...</div>;
   if (!ilan) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-red-500 font-black">VARLIK BULUNAMADI.</div>;
 
-  // 🛡️ SİBER ZIRH: Eğer veri eksik gelirse sayfanın çökmesini engelleyen güvenli kontrol
   const saticiMaili = ilan.sellerEmail || ilan.satici?.email || ilan.userId || ilan.satici;
   const ilaninSahibiyim = session?.user?.email && saticiMaili && typeof saticiMaili === 'string' && session.user.email.toLowerCase() === saticiMaili.toLowerCase();
 
@@ -200,18 +173,12 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
         <div className="w-full lg:w-1/2 bg-[#030712] border-r border-white/5 p-8 flex flex-col relative">
            <img src={getResim(ilan)} alt={ilan.title || ilan.baslik} className="w-full h-auto object-cover rounded-3xl border border-white/10 shadow-lg mb-8" />
            
-           {/* ⭐ CANLI YORUM VE PUAN SİSTEMİ */}
            <div className="mt-auto bg-white/[0.02] p-6 rounded-2xl border border-white/5 max-h-80 overflow-y-auto custom-scrollbar">
              <div className="flex justify-between items-center mb-4 border-b border-white/5 pb-2">
-               <h3 className="text-cyan-400 font-black text-[10px] uppercase tracking-widest">
-                 Satıcı Güven Puanı
-               </h3>
-               <span className="text-amber-400 text-lg font-black tracking-widest">
-                 {ortalamaPuan > 0 ? `${renderYildizlar(ortalamaPuan)} (${ortalamaPuan})` : "DEĞERLENDİRME YOK"}
-               </span>
+               <h3 className="text-cyan-400 font-black text-[10px] uppercase tracking-widest">Satıcı Güven Puanı</h3>
+               <span className="text-amber-400 text-lg font-black tracking-widest">{ortalamaPuan > 0 ? `${renderYildizlar(ortalamaPuan)} (${ortalamaPuan})` : "DEĞERLENDİRME YOK"}</span>
              </div>
              
-             {/* Yorumlar Listesi */}
              <div className="space-y-3 mb-6">
                {yorumlar.length === 0 ? (
                  <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest text-center py-4">Henüz yorum yapılmamış.</p>
@@ -229,7 +196,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                )}
              </div>
 
-             {/* 🚀 YENİ YORUM FORMU (Sadece Giriş Yapan ve Satıcı Olmayanlar Görebilir) */}
              {session?.user && !ilaninSahibiyim && (
                <div className="bg-black/50 p-4 rounded-xl border border-cyan-500/20">
                  <p className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-2">Satıcıyı Değerlendir</p>
@@ -238,15 +204,8 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                      <button key={star} onClick={() => setYeniPuan(star)} className={`text-2xl transition-all ${yeniPuan >= star ? 'text-amber-400 scale-110' : 'text-slate-600 hover:text-amber-400/50'}`}>★</button>
                    ))}
                  </div>
-                 <textarea 
-                   value={yeniYorumMetni} 
-                   onChange={(e) => setYeniYorumMetni(e.target.value)} 
-                   placeholder="İşlem nasıldı? Güvenilir miydi? Yorumunuzu bırakın..."
-                   className="w-full bg-[#050505] text-white text-xs p-3 rounded-lg border border-white/10 focus:border-cyan-500 transition-colors h-16 resize-none mb-2"
-                 />
-                 <button onClick={handleYorumGonder} className="w-full bg-cyan-500/20 text-cyan-400 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all">
-                   YORUMU GÖNDER
-                 </button>
+                 <textarea value={yeniYorumMetni} onChange={(e) => setYeniYorumMetni(e.target.value)} placeholder="İşlem nasıldı? Güvenilir miydi? Yorumunuzu bırakın..." className="w-full bg-[#050505] text-white text-xs p-3 rounded-lg border border-white/10 focus:border-cyan-500 transition-colors h-16 resize-none mb-2" />
+                 <button onClick={handleYorumGonder} className="w-full bg-cyan-500/20 text-cyan-400 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all">YORUMU GÖNDER</button>
                </div>
              )}
            </div>
