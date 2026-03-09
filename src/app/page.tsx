@@ -90,7 +90,7 @@ export default function Home() {
 
   const getResim = (ilan: any) => ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/600x400/030712/00f260?text=A-TAKASA";
 
-  // 🛠️ GELİŞMİŞ RADAR FİLTRELEME MOTORU (GÜNCELLENDİ)
+  // 🛠️ GELİŞMİŞ RADAR FİLTRELEME MOTORU
   const filtrelenmisIlanlar = () => {
     let liste = [...ilanlar];
     
@@ -119,11 +119,33 @@ export default function Home() {
   
   const closeModal = () => { setSeciliIlan(null); setModalTuru(null); setSecilenBenimIlanim(""); setEklenecekNakit(""); };
 
+  // 🛒 🚀 YENİ SİBER SEPET MOTORU (ÇÖKME KORUMALI)
   const handleSepeteEkle = (ilan: any) => {
-    const sepet = JSON.parse(localStorage.getItem('siber_sepet') || '[]');
-    sepet.push(ilan);
-    localStorage.setItem('siber_sepet', JSON.stringify(sepet));
-    alert("🛒 Varlık siber sepete eklendi!");
+    // 1. Tarayıcı hafızasını oku
+    const mevcutSepet = JSON.parse(localStorage.getItem('atakasa_sepet') || '[]');
+    
+    // 2. Bu ürün zaten sepette mi kontrol et (Çift eklemeyi engelle)
+    const urunId = ilan._id || ilan.id;
+    const zatenVarMi = mevcutSepet.find((item: any) => item.id === urunId);
+    
+    if (zatenVarMi) {
+      return alert("⚠️ Bu varlık zaten siber kasanızda bekliyor!");
+    }
+
+    // 3. Sepet formatına uygun objeyi oluştur
+    const eklenecekUrun = {
+      id: urunId,
+      baslik: ilan.title || ilan.baslik,
+      fiyat: Number(ilan.price || ilan.fiyat),
+      resim: ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/150x150/030712/00f260?text=A-TAKASA",
+      saticiMail: ilan.sellerEmail || ilan.satici?.email || ilan.userId || ilan.satici
+    };
+
+    // 4. Hafızaya mühürle
+    mevcutSepet.push(eklenecekUrun);
+    localStorage.setItem('atakasa_sepet', JSON.stringify(mevcutSepet));
+    
+    alert("⚡ VARLIK SİBER KASAYA (SEPETE) EKLENDİ!");
   };
 
   const handleTakasGonder = async () => {
@@ -148,7 +170,6 @@ export default function Home() {
     } catch (e) { alert("Sinyal koptu."); }
   };
 
-  // 🛒 YENİLENMİŞ SİPARİŞ MOTORU
   const handleSiparisTamamla = async () => {
     if (!siparisForm.adSoyad || !siparisForm.adres || !siparisForm.telefon) return alert("Lütfen teslimat ve iletişim bilgilerini eksiksiz doldurun!");
     if (!kabulSozlesme || !kabulYasalZirh) return alert("🚨 İşleme devam etmek için sözleşmeleri onaylamalısınız!");
@@ -231,7 +252,7 @@ export default function Home() {
                  <p className="text-[#00f260] text-[9px] font-black tracking-[0.2em] uppercase mt-1 animate-pulse">{aktifSlogan}</p>
                </div>
             </div>
-{/* Arama Motoru ve Filtre Açma Butonu */}
+            {/* Arama Motoru, Filtre Açma ve 🛒 SEPET Butonu */}
             <div className="flex w-full md:w-auto gap-2 max-w-xl flex-1">
               <div className="relative flex-1 group">
                 <input type="text" placeholder="Varlık veya kelime ara..." value={searchTerm} className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] px-6 py-4 outline-none focus:border-[#00f260] text-sm transition-all" onChange={(e) => setSearchTerm(e.target.value)} />
@@ -243,6 +264,13 @@ export default function Home() {
               >
                 🛠️ RADAR
               </button>
+              {/* 🚀 YENİ EKLENEN KISAYOL: SEPET BUTONU */}
+              <button 
+                onClick={() => router.push('/sepet')} 
+                className="px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+              >
+                🛒 SEPET
+              </button>
             </div>
           </div>
 
@@ -251,7 +279,6 @@ export default function Home() {
             <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-6 animate-in slide-in-from-top duration-300 shadow-[0_0_30px_rgba(0,242,96,0.1)]">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 
-                {/* Şehir Filtresi */}
                 <div className="flex flex-col">
                   <label className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-2">BÖLGE / ŞEHİR</label>
                   <select value={aktifSehir} onChange={(e) => setAktifSehir(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-cyan-500">
@@ -259,19 +286,16 @@ export default function Home() {
                   </select>
                 </div>
 
-                {/* Min Fiyat */}
                 <div className="flex flex-col">
                   <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MİN TAVAN (₺)</label>
                   <input type="number" placeholder="Örn: 1000" value={minFiyat} onChange={(e) => setMinFiyat(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-[#00f260]" />
                 </div>
 
-                {/* Max Fiyat */}
                 <div className="flex flex-col">
                   <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MAX TABAN (₺)</label>
                   <input type="number" placeholder="Örn: 50000" value={maxFiyat} onChange={(e) => setMaxFiyat(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-[#00f260]" />
                 </div>
 
-                {/* Sadece Takaslık - Tıklanabilir Kutu */}
                 <div className="flex items-end">
                    <button 
                      onClick={() => setSadeceTakaslik(!sadeceTakaslik)}
@@ -405,7 +429,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 📱 SİBER MOBİL ALT BAR (NAVİGASYON) - Yansıma Sorunu Kesin Çözüm */}
+      {/* 📱 SİBER MOBİL ALT BAR (NAVİGASYON) */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[400px] z-[200] bg-[#050505] border border-white/10 px-6 py-3 rounded-full flex justify-between items-center md:hidden">
          <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
            <span className="text-xl">🏠</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">VİTRİN</span>
@@ -414,7 +438,7 @@ export default function Home() {
            <span className="text-xl">📂</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">SEKTÖR</span>
          </button>
          
-         {/* ANA BUTON (⚡) - Yukarı kaldırıldı, parlama sadece butona özel yapıldı */}
+         {/* ANA BUTON (⚡) */}
          <div className="relative -top-6">
             <button onClick={() => router.push('/varlik-ekle')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
               ⚡
@@ -431,4 +455,3 @@ export default function Home() {
     </div>
   );
 }
-  
