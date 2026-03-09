@@ -58,15 +58,15 @@ export async function POST(req: NextRequest) {
     <div style="padding:40px 36px;">
       <h1 style="font-size:28px;font-weight:900;color:#1A1A1A;margin:0 0 4px;">A-TAKASA</h1>
       <p style="color:#C8A96E;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 32px;">Takas Platformu</p>
-      <h2 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 12px;">Sifre Sifirlama</h2>
+      <h2 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 12px;">Şifre Sıfırlama</h2>
       <p style="color:#6B6B6B;font-size:14px;line-height:1.7;margin:0 0 28px;">
-        Sifre sifirlama talebinde bulundunuz. Bu link 1 saat gecerlidir.
+        Bu link <strong>1 saat</strong> gecerlidir.
       </p>
       <a href="${resetUrl}" style="display:block;background:#2C5F2E;color:white;text-decoration:none;text-align:center;padding:14px 24px;border-radius:12px;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;">
         Sifremi Sifirla
       </a>
-      <p style="color:#ABABAB;font-size:12px;line-height:1.6;margin:0;">
-        Bu islemi siz yapmadıysanız bu e-postayı gormezden gelebilirsiniz.
+      <p style="color:#ABABAB;font-size:12px;margin:0;">
+        Bu islemi siz yapmadıysanız gormezden gelebilirsiniz.
       </p>
     </div>
     <div style="padding:20px 36px;border-top:1px solid #F0EDE8;text-align:center;">
