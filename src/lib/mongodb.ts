@@ -1,11 +1,9 @@
-// src/lib/mongodb.ts
-
-import { MongoClient } from "mongodb";
+import { MongoClient, Db } from "mongodb";
 
 const uri = process.env.MONGODB_URI as string;
 
 if (!uri) {
-  throw new Error("MONGODB_URI environment variable tanımlanmamış.");
+  throw new Error("MONGODB_URI ortam değişkeni tanımlanmamış.");
 }
 
 let client: MongoClient;
@@ -24,6 +22,12 @@ if (process.env.NODE_ENV === "development") {
 } else {
   client = new MongoClient(uri);
   clientPromise = client.connect();
+}
+
+// Eski kodlarla uyumlu — connectMongoDB olarak da kullanılabilir
+export async function connectMongoDB(): Promise<Db> {
+  const connectedClient = await clientPromise;
+  return connectedClient.db();
 }
 
 export default clientPromise;
