@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "../../../lib/mongodb";
 import Varlik from "../../../models/Varlik";
 
-export const dynamic = "force-dynamic";
+// 🚀 SİBER TURBO ÖNBELLEK: "force-dynamic" iptal edildi! 
+// Vercel'e "Verileri 5 saniyede bir güncelle, her tıklamada veritabanını yorma" emri verildi!
+export const revalidate = 5; 
 
 // 🛡️ SİBER KALKAN: Kaba Kuvvet (Brute Force) Radarı
 const requestCounts = new Map<string, number[]>();
@@ -114,4 +116,3 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "İşlem başarısız." }, { status: 500 });
   }
 }
- 
