@@ -16,7 +16,7 @@ export default function SifremiUnuttum() {
     setHata("");
 
     if (!email || !email.includes("@")) {
-      setHata("Lütfen geçerli bir e-posta adresi girin.");
+      setHata("Lutfen gecerli bir e-posta adresi girin.");
       return;
     }
 
@@ -31,10 +31,10 @@ export default function SifremiUnuttum() {
       if (res.ok) {
         setGonderildi(true);
       } else {
-        setHata(data.message || "Bir hata oluştu, lütfen tekrar deneyin.");
+        setHata(data.message || "Bir hata olustu, lutfen tekrar deneyin.");
       }
     } catch (err) {
-      setHata("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
+      setHata("Sunucuya baglaниlamadi. Lutfen tekrar deneyin.");
     } finally {
       setLoading(false);
     }
@@ -70,10 +70,10 @@ export default function SifremiUnuttum() {
                     🔑
                   </div>
                   <h2 className="text-2xl font-bold text-[#1A1A1A] leading-tight">
-                    Şifreni mi unuttun?
+                    Sifreni mi unuttun?
                   </h2>
                   <p className="text-[#6B6B6B] mt-2 text-sm leading-relaxed">
-                    E-posta adresini gir, sana sıfırlama bağlantısı gönderelim.
+                    E-posta adresini gir, sana sifirlama baglantisi gonderelim.
                   </p>
                 </div>
 
@@ -108,29 +108,14 @@ export default function SifremiUnuttum() {
                   >
                     {loading ? (
                       <>
-                        <svg
-                          className="animate-spin h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
-                        Gönderiliyor...
+                        Gonderiliyor...
                       </>
                     ) : (
-                      "Sıfırlama Bağlantısı Gönder"
+                      "Sifirlama Baglantisi Gonder"
                     )}
                   </button>
                 </form>
@@ -141,46 +126,37 @@ export default function SifremiUnuttum() {
                   ✉️
                 </div>
                 <h2 className="text-2xl font-bold text-[#1A1A1A] mb-3">
-                  E-posta Gönderildi!
+                  E-posta Gonderildi!
                 </h2>
                 <p className="text-[#6B6B6B] text-sm leading-relaxed mb-2">
                   <span className="font-semibold text-[#1A1A1A]">{email}</span>{" "}
-                  adresine sıfırlama bağlantısı gönderildi.
+                  adresine sifirlama baglantisi gonderildi.
                 </p>
                 <p className="text-[#ABABAB] text-xs mb-8">
-                  Spam klasörünü de kontrol etmeyi unutma!
+                  Spam klasorunu de kontrol etmeyi unutma!
                 </p>
                 <button
-                  onClick={() => {
-                    setGonderildi(false);
-                    setEmail("");
-                  }}
+                  onClick={() => { setGonderildi(false); setEmail(""); }}
                   className="text-[#C8A96E] text-sm font-semibold hover:underline"
                 >
-                  Farklı bir e-posta dene
+                  Farkli bir e-posta dene
                 </button>
               </div>
             )}
           </div>
 
           <div className="px-8 pb-8 flex items-center justify-between">
-            <Link
-              href="/giris"
-              className="text-[#6B6B6B] text-sm hover:text-[#1A1A1A] transition-colors"
-            >
-              ← Giriş Yap
+            <Link href="/giris" className="text-[#6B6B6B] text-sm hover:text-[#1A1A1A] transition-colors">
+              Giris Yap
             </Link>
-            <Link
-              href="/kayit"
-              className="text-[#C8A96E] text-sm font-semibold hover:underline"
-            >
-              Hesap Oluştur
+            <Link href="/kayit" className="text-[#C8A96E] text-sm font-semibold hover:underline">
+              Hesap Olustur
             </Link>
           </div>
         </div>
 
         <p className="text-center text-xs text-[#ABABAB] mt-6">
-          © 2025 atakasa.com · Türkiye&apos;nin Takas Platformu
+          2025 atakasa.com - Turkiye Takas Platformu
         </p>
       </div>
     </div>
