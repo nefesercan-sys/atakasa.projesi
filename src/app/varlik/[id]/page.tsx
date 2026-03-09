@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation"; 
-// 🚨 SİBER MAYIN İMHA EDİLDİ: useSearchParams Next.js'i çökertiyordu, kaldırıldı!
 import Link from "next/link";
 
 export default function SiberVarlikTerminali({ params }: { params: any }) {
@@ -51,8 +50,8 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
 
   const fetchIlanDetay = async () => {
     try {
-      // Not: Ana sayfada /api/varliklar kullanıyorsun, detayda /api/listings. Eğer hata alırsan burayı /api/varliklar yap!
-      const res = await fetch(`/api/listings`); 
+      // 🎯 SİBER FREKANS AYARI: Artık doğru kanala (varliklar) bağlanıyor!
+      const res = await fetch(`/api/varliklar`); 
       const data = await res.json();
       let liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
       const seciliIlan = liste.find((i: any) => i._id === resolvedParams.id || i.id === resolvedParams.id);
@@ -69,7 +68,8 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
 
   const fetchBenimIlanlarim = async () => {
     try {
-      const res = await fetch(`/api/listings`);
+      // 🎯 SİBER FREKANS AYARI: Kendi ilanlarını da doğru kanaldan (varliklar) çekiyor!
+      const res = await fetch(`/api/varliklar`);
       if (res.ok) {
         const data = await res.json();
         let liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
