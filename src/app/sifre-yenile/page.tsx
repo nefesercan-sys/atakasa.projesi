@@ -167,3 +167,142 @@ function SifreYenileForm() {
                               className="h-1 flex-1 rounded-full transition-all duration-300"
                               style={{
                                 background:
+                                  i <= sifreGuc.guc
+                                    ? sifreGuc.renk
+                                    : "#E5E5E5",
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-xs" style={{ color: sifreGuc.renk }}>
+                          {sifreGuc.label}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Şifre Tekrar */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#1A1A1A] uppercase tracking-wider mb-2">
+                      Şifre Tekrar
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={goster2 ? "text" : "password"}
+                        value={tekrarSifre}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setTekrarSifre(e.target.value)
+                        }
+                        placeholder="Şifrenizi tekrar girin"
+                        required
+                        className="w-full bg-[#F8F6F2] border border-black/10 rounded-xl px-4 py-3.5 pr-12 text-[#1A1A1A] text-sm placeholder:text-[#ABABAB] outline-none focus:border-[#C8A96E] focus:ring-2 focus:ring-[#C8A96E]/20 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setGoster2(!goster2)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#ABABAB] hover:text-[#1A1A1A] transition-colors text-lg"
+                      >
+                        {goster2 ? "🙈" : "👁️"}
+                      </button>
+                    </div>
+                    {tekrarSifre.length > 0 && yeniSifre !== tekrarSifre && (
+                      <p className="text-xs text-red-500 mt-1">
+                        Şifreler eşleşmiyor
+                      </p>
+                    )}
+                    {tekrarSifre.length > 0 && yeniSifre === tekrarSifre && (
+                      <p className="text-xs text-green-600 mt-1">
+                        ✓ Şifreler eşleşiyor
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || !token || !email}
+                    className="w-full bg-[#2C5F2E] hover:bg-[#234D25] text-white font-bold py-3.5 rounded-xl text-sm uppercase tracking-widest transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Kaydediliyor...
+                      </>
+                    ) : (
+                      "Şifremi Güncelle"
+                    )}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <div className="w-20 h-20 rounded-full bg-[#2C5F2E]/10 flex items-center justify-center mx-auto mb-5 text-4xl">
+                  ✅
+                </div>
+                <h2 className="text-2xl font-bold text-[#1A1A1A] mb-3">
+                  Şifre Güncellendi!
+                </h2>
+                <p className="text-[#6B6B6B] text-sm leading-relaxed mb-2">
+                  {mesaj}
+                </p>
+                <p className="text-[#ABABAB] text-xs mb-6">
+                  3 saniye içinde giriş sayfasına yönlendiriliyorsunuz...
+                </p>
+                <Link
+                  href="/giris"
+                  className="inline-block bg-[#2C5F2E] text-white font-bold px-6 py-3 rounded-xl text-sm uppercase tracking-widest"
+                >
+                  Giriş Yap →
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <div className="px-8 pb-8">
+            <Link
+              href="/sifremi-unuttum"
+              className="text-[#6B6B6B] text-sm hover:text-[#1A1A1A] transition-colors"
+            >
+              ← Tekrar bağlantı iste
+            </Link>
+          </div>
+        </div>
+
+        <p className="text-center text-xs text-[#ABABAB] mt-6">
+          © 2025 atakasa.com · Türkiye&apos;nin Takas Platformu
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function SifreYenile() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F5F0E8] flex items-center justify-center">
+          <p className="text-[#6B6B6B]">Yükleniyor...</p>
+        </div>
+      }
+    >
+      <SifreYenileForm />
+    </Suspense>
+  );
+}
