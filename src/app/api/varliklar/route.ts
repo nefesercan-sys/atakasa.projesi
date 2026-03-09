@@ -52,28 +52,33 @@ export async function GET(req: Request) {
       .limit(id ? 1 : 100)
       .lean();
 
-    // Satici ID'lerini topla, tek sorguda emaillerini çek
-    const saticiIdleri = [...new Set(
-      ilanlar.map((i: any) => i.satici?.toString()).filter(Boolean)
-    )];
+    // ✅ TypeScript uyumlu unique ID listesi
+    const saticiIdleriSet = new Set<string>();
+    ilanlar.forEach((i: any) => {
+      if (i.satici) saticiIdleriSet.add(i.satici.toString());
+    });
+    const saticiIdleri = Array.from(saticiIdleriSet);
+
     const saticilar = await User.find({ _id: { $in: saticiIdleri } })
       .select("_id email name")
       .lean();
-    const saticiMap = new Map(
-      saticilar.map((s: any) => [s._id.toString(), s])
-    );
+
+    const saticiMap = new Map<string, any>();
+    saticilar.forEach((s: any) => {
+      saticiMap.set(s._id.toString(), s);
+    });
 
     const borsaVeriliIlanlar = ilanlar.map((ilan: any) => {
       let degisimYuzdesi = 0;
       if (ilan.eskiFiyat > 0 && ilan.fiyat !== ilan.eskiFiyat) {
         degisimYuzdesi = ((ilan.fiyat - ilan.eskiFiyat) / ilan.eskiFiyat) * 100;
       }
-      const saticiObj = saticiMap.get(ilan.satici?.toString()) as any;
+      const saticiObj = saticiMap.get(ilan.satici?.toString());
       return {
         ...ilan,
         _id: ilan._id.toString(),
         satici: {
-          _id: ilan.satici?.toString(),
+          _id: ilan.satici?.toString() || "",
           email: saticiObj?.email || "",
           name: saticiObj?.name || "",
         },
