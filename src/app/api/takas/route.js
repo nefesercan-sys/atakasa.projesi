@@ -18,7 +18,7 @@ const Wallet = mongoose.models.Wallet || mongoose.model("Wallet", WalletSchema);
 // 🔄 TAKAS ŞEMASI (Borsa, Escrow ve Komisyon Korumalı)
 const TakasSchema = new mongoose.Schema({
   gonderenEmail: { type: String, required: true }, 
-  aliciEmail: { type: String, required: true },    
+  aliciEmail: { type: String, required: true },     
   hedefIlanId: { type: String, required: true },   
   hedefIlanBaslik: { type: String, required: true },
   hedefIlanFiyat: { type: Number, required: true, default: 0 }, 
@@ -44,17 +44,29 @@ const TakasSchema = new mongoose.Schema({
 
 const Takas = mongoose.models.Takas || mongoose.model("Takas", TakasSchema);
 
-// 🔍 GET: Panel için teklifleri çeker
+// 🔍 GET: Panel için teklifleri çeker (ÇÖKME KORUMALI URL RADARI EKLENDİ 🚀)
 export async function GET(req) {
   try {
     await connectDB();
-    const session = await getServerSession();
-    if (!session?.user?.email) return NextResponse.json({ error: "Oturum yok!" }, { status: 401 });
+    
+    // Siber radardan (Frontend) fırlatılan e-posta sinyalini yakala
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get("email");
 
-    const email = session.user.email.toLowerCase();
-    const teklifler = await Takas.find({ $or: [{ gonderenEmail: email }, { aliciEmail: email }] }).sort({ createdAt: -1 });
+    if (!email) {
+      return NextResponse.json({ error: "Siber kimlik sinyali eksik!" }, { status: 400 });
+    }
+
+    const aktifEmail = email.toLowerCase();
+    
+    // Hem gelen hem giden takasları getir
+    const teklifler = await Takas.find({ 
+      $or: [{ gonderenEmail: aktifEmail }, { aliciEmail: aktifEmail }] 
+    }).sort({ createdAt: -1 });
+    
     return NextResponse.json(teklifler, { status: 200 });
   } catch (error) {
+    console.error("GET Siber Arıza:", error);
     return NextResponse.json({ error: "Veritabanı bağlantısı koptu." }, { status: 500 });
   }
 }
