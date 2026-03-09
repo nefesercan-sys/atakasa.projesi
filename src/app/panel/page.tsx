@@ -1,67 +1,47 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSession, signOut } from "next-auth/react"; 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import useSWR from "swr"; // 🚀 SWR SİHİRBAZI EKLENDİ
+
+// 📡 SWR VERİ ÇEKME MOTORU
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function SiberBorsaPaneli() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
+  const aktifEmail = session?.user?.email?.toLowerCase() || "";
+
   // 🎛️ PANEL KONTROLLERİ
   const [aktifSekme, setAktifSekme] = useState("ozet_radar");
   const [altFiltre, setAltFiltre] = useState("hepsi");
-
-  // 📡 VERİ MERKEZİ
-  const [bakiye, setBakiye] = useState(0);
-  const [ilanlarim, setIlanlarim] = useState<any[]>([]);
-  const [gelenTakaslar, setGelenTakaslar] = useState<any[]>([]);
-  const [gidenTakaslar, setGidenTakaslar] = useState<any[]>([]);
-  const [gelenSiparisler, setGelenSiparisler] = useState<any[]>([]);
-  const [gidenSiparisler, setGidenSiparisler] = useState<any[]>([]);
-  
   const [kargoKoduForm, setKargoKoduForm] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  // 🛡️ ŞİFRE DEĞİŞTİRME STATE'İ
   const [sifreForm, setSifreForm] = useState({ eski: "", yeni: "", tekrar: "" });
 
-  useEffect(() => {
-    if (status === "authenticated") fetchBorsaVerileri();
-    else if (status === "unauthenticated") router.push("/giris");
-  }, [status, router]);
+  // 📡 SWR CANLI RADAR BAĞLANTILARI (Her 3 saniyede bir arka planda sessizce taranır)
+  const { data: walletData } = useSWR(aktifEmail ? `/api/wallet` : null, fetcher, { refreshInterval: 3000 });
+  const { data: listingsData } = useSWR(aktifEmail ? `/api/listings` : null, fetcher, { refreshInterval: 3000 });
+  const { data: takasData, mutate: mutateTakas } = useSWR(aktifEmail ? `/api/takas` : null, fetcher, { refreshInterval: 3000 });
+  const { data: ordersData, mutate: mutateOrders } = useSWR(aktifEmail ? `/api/orders?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
 
-  const fetchBorsaVerileri = async () => {
-    if (!session?.user?.email) return;
-    setLoading(true);
-    const aktifEmail = session.user.email.toLowerCase();
-    
-    try {
-      const resWallet = await fetch(`/api/wallet`, { cache: "no-store" });
-      if (resWallet.ok) setBakiye((await resWallet.json()).balance || 0);
+  // 🔄 VERİLERİ SWR'DAN AYRIŞTIRMA (Artık hepsi canlı ve anlık!)
+  const bakiye = walletData?.balance || 0;
+  const ilanlarim = listingsData ? listingsData.filter((i: any) => (i.sellerEmail || i.userId || "").toLowerCase() === aktifEmail) : [];
+  
+  const gelenTakaslar = takasData ? takasData.filter((t: any) => t.aliciEmail === aktifEmail) : [];
+  const gidenTakaslar = takasData ? takasData.filter((t: any) => t.gonderenEmail === aktifEmail) : [];
+  
+  const gelenSiparisler = ordersData ? ordersData.filter((o: any) => o.sellerEmail === aktifEmail) : [];
+  const gidenSiparisler = ordersData ? ordersData.filter((o: any) => o.buyerEmail === aktifEmail) : [];
 
-      const resListings = await fetch(`/api/listings`, { cache: "no-store" });
-      if (resListings.ok) {
-        const dataListings = await resListings.json();
-        setIlanlarim(dataListings.filter((i: any) => (i.sellerEmail || i.userId || "").toLowerCase() === aktifEmail));
-      }
+  const loading = status === "loading" || (aktifEmail && (!walletData && !listingsData && !takasData && !ordersData));
 
-      const resTakas = await fetch(`/api/takas`, { cache: "no-store" });
-      if (resTakas.ok) {
-        const dataTakas = await resTakas.json();
-        setGelenTakaslar(dataTakas.filter((t: any) => t.aliciEmail === aktifEmail));
-        setGidenTakaslar(dataTakas.filter((t: any) => t.gonderenEmail === aktifEmail));
-      }
-
-      const resOrders = await fetch(`/api/orders?email=${aktifEmail}`, { cache: "no-store" });
-      if (resOrders.ok) {
-        const dataOrders = await resOrders.json();
-        setGelenSiparisler(dataOrders.filter((o: any) => o.sellerEmail === aktifEmail));
-        setGidenSiparisler(dataOrders.filter((o: any) => o.buyerEmail === aktifEmail));
-      }
-    } catch (err) { console.error("Siber Ağ Hatası:", err); }
-    setLoading(false);
-  };
+  if (status === "unauthenticated") {
+    router.push("/giris");
+    return null;
+  }
 
   // 🔄 DURUM GÜNCELLEME MOTORLARI
   const handleDurumGuncelle = async (takasId: string, yeniDurum: string) => {
@@ -71,7 +51,7 @@ export default function SiberBorsaPaneli() {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ takasId, yeniDurum })
       });
-      if (res.ok) fetchBorsaVerileri();
+      if (res.ok) mutateTakas(); // SWR: Ekranı sayfayı yenilemeden anında değiştir!
     } catch (error) { alert("Sinyal koptu."); }
   };
 
@@ -85,7 +65,8 @@ export default function SiberBorsaPaneli() {
       });
       if (res.ok) {
         alert("⚡ SİPARİŞ DURUMU GÜNCELLENDİ!");
-        setKargoKoduForm(""); fetchBorsaVerileri();
+        setKargoKoduForm(""); 
+        mutateOrders(); // SWR: Ekranı sayfayı yenilemeden anında değiştir!
       } else { alert("Güncelleme reddedildi."); }
     } catch (error) { alert("Ağ arızası."); }
   };
@@ -184,12 +165,24 @@ export default function SiberBorsaPaneli() {
                 <p className="text-5xl font-black text-white">{ilanlarim.length} <span className="text-xl text-slate-500">Adet</span></p>
                 <p className="text-cyan-400 text-[10px] font-black mt-4 uppercase">Toplam: {ilanlarim.reduce((a, i) => a + Number(i.price || i.fiyat), 0).toLocaleString()} ₺</p>
               </div>
-              <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
+              
+              {/* 🚀 CANLI RADARA DÖNÜŞTÜRÜLEN KART VE SİBER KÖPRÜ */}
+              <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group hover:border-[#00f260]/40 transition-colors">
                 <div className="absolute -right-10 -top-10 text-9xl opacity-5 group-hover:scale-110 transition-transform">📦</div>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Bekleyen İşlemler</p>
-                <p className="text-5xl font-black text-white">{gelenSiparisler.filter(s=>s.durum==='bekliyor').length + gelenTakaslar.filter(t=>t.durum==='bekliyor').length} <span className="text-xl text-slate-500">Aksiyon</span></p>
-                <button onClick={()=>setAktifSekme("gelen_siparisler")} className="mt-4 bg-white/5 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase hover:bg-[#00f260] hover:text-black transition-all">İncele →</button>
+                <div className="flex items-center gap-4">
+                  <p className="text-5xl font-black text-white">
+                    {gelenSiparisler.filter(s=>s.durum==='bekliyor').length + gelenTakaslar.filter(t=>t.durum==='bekliyor').length} 
+                  </p>
+                  <span className="w-3 h-3 bg-[#00f260] rounded-full animate-ping shadow-[0_0_15px_rgba(0,242,96,1)]"></span>
+                </div>
+                <p className="text-xl text-slate-500 mt-1 font-black">Aksiyon</p>
+                
+                <Link href="/panel/siparisler" className="mt-6 flex items-center justify-center bg-white/5 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#00f260] hover:text-black hover:scale-105 transition-all shadow-lg border border-white/10 hover:border-[#00f260]">
+                  Siber Panele Git →
+                </Link>
               </div>
+
             </div>
           </div>
         )}
@@ -214,7 +207,7 @@ export default function SiberBorsaPaneli() {
              <h2 className="text-4xl md:text-6xl font-black italic uppercase mb-10 tracking-tighter">Siber <span className="text-white">Varlıklarım.</span></h2>
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {ilanlarim.length === 0 ? <p className="text-slate-600 font-black uppercase tracking-widest col-span-full">Ağda aktif varlığınız yok.</p> : 
-                  ilanlarim.map(ilan => (
+                  ilanlarim.map((ilan: any) => (
                     <div key={ilan._id} className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] p-6 shadow-xl hover:border-[#00f260]/40 transition-colors group">
                        <p className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-1">{ilan.kategori}</p>
                        <h3 className="text-white font-bold text-xl mb-4 truncate">{ilan.title || ilan.baslik}</h3>
@@ -266,12 +259,12 @@ export default function SiberBorsaPaneli() {
                         <div className="flex flex-col md:flex-row items-center gap-6 bg-[#030712] p-6 rounded-[2rem] border border-white/5 mb-6 pl-4">
                           <div className="flex-1 text-center md:text-left">
                             <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-2">Benim Varlığım</p>
-                            <p className="text-white font-bold text-sm uppercase">{benimRolum === "alici" ? islem.hedefIlanBaslik : islem.teklifEdilenIlanBaslik}</p>
+                            <p className="text-white font-bold text-sm uppercase">{benimRolum === "alici" ? islem.heTargetIlanBaslik || islem.hedefIlanBaslik : islem.teklifEdilenIlanBaslik}</p>
                           </div>
                           <div className="text-cyan-400 text-3xl font-black rotate-90 md:rotate-0">⇄</div>
                           <div className="flex-1 text-center md:text-right">
                             <p className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-2">Karşı Tarafın Varlığı</p>
-                            <p className="text-white font-bold text-sm uppercase">{benimRolum === "alici" ? islem.teklifEdilenIlanBaslik : islem.hedefIlanBaslik}</p>
+                            <p className="text-white font-bold text-sm uppercase">{benimRolum === "alici" ? islem.teklifEdilenIlanBaslik : islem.heTargetIlanBaslik || islem.hedefIlanBaslik}</p>
                             {islem.eklenenNakit > 0 && <p className="text-[#00f260] text-[10px] font-black mt-2 bg-[#00f260]/10 inline-block px-3 py-1 rounded">+ {islem.eklenenNakit.toLocaleString()} ₺ Nakit</p>}
                           </div>
                         </div>
@@ -293,7 +286,7 @@ export default function SiberBorsaPaneli() {
                   }
 
                   // 📦 SİPARİŞ KARTI
-                  if (islem.odemeYontemi) {
+                  if (islem.odemeYontemi || islem.productId) {
                     const benimRolum = islem.sellerEmail === session?.user?.email?.toLowerCase() ? "satici" : "alici";
                     return (
                       <div key={islem._id} className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem] flex flex-col hover:border-white/20 transition-all shadow-xl relative overflow-hidden">
@@ -303,7 +296,7 @@ export default function SiberBorsaPaneli() {
                             <span className={`${benimRolum === 'satici' ? 'bg-amber-500/10 text-amber-500' : 'bg-purple-500/10 text-purple-400'} font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-lg`}>
                               {benimRolum === 'satici' ? '📦 SATIŞ İŞLEMİ' : '🛒 SATIN ALMA İŞLEMİ'}
                             </span>
-                            {getDurumRozeti(islem.durum)}
+                            {getDurumRozeti(islem.durum || islem.status)}
                           </div>
                           <span className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">ID: {islem._id.slice(-6)} • {new Date(islem.createdAt).toLocaleDateString("tr-TR")}</span>
                         </div>
@@ -311,32 +304,32 @@ export default function SiberBorsaPaneli() {
                         <div className="flex flex-col md:flex-row gap-8 pl-4 mb-8 bg-[#030712] p-6 rounded-[2rem] border border-white/5">
                           <div className="flex-1">
                             <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Teslimat Bilgileri</p>
-                            <p className="text-white font-bold text-sm uppercase mb-1">{islem.adSoyad}</p>
-                            <p className="text-slate-400 text-xs">{islem.adres}</p>
+                            <p className="text-white font-bold text-sm uppercase mb-1">{islem.adSoyad || "Alıcı Müşteri"}</p>
+                            <p className="text-slate-400 text-xs">{islem.adres || islem.shippingAddress}</p>
                           </div>
                           <div className="flex-1 md:border-l border-white/5 md:pl-8">
                             <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Ödeme Özeti</p>
-                            <p className="text-[#00f260] font-black text-3xl mb-1">{islem.fiyat.toLocaleString()} ₺</p>
-                            <p className="text-cyan-400 text-[10px] font-bold uppercase">Yöntem: {islem.odemeYontemi.replace("_", " ")}</p>
-                            {islem.kargoKodu && <p className="text-purple-400 text-[11px] font-black uppercase mt-3 bg-purple-500/10 inline-block px-4 py-2 rounded-lg">🚚 Takip No: {islem.kargoKodu}</p>}
+                            <p className="text-[#00f260] font-black text-3xl mb-1">{(islem.fiyat || islem.price)?.toLocaleString()} ₺</p>
+                            <p className="text-cyan-400 text-[10px] font-bold uppercase">Yöntem: {(islem.odemeYontemi || "Kart").replace("_", " ")}</p>
+                            {(islem.kargoKodu || islem.trackingNumber) && <p className="text-purple-400 text-[11px] font-black uppercase mt-3 bg-purple-500/10 inline-block px-4 py-2 rounded-lg">🚚 Takip No: {islem.kargoKodu || islem.trackingNumber}</p>}
                           </div>
                         </div>
 
                         <div className="flex flex-wrap gap-3 mt-auto pl-4">
-                          {benimRolum === "satici" && islem.durum === "bekliyor" && (
+                          {benimRolum === "satici" && (islem.durum === "bekliyor" || islem.status === "isleme_alindi") && (
                             <button onClick={()=>handleSiparisGuncelle(islem._id, "onaylandi")} className="flex-1 bg-amber-500 text-black py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(245,158,11,0.4)]">✅ SİPARİŞİ ONAYLA (HAZIRLA)</button>
                           )}
-                          {benimRolum === "satici" && islem.durum === "onaylandi" && (
+                          {benimRolum === "satici" && (islem.durum === "onaylandi" || islem.status === "onaylandi") && (
                             <div className="flex-1 flex flex-col md:flex-row gap-3">
                               <input type="text" placeholder="Kargo Takip Kodu Girin" value={kargoKoduForm} onChange={(e)=>setKargoKoduForm(e.target.value)} className="flex-1 bg-[#030712] border border-white/10 text-white text-xs px-6 py-4 rounded-2xl outline-none focus:border-purple-500" />
                               <button onClick={()=>handleSiparisGuncelle(islem._id, "kargoda", true)} className="bg-purple-500 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(168,85,247,0.5)]">🚚 KARGOYA VER</button>
                             </div>
                           )}
 
-                          {benimRolum === "alici" && islem.durum === "kargoda" && (
+                          {benimRolum === "alici" && (islem.durum === "kargoda" || islem.status === "kargolandi") && (
                             <button onClick={()=>handleSiparisGuncelle(islem._id, "teslim_edildi")} className="flex-1 bg-[#00f260] text-black py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,242,96,0.5)] animate-pulse">📦 ÜRÜNÜ TESLİM ALDIM (ONAYLA)</button>
                           )}
-                          {benimRolum === "alici" && islem.durum === "bekliyor" && (
+                          {benimRolum === "alici" && (islem.durum === "bekliyor" || islem.status === "isleme_alindi") && (
                             <button onClick={()=>handleSiparisGuncelle(islem._id, "iptal")} className="px-8 bg-red-500/10 text-red-500 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">SİPARİŞİ İPTAL ET</button>
                           )}
 
