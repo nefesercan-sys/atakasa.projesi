@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 
 const handler = NextAuth({
   session: { strategy: "jwt" },
-  // 🛡️ ZIRH 1: "as string" eklendi
   secret: process.env.NEXTAUTH_SECRET as string,
   pages: { signIn: '/giris' },
 
@@ -31,7 +30,6 @@ const handler = NextAuth({
 
           // === NORMAL VERİTABANI KONTROLÜ ===
           if (mongoose.connection.readyState === 0) {
-            // 🛡️ ZIRH 2: "as string" eklendi (HATA BURADAYDI)
             await mongoose.connect(process.env.MONGODB_URI as string);
           }
           
@@ -78,9 +76,9 @@ const handler = NextAuth({
   ],
   callbacks: {
     async session({ session, token }) {
-      // 🛡️ ZIRH 3: Güvenli token eşleştirmesi
+      // 🛡️ ZIRH 3: TypeScript'in gözünü bağlayan "as any" eklendi! (HATA BURADAYDI)
       if (session?.user && token.sub) { 
-        session.user.id = token.sub; 
+        (session.user as any).id = token.sub; 
       }
       return session;
     }
