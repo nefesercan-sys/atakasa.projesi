@@ -41,7 +41,9 @@ export async function GET(req: Request) {
     // 🎯 Eğer Frontend sadece 1 ilanı soruyorsa (İncele Sayfası), hedefi kilitle!
     const id = searchParams.get("id");
     
-    let query: any = { aktif: true };
+    // 🔓 SİBER KİLİT AÇILDI: Artık 'aktif: true' şartı yok, veritabanındaki her şeyi çekecek!
+    let query: any = {}; 
+    
     if (id) {
       query._id = id; // Tüm veritabanı yerine sadece bu ID'yi ara
     } else {
