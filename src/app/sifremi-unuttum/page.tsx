@@ -5,7 +5,6 @@ import Link from "next/link";
 
 export default function SifremiUnuttum() {
   const [email, setEmail] = useState<string>("");
-  const [mesaj, setMesaj] = useState<string>("");
   const [hata, setHata] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [gonderildi, setGonderildi] = useState<boolean>(false);
@@ -14,7 +13,6 @@ export default function SifremiUnuttum() {
     e: React.FormEvent<HTMLFormElement>
   ): Promise<void> => {
     e.preventDefault();
-    setMesaj("");
     setHata("");
 
     if (!email || !email.includes("@")) {
@@ -32,9 +30,8 @@ export default function SifremiUnuttum() {
       const data = await res.json();
       if (res.ok) {
         setGonderildi(true);
-        setMesaj(data.message || "Sıfırlama bağlantısı gönderildi.");
       } else {
-        setHata(data.message || "Bir hata oluştu, tekrar deneyin.");
+        setHata(data.message || "Bir hata oluştu, lütfen tekrar deneyin.");
       }
     } catch (err) {
       setHata("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
@@ -82,15 +79,8 @@ export default function SifremiUnuttum() {
 
                 {hata && (
                   <div className="mb-5 flex items-start gap-3 bg-red-50 border border-red-100 text-red-600 rounded-xl px-4 py-3 text-sm">
-                    <span className="text-base mt-0.5">⚠️</span>
+                    <span className="mt-0.5">⚠️</span>
                     <span>{hata}</span>
-                  </div>
-                )}
-
-                {mesaj && (
-                  <div className="mb-5 flex items-start gap-3 bg-green-50 border border-green-100 text-green-600 rounded-xl px-4 py-3 text-sm">
-                    <span className="text-base mt-0.5">✅</span>
-                    <span>{mesaj}</span>
                   </div>
                 )}
 
@@ -118,9 +108,24 @@ export default function SifremiUnuttum() {
                   >
                     {loading ? (
                       <>
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
                         </svg>
                         Gönderiliyor...
                       </>
@@ -149,7 +154,6 @@ export default function SifremiUnuttum() {
                   onClick={() => {
                     setGonderildi(false);
                     setEmail("");
-                    setMesaj("");
                   }}
                   className="text-[#C8A96E] text-sm font-semibold hover:underline"
                 >
