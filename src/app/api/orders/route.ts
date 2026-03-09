@@ -1,77 +1,93 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../lib/mongodb";
 import mongoose from "mongoose";
+// Merkezi modelimizi içeri alıyoruz
+import Order from "../../../models/Order";
+
+// Veritabanı bağlantı motoru
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  try {
+    await mongoose.connect(process.env.MONGODB_URI as string);
+  } catch (err) {
+    console.error("Veritabanı bağlantı hatası:", err);
+  }
+};
 
 export const dynamic = "force-dynamic";
 
-// Basit bir Sipariş Şeması (Eğer modelin yoksa anında oluşturur)
-const orderSchema = new mongoose.Schema({
-  listingId: String,
-  buyerEmail: String,
-  sellerEmail: String,
-  adSoyad: String,
-  adres: String,
-  odemeYontemi: String,
-  fiyat: Number,
-  durum: { type: String, default: "bekliyor" }, // bekliyor, onaylandi, kargoda, teslim_edildi, iptal
-  kargoKodu: String,
-  createdAt: { type: Date, default: Date.now }
-});
-
-const Order = mongoose.models.Order || mongoose.model("Order", orderSchema);
-
-// 🛒 POST: YENİ SİPARİŞ OLUŞTUR
+// 📦 YENİ SİPARİŞ OLUŞTUR (Satın Al Butonu Buraya Geliyor)
 export async function POST(req: Request) {
   try {
-    await connectMongoDB();
+    await connectDB();
     const data = await req.json();
-    
-    // Alıcı e-postasını güvenlik için session'dan da alabilirsin, şimdilik frontend'den gelen alıcı bilgisini farz edelim.
-    // Eğer frontend alıcı mailini yollamıyorsa, NextAuth token'ından alman gerekir.
-    
-    const yeniSiparis = await Order.create(data);
-    return NextResponse.json({ message: "Sipariş mühürlendi!", order: yeniSiparis }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: "Sipariş motoru arızalandı." }, { status: 500 });
+
+    // 🚨 SİBER KÖPRÜ: Frontend'den gelen Türkçe verileri, 
+    // MongoDB'nin beklediği yeni nesil (İngilizce) modele çeviriyoruz!
+    const mappedData = {
+      productId: data.listingId || data.productId || "Bilinmiyor",
+      buyerEmail: data.buyerEmail,
+      sellerEmail: data.sellerEmail || data.saticiEmail,
+      price: Number(data.fiyat || data.price || 0),
+      // Ad Soyad ve Adresi birleştirip tek bir kargo adresine çeviriyoruz
+      shippingAddress: `${data.adSoyad ? data.adSoyad + " - " : ""}${data.adres || data.shippingAddress || "Adres belirtilmedi"}`,
+      paymentStatus: data.odemeYontemi === "kredi_karti" ? "odendi" : "bekliyor",
+      status: "isleme_alindi", // Sistemin tanıdığı ilk standart durum
+      trackingNumber: data.kargoKodu || null
+    };
+
+    const yeniSiparis = await Order.create(mappedData);
+    return NextResponse.json({ message: "Sipariş mühürlendi", order: yeniSiparis }, { status: 200 });
+
+  } catch (error: any) {
+    console.error("Sipariş Yaratma Arızası:", error);
+    return NextResponse.json({ error: "Sistem çakışması: " + error.message }, { status: 500 });
   }
 }
 
-// 📡 GET: KULLANICININ SİPARİŞLERİNİ GETİR
+// 📡 SİPARİŞLERİ GETİR (Panel SWR Motoru Buradan Veri Çeker)
 export async function GET(req: Request) {
   try {
-    await connectMongoDB();
+    await connectDB();
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
 
-    if (!email) return NextResponse.json({ error: "Ajan kimliği eksik." }, { status: 400 });
+    let query = {};
+    // Hem sattığım hem satın aldığım ürünleri getir
+    if (email) {
+      query = { 
+        $or: [
+          { buyerEmail: email.toLowerCase() }, 
+          { sellerEmail: email.toLowerCase() }
+        ] 
+      };
+    }
 
-    // Hem aldığım (buyer) hem de sattığım (seller) siparişleri getir
-    const orders = await Order.find({
-      $or: [{ buyerEmail: email }, { sellerEmail: email }]
-    }).sort({ createdAt: -1 });
-
+    const orders = await Order.find(query).sort({ createdAt: -1 });
     return NextResponse.json(orders, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: "Veri çekilemedi." }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: "Veri çekilemedi" }, { status: 500 });
   }
 }
 
-// 🔄 PUT: SİPARİŞ DURUMUNU VE KARGO KODUNU GÜNCELLE
+// 🔄 DURUM GÜNCELLE (Paneldeki Onayla/Kargola Butonları)
 export async function PUT(req: Request) {
   try {
-    await connectMongoDB();
-    const { orderId, yeniDurum, kargoKodu } = await req.json();
+    await connectDB();
+    const body = await req.json();
+    const { orderId, yeniDurum, kargoKodu } = body;
 
     const siparis = await Order.findById(orderId);
-    if (!siparis) return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+    if (!siparis) {
+      return NextResponse.json({ error: "Sipariş bulunamadı" }, { status: 404 });
+    }
 
-    siparis.durum = yeniDurum;
-    if (kargoKodu) siparis.kargoKodu = kargoKodu;
-    
+    // Yeni modelimize uygun şekilde kelimeleri eşitliyoruz
+    if (yeniDurum) siparis.status = yeniDurum;
+    if (kargoKodu) siparis.trackingNumber = kargoKodu;
+
     await siparis.save();
-
-    return NextResponse.json({ message: "Siber kargo durumu güncellendi!" }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: "Güncelleme başarısız." }, { status: 500 });
+    return NextResponse.json({ message: "Durum güncellendi" }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ error: "Güncelleme başarısız" }, { status: 500 });
   }
 }
