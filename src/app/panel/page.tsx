@@ -20,11 +20,11 @@ export default function SiberBorsaPaneli() {
   const [kargoKoduForm, setKargoKoduForm] = useState("");
   const [sifreForm, setSifreForm] = useState({ eski: "", yeni: "", tekrar: "" });
 
-  // 📡 SWR CANLI RADAR BAĞLANTILARI
-  const { data: walletData } = useSWR(aktifEmail ? `/api/wallet` : null, fetcher, { refreshInterval: 3000 });
-  const { data: listingsData } = useSWR(aktifEmail ? `/api/listings` : null, fetcher, { refreshInterval: 3000 });
-  const { data: takasData, mutate: mutateTakas } = useSWR(aktifEmail ? `/api/takas` : null, fetcher, { refreshInterval: 3000 });
-  const { data: ordersData, mutate: mutateOrders } = useSWR(aktifEmail ? `/api/orders` : null, fetcher, { refreshInterval: 3000 });
+  // 📡 SWR CANLI RADAR BAĞLANTILARI (E-posta sinyali hedefe kilitlendi 🎯)
+  const { data: walletData } = useSWR(aktifEmail ? `/api/wallet?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
+  const { data: listingsData } = useSWR(aktifEmail ? `/api/listings?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
+  const { data: takasData, mutate: mutateTakas } = useSWR(aktifEmail ? `/api/takas?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
+  const { data: ordersData, mutate: mutateOrders } = useSWR(aktifEmail ? `/api/orders?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
 
   // 🛡️ SİBER GÜVENLİ DİZİ KONTROLÜ
   const safeOrders = Array.isArray(ordersData) ? ordersData : (ordersData?.orders || ordersData?.data || []);
