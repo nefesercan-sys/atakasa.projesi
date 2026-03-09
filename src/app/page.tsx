@@ -34,7 +34,7 @@ export default function Home() {
   const [secilenBenimIlanim, setSecilenBenimIlanim] = useState("");
   const [eklenecekNakit, setEklenecekNakit] = useState("");
   
-  // 🛒 YENİLENMİŞ SİPARİŞ STATE'LERİ (Telefon, Not ve Sözleşmeler)
+  // 🛒 YENİLENMİŞ SİPARİŞ STATE'LERİ
   const [siparisForm, setSiparisForm] = useState({ adSoyad: "", telefon: "", adres: "", not: "", odemeYontemi: "kredi_karti" });
   const [kabulSozlesme, setKabulSozlesme] = useState(false);
   const [kabulYasalZirh, setKabulYasalZirh] = useState(false);
@@ -52,7 +52,6 @@ export default function Home() {
     { ad: "Oyun/Konsol", degisim: "+8.7" }
   ];
 
-  // 🚀 DİNAMİK SLOGAN JENERATÖRÜ
   const sloganlar = [
     "At Takasa, Daha Fazla Kazan.", 
     "Elinde Tutma, Takasa At.", 
@@ -68,13 +67,15 @@ export default function Home() {
     return () => clearInterval(sId);
   }, []);
 
-  // 📡 SİBER VERİ ÇEKME
+  // 📡 SİBER VERİ ÇEKME (ZIRHLANDIRILDI: Artık boş gelmeyecek!)
   useEffect(() => {
     const veriCek = async () => {
       try {
         const res = await fetch("/api/varliklar");
         const data = await res.json();
-        setIlanlar(Array.isArray(data) ? data : []);
+        // GÜVENLİK: API paketle gönderiyorsa bile içindeki listeyi bulur
+        const liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
+        setIlanlar(liste);
       } catch (err) { console.error("Sinyal koptu:", err); } 
       finally { setLoading(false); }
     };
@@ -109,7 +110,6 @@ export default function Home() {
     return liste;
   };
 
-  // 🛡️ MODAL VE İŞLEM MOTORLARI
   const openModal = (ilan: any, tur: "takas" | "satinal") => {
     if (!session) return router.push("/giris");
     if ((ilan.satici || ilan.sellerEmail || "").toLowerCase() === session.user?.email?.toLowerCase()) return alert("SİBER ENGEL: Kendi varlığınızla işlem yapamazsınız!");
@@ -119,12 +119,11 @@ export default function Home() {
   
   const closeModal = () => { setSeciliIlan(null); setModalTuru(null); setSecilenBenimIlanim(""); setEklenecekNakit(""); };
 
-  // 🛒 🚀 YENİ SİBER SEPET MOTORU (ÇÖKME KORUMALI)
+  // 🛒 🚀 YENİ SİBER SEPET MOTORU (Eski ve Yeni Hafızayı Eşitledik)
   const handleSepeteEkle = (ilan: any) => {
-    // 1. Tarayıcı hafızasını oku
+    // Sepet/page.tsx'teki şifreyle aynısı (atakasa_sepet)
     const mevcutSepet = JSON.parse(localStorage.getItem('atakasa_sepet') || '[]');
     
-    // 2. Bu ürün zaten sepette mi kontrol et (Çift eklemeyi engelle)
     const urunId = ilan._id || ilan.id;
     const zatenVarMi = mevcutSepet.find((item: any) => item.id === urunId);
     
@@ -132,7 +131,6 @@ export default function Home() {
       return alert("⚠️ Bu varlık zaten siber kasanızda bekliyor!");
     }
 
-    // 3. Sepet formatına uygun objeyi oluştur
     const eklenecekUrun = {
       id: urunId,
       baslik: ilan.title || ilan.baslik,
@@ -141,7 +139,6 @@ export default function Home() {
       saticiMail: ilan.sellerEmail || ilan.satici?.email || ilan.userId || ilan.satici
     };
 
-    // 4. Hafızaya mühürle
     mevcutSepet.push(eklenecekUrun);
     localStorage.setItem('atakasa_sepet', JSON.stringify(mevcutSepet));
     
@@ -236,12 +233,10 @@ export default function Home() {
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] blur-[150px] rounded-full"></div>
       </div>
 
-      {/* 🚀 ÜST KONTROL PANELİ VE SİBER LOGO */}
       <div className="sticky top-0 z-[100] bg-[#050505]/95 backdrop-blur-3xl border-b border-white/5 pt-8 pb-4 px-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="max-w-7xl mx-auto">
           
           <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
-            {/* 💎 MARKA LOGOSU VE SLOGAN */}
             <div className="flex items-center gap-4 cursor-pointer mr-auto" onClick={() => {setAktifKategori("Hepsi"); setSearchTerm("");}}>
                <div className="w-14 h-14 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.4)] relative overflow-hidden group">
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
@@ -252,7 +247,6 @@ export default function Home() {
                  <p className="text-[#00f260] text-[9px] font-black tracking-[0.2em] uppercase mt-1 animate-pulse">{aktifSlogan}</p>
                </div>
             </div>
-            {/* Arama Motoru, Filtre Açma ve 🛒 SEPET Butonu */}
             <div className="flex w-full md:w-auto gap-2 max-w-xl flex-1">
               <div className="relative flex-1 group">
                 <input type="text" placeholder="Varlık veya kelime ara..." value={searchTerm} className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] px-6 py-4 outline-none focus:border-[#00f260] text-sm transition-all" onChange={(e) => setSearchTerm(e.target.value)} />
@@ -264,7 +258,6 @@ export default function Home() {
               >
                 🛠️ RADAR
               </button>
-              {/* 🚀 YENİ EKLENEN KISAYOL: SEPET BUTONU */}
               <button 
                 onClick={() => router.push('/sepet')} 
                 className="px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
@@ -274,7 +267,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 🟢 GELİŞMİŞ RADAR (FİLTRE) MENÜSÜ */}
           {filtreMenusuAcik && (
             <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-6 animate-in slide-in-from-top duration-300 shadow-[0_0_30px_rgba(0,242,96,0.1)]">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -314,7 +306,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Kategoriler */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mask-linear-right">
             <button onClick={() => {setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar");}} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${aktifKategori === "Hepsi" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
               🌐 KARIŞIK AKIŞ
@@ -326,7 +317,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Alt Filtreler */}
           {aktifKategori !== "Hepsi" && (
             <div className="flex gap-2 mt-3 animate-in slide-in-from-top duration-300 overflow-x-auto no-scrollbar">
               {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map(f => (
@@ -393,7 +383,6 @@ export default function Home() {
                 <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim} className="w-full mt-6 bg-cyan-500 text-black py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-all shadow-[0_0_30px_rgba(6,182,212,0.4)] disabled:opacity-50">🚀 TEKLİFİ FIRLAT</button>
               </div>
             ) : (
-            /* SATIN AL FORMU (EKSİKSİZ) */
               <div className="space-y-4">
                 <div className="bg-[#00f260]/5 border border-[#00f260]/20 p-6 rounded-2xl mb-4 flex justify-between items-center">
                   <span className="text-[#00f260] text-[10px] font-black uppercase tracking-widest">ÖDENECEK TUTAR</span>
@@ -410,7 +399,6 @@ export default function Home() {
                   <option value="kapida_odeme">📦 Kapıda Ödeme</option>
                 </select>
 
-                {/* HUKUKİ ONAY KUTUCUKLARI */}
                 <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-3 mt-4">
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input type="checkbox" checked={kabulSozlesme} onChange={(e) => setKabulSozlesme(e.target.checked)} className="mt-1 accent-[#00f260] w-4 h-4 shrink-0" />
@@ -438,7 +426,6 @@ export default function Home() {
            <span className="text-xl">📂</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">SEKTÖR</span>
          </button>
          
-         {/* ANA BUTON (⚡) */}
          <div className="relative -top-6">
             <button onClick={() => router.push('/varlik-ekle')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
               ⚡
