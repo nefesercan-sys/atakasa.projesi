@@ -1,19 +1,27 @@
-// 📡 İLAN DETAY ÇEKME (SADECE HEDEF VARLIĞA ODAKLANIR 🎯)
+// 📡 İLAN DETAY ÇEKME (TYPESCRIPT ZIRHLI & ULTRA HIZLI 🚀)
   const fetchIlanDetay = async () => {
+    if (!resolvedParams?.id) return;
+    
     try {
-      // NOKTA ATIŞI: Artık API'ye ID gönderiyoruz, böylece 10 saniye değil 0.1 saniyede geliyor.
+      // Nokta atışı sorgu 🎯
       const res = await fetch(`/api/varliklar?id=${resolvedParams.id}`); 
+      if (!res.ok) throw new Error("Sinyal zayıf");
+      
       const data = await res.json();
       
-      // API'den gelen veriyi güvenli bir şekilde yakala
-      const liste = Array.isArray(data) ? data : data.data || data.ilanlar || [];
-      const seciliIlan = liste.find((i: any) => i._id === resolvedParams.id || i.id === resolvedParams.id) || liste[0];
+      // Veriyi dizi formatına zorla (TypeScript koruması)
+      const liste: any[] = Array.isArray(data) ? data : (data.data || data.ilanlar || []);
+      
+      // Hedef varlığı bul
+      const seciliIlan = liste.find((i: any) => 
+        String(i._id) === String(resolvedParams.id) || String(i.id) === String(resolvedParams.id)
+      ) || (liste.length > 0 ? liste[0] : null);
       
       setIlan(seciliIlan);
       
       if (seciliIlan) {
         const saticiMail = seciliIlan.sellerEmail || seciliIlan.satici?.email || seciliIlan.userId || seciliIlan.satici;
-        fetchSaticiYorumlari(saticiMail);
+        if (saticiMail) fetchSaticiYorumlari(saticiMail);
       }
     } catch (error) { 
       console.error("Siber veri çekilemedi:", error); 
@@ -22,22 +30,24 @@
     }
   };
 
-  // 📡 BENİM VARLIKLARIM (SADECE GİRİŞ YAPILDIYSA ÇALIŞIR)
+  // 📡 BENİM VARLIKLARIM (TYPESCRIPT ZIRHLI)
   const fetchBenimIlanlarim = async () => {
-    if (!session?.user?.email) return;
+    const userEmail = session?.user?.email;
+    if (!userEmail) return;
+
     try {
-      // Burası da kendi ilanlarını hızlıca çekmek için optimize edildi
       const res = await fetch(`/api/varliklar`);
       if (res.ok) {
         const data = await res.json();
-        const liste = Array.isArray(data) ? data : data.data || data.ilanlar || [];
+        const liste: any[] = Array.isArray(data) ? data : (data.data || data.ilanlar || []);
+        
         const benimkiler = liste.filter((i: any) => {
-           const sEmail = (typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
-           return sEmail === session?.user?.email?.toLowerCase();
+           const sEmail = String(typeof i.userId === 'string' ? i.userId : i.satici?.email || i.satici || "").toLowerCase();
+           return sEmail === userEmail.toLowerCase();
         });
         setBenimIlanlarim(benimkiler);
       }
     } catch (error) { 
-      console.error("Varlıklar çekilemedi."); 
+      console.error("Varlıklar radardan kaçtı."); 
     }
   };
