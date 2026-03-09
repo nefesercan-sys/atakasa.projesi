@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "../../../lib/mongodb";
 import Varlik from "../../../models/Varlik";
+import User from "../../../models/User";
 
 export const revalidate = 5;
 
@@ -46,26 +47,38 @@ export async function GET(req: Request) {
       if (sektor) query.kategori = siberTemizleyici(sektor);
     }
 
-    // ✅ populate eklendi — satici artık email ve name ile geliyor
     const ilanlar = await Varlik.find(query)
-      .populate("satici", "email name")
       .sort({ createdAt: -1 })
       .limit(id ? 1 : 100)
       .lean();
+
+    // Satici ID'lerini topla, tek sorguda emaillerini çek
+    const saticiIdleri = [...new Set(
+      ilanlar.map((i: any) => i.satici?.toString()).filter(Boolean)
+    )];
+    const saticilar = await User.find({ _id: { $in: saticiIdleri } })
+      .select("_id email name")
+      .lean();
+    const saticiMap = new Map(
+      saticilar.map((s: any) => [s._id.toString(), s])
+    );
 
     const borsaVeriliIlanlar = ilanlar.map((ilan: any) => {
       let degisimYuzdesi = 0;
       if (ilan.eskiFiyat > 0 && ilan.fiyat !== ilan.eskiFiyat) {
         degisimYuzdesi = ((ilan.fiyat - ilan.eskiFiyat) / ilan.eskiFiyat) * 100;
       }
+      const saticiObj = saticiMap.get(ilan.satici?.toString()) as any;
       return {
         ...ilan,
         _id: ilan._id.toString(),
-        // ✅ satici artık populate edilmiş obje — email doğru geliyor
-        satici: ilan.satici,
-        saticiEmail: (ilan.satici as any)?.email || ilan.sellerEmail || "",
-        saticiAd: (ilan.satici as any)?.name || "",
-        sellerEmail: (ilan.satici as any)?.email || ilan.sellerEmail || "",
+        satici: {
+          _id: ilan.satici?.toString(),
+          email: saticiObj?.email || "",
+          name: saticiObj?.name || "",
+        },
+        saticiEmail: saticiObj?.email || "",
+        sellerEmail: saticiObj?.email || "",
         degisimYuzdesi: Number(degisimYuzdesi.toFixed(1)),
         borsaDurumu: degisimYuzdesi < 0 ? "DÜŞÜŞ" : degisimYuzdesi > 0 ? "YÜKSELİŞ" : "STABİL",
       };
