@@ -17,8 +17,8 @@ export default function IlanVer() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ☁️ CLOUDINARY SİBER BULUT BİLGİLERİ (Tam Otomatik Mod)
-  const CLOUD_NAME = "diuamcnej"; 
-  const UPLOAD_PRESET = "nexus_preset"; 
+  const CLOUD_NAME = "dluamcnej"; 
+  const UPLOAD_PRESET = "atakasa_hizli"; 
 
   // 🚀 DOĞRUDAN BULUTA YÜKLEME MOTORU (Vercel ByPass)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,7 +35,7 @@ export default function IlanVer() {
         uploadData.append("upload_preset", UPLOAD_PRESET);
         uploadData.append("cloud_name", CLOUD_NAME);
 
-        // Buluta fırlat! (100MB bile olsa yağ gibi akar)
+        // Buluta fırlat! (auto/upload sayesinde 100MB video bile yağ gibi akar)
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
           method: "POST",
           body: uploadData,
@@ -71,7 +71,8 @@ export default function IlanVer() {
     setLoading(true);
     
     try {
-      // Veritabanına sadece hafif bir link (URL) gidiyor
+      // ⚠️ DİKKAT: Veritabanına sadece hafif bir link (URL) gidiyor
+      // Eğer burada 404 hatası alırsan, "/api/assets" yerine "/api/varliklar" veya "/api/ilanlar" yaz!
       const res = await fetch('/api/assets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,4 +191,4 @@ export default function IlanVer() {
       </div>
     </div>
   );
-}
+}}
