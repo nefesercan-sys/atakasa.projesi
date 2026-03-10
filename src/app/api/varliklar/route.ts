@@ -37,31 +37,39 @@ export async function GET(req: Request) {
     await connectMongoDB();
     const { searchParams } = new URL(req.url);
 
-    const id = searchParams.get("id");
+    const id         = searchParams.get("id");
+    const emailParam = searchParams.get("email");
+    const kategori   = searchParams.get("kategori") || searchParams.get("sektor");
+    const limitParam = parseInt(searchParams.get("limit") || "50");
+    const limit      = Math.min(limitParam, 100);
+
     let query: any = {};
 
     if (id) {
       query._id = id;
+    } else if (emailParam) {
+      const user = await User.findOne({ email: emailParam.toLowerCase() }).select("_id").lean();
+      if (!user) return NextResponse.json([], { status: 200 });
+      query.satici = (user as any)._id;
     } else {
-      const sektor = searchParams.get("sektor");
-      if (sektor) query.kategori = siberTemizleyici(sektor);
+      if (kategori) query.kategori = siberTemizleyici(kategori);
     }
 
     const ilanlar = await Varlik.find(query)
       .sort({ createdAt: -1 })
-      .limit(id ? 1 : 100)
+      .limit(id ? 1 : limit)
+      .select("baslik fiyat eskiFiyat kategori sehir resimler images image aciklama takasIstegi satici durum createdAt")
       .lean();
 
-    // ✅ TypeScript uyumlu unique ID listesi
     const saticiIdleriSet = new Set<string>();
     ilanlar.forEach((i: any) => {
       if (i.satici) saticiIdleriSet.add(i.satici.toString());
     });
     const saticiIdleri = Array.from(saticiIdleriSet);
 
-    const saticilar = await User.find({ _id: { $in: saticiIdleri } })
-      .select("_id email name")
-      .lean();
+    const saticilar = saticiIdleri.length > 0
+      ? await User.find({ _id: { $in: saticiIdleri } }).select("_id email name").lean()
+      : [];
 
     const saticiMap = new Map<string, any>();
     saticilar.forEach((s: any) => {
