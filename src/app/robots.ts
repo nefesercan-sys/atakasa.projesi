@@ -83,7 +83,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
 
-      // ── KÖTÜ BOTLARI ENGELLE ─────────────────────────────────
+      // ── KÖTÜ BOTLARI ENGELLE (Siber Kalkan) ──────────────────
       {
         userAgent: 'AhrefsBot',
         disallow: '/',
@@ -101,8 +101,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: '/',
       },
     ],
-
+    // host özelliği kaldırıldı (Next.js bunu otomatik yönetir)
     sitemap: 'https://atakasa.com/sitemap.xml',
-    host: 'https://atakasa.com',
   };
 }
