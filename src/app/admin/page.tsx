@@ -11,6 +11,24 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 // 👑 MASTER ADMİN MAİLİ
 const ADMIN_EMAILS = ["ercannefes@gmail.com"];
 
+// 🛡️ SİBER KORUMA FONKSİYONLARI (Çökmeleri Engeller)
+const getSafeText = (val: any, fallback: string) => {
+  if (!val) return fallback;
+  if (typeof val === 'string' || typeof val === 'number') return String(val);
+  return fallback; // Obje veya array ise React'in çökmesini engeller
+};
+
+const getMediaUrl = (ilan: any) => {
+  try {
+    if (ilan?.resimler && Array.isArray(ilan.resimler) && ilan.resimler.length > 0) return String(ilan.resimler[0] || "");
+    if (ilan?.images && Array.isArray(ilan.images) && ilan.images.length > 0) return String(ilan.images[0] || "");
+    if (typeof ilan?.resimler === 'string') return ilan.resimler;
+    return "https://placehold.co/50?text=YOK";
+  } catch (e) {
+    return "https://placehold.co/50?text=HATA";
+  }
+};
+
 export default function SiberAdminTerminali() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -27,25 +45,30 @@ export default function SiberAdminTerminali() {
   const { data: allUsersData, mutate: mutateUsers } = useSWR(isMasterAdmin ? `/api/admin/users` : null, fetcher, { refreshInterval: 5000 });
   
   // 🛡️ DİZİ (ARRAY) ZIRHI
-  const safeListings = Array.isArray(allListingsData) ? allListingsData : (allListingsData?.data || allListingsData?.ilanlar || []);
+  let rawListings = [];
+  if (Array.isArray(allListingsData)) rawListings = allListingsData;
+  else if (allListingsData?.data && Array.isArray(allListingsData.data)) rawListings = allListingsData.data;
+  else if (allListingsData?.ilanlar && Array.isArray(allListingsData.ilanlar)) rawListings = allListingsData.ilanlar;
+
+  const safeListings = rawListings.filter(item => item !== null && typeof item === 'object');
   const safeUsers = Array.isArray(allUsersData) ? allUsersData : (allUsersData?.data || []);
 
   // 📊 ADMİN İSTATİSTİKLERİ
   const toplamIlan = safeListings.length;
   const aktifIlan = safeListings.filter((i: any) => i.durum !== 'pasif').length;
   const pasifIlan = toplamIlan - aktifIlan;
-  const toplamHacim = safeListings.reduce((acc: number, ilan: any) => acc + Number(ilan.price || ilan.fiyat || 0), 0);
+  const toplamHacim = safeListings.reduce((acc: number, ilan: any) => acc + (Number(ilan.fiyat || ilan.price || 0) || 0), 0);
 
-  // 🔍 FİLTRELEME MOTORU (🚀 ÇÖKMEYİ ENGELLEYEN YENİ ZIRH)
+  // 🔍 FİLTRELEME MOTORU
   const filtrelenmisIlanlar = safeListings.filter((ilan: any) => {
-    const baslik = String(ilan?.baslik || ilan?.title || "").toLowerCase();
-    const satici = String(ilan?.sellerEmail || ilan?.satici || ilan?.userId || "").toLowerCase();
+    const baslik = getSafeText(ilan?.baslik || ilan?.title, "").toLowerCase();
+    const satici = getSafeText(ilan?.sellerEmail || ilan?.satici || ilan?.userId, "").toLowerCase();
     const aramaMetni = arama.toLowerCase();
     return baslik.includes(aramaMetni) || satici.includes(aramaMetni);
   });
 
   const filtrelenmisKullanicilar = safeUsers.filter((k: any) => {
-    const email = String(k?.email || "").toLowerCase();
+    const email = getSafeText(k?.email, "").toLowerCase();
     return email.includes(arama.toLowerCase());
   });
 
@@ -184,15 +207,6 @@ export default function SiberAdminTerminali() {
                 </p>
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-[2rem] shadow-xl relative overflow-hidden group hover:border-white/20 transition-colors cursor-pointer" onClick={() => setAktifSekme('kullanicilar')}>
-                <div className="absolute -right-5 -top-5 text-7xl opacity-5 group-hover:scale-110 transition-transform">👥</div>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Kayıtlı Ajanlar</p>
-                <p className="text-4xl font-black text-white">{safeUsers.length}</p>
-              </div>
-            </div>
-
           </div>
         )}
 
@@ -224,41 +238,54 @@ export default function SiberAdminTerminali() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtrelenmisIlanlar.map((ilan: any, index: number) => (
-                      <tr key={ilan._id || `ilan-${index}`} className={`border-b border-white/5 hover:bg-white/[0.01] transition-colors ${ilan.durum === 'pasif' ? 'opacity-60 grayscale' : ''}`}>
-                        <td className="p-5">
-                          <div className="w-12 h-12 rounded-lg bg-black overflow-hidden border border-white/10">
-                             {ilan.resimler?.[0]?.includes(".mp4") ? <video src={ilan.resimler[0]} className="w-full h-full object-cover" /> : <img src={ilan.resimler?.[0] || "https://placehold.co/50"} className="w-full h-full object-cover" />}
-                          </div>
-                        </td>
-                        <td className="p-5">
-                          <p className="font-bold text-sm text-white truncate max-w-[200px]" title={ilan.baslik || ilan.title}>{ilan.baslik || ilan.title || "İsimsiz İlan"}</p>
-                          <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">{ilan.kategori || "Diğer"} | {ilan.sehir || "Türkiye"}</p>
-                        </td>
-                        <td className="p-5">
-                          <p className="text-xs text-cyan-400 truncate max-w-[150px]">{ilan.sellerEmail || ilan.satici || ilan.userId || "Bilinmiyor"}</p>
-                        </td>
-                        <td className="p-5 font-black text-[#00f260]">
-                          {Number(ilan.fiyat || ilan.price || 0).toLocaleString()} ₺
-                        </td>
-                        <td className="p-5">
-                          {ilan.durum === 'pasif' ? 
-                            <span className="bg-red-500/20 text-red-500 px-2 py-1 rounded text-[8px] font-black uppercase">PASİF</span> : 
-                            <span className="bg-[#00f260]/20 text-[#00f260] px-2 py-1 rounded text-[8px] font-black uppercase">AKTİF</span>}
-                        </td>
-                        <td className="p-5 text-right flex items-center justify-end gap-2 h-full pt-6">
-                          <button onClick={() => window.open(`/varlik/${ilan._id}`, '_blank')} className="p-2 bg-white/5 hover:bg-white text-slate-300 hover:text-black rounded-lg transition-colors" title="İlanı Gör">
-                            <Eye size={14} />
-                          </button>
-                          <button onClick={() => handleGlobalDurumDegistir(ilan)} className={`p-2 rounded-lg transition-colors ${ilan.durum === 'pasif' ? 'bg-[#00f260]/10 text-[#00f260] hover:bg-[#00f260] hover:text-black' : 'bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-black'}`} title={ilan.durum === 'pasif' ? 'Yayına Al' : 'Yayından Kaldır'}>
-                            <Power size={14} />
-                          </button>
-                          <button onClick={() => handleGlobalIlanSil(ilan._id, ilan.baslik || ilan.title)} className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg transition-colors" title="Kalıcı Olarak Sil">
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {filtrelenmisIlanlar.map((ilan: any, index: number) => {
+                      // HATA ÖNLEYİCİ DEĞİŞKENLER
+                      const medyaUrl = getMediaUrl(ilan);
+                      const isVideo = medyaUrl.toLowerCase().includes('.mp4') || medyaUrl.toLowerCase().includes('.webm');
+                      const baslik = getSafeText(ilan.baslik || ilan.title, "İsimsiz İlan");
+                      const kategori = getSafeText(ilan.kategori, "Diğer");
+                      const sehir = getSafeText(ilan.sehir, "Türkiye");
+                      const satici = getSafeText(ilan.sellerEmail || ilan.satici || ilan.userId, "Bilinmiyor");
+                      const fiyat = Number(ilan.fiyat || ilan.price || 0) || 0;
+                      const durum = String(ilan.durum || "aktif");
+                      const ilanId = String(ilan._id || index);
+
+                      return (
+                        <tr key={`ilan-${ilanId}`} className={`border-b border-white/5 hover:bg-white/[0.01] transition-colors ${durum === 'pasif' ? 'opacity-60 grayscale' : ''}`}>
+                          <td className="p-5">
+                            <div className="w-12 h-12 rounded-lg bg-black overflow-hidden border border-white/10 shrink-0">
+                               {isVideo ? <video src={medyaUrl} className="w-full h-full object-cover" muted /> : <img src={medyaUrl} className="w-full h-full object-cover" alt="İlan" />}
+                            </div>
+                          </td>
+                          <td className="p-5">
+                            <p className="font-bold text-sm text-white truncate max-w-[200px]" title={baslik}>{baslik}</p>
+                            <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">{kategori} | {sehir}</p>
+                          </td>
+                          <td className="p-5">
+                            <p className="text-xs text-cyan-400 truncate max-w-[150px]">{satici}</p>
+                          </td>
+                          <td className="p-5 font-black text-[#00f260]">
+                            {fiyat.toLocaleString()} ₺
+                          </td>
+                          <td className="p-5">
+                            {durum === 'pasif' ? 
+                              <span className="bg-red-500/20 text-red-500 px-2 py-1 rounded text-[8px] font-black uppercase">PASİF</span> : 
+                              <span className="bg-[#00f260]/20 text-[#00f260] px-2 py-1 rounded text-[8px] font-black uppercase">AKTİF</span>}
+                          </td>
+                          <td className="p-5 text-right flex items-center justify-end gap-2 h-full pt-6">
+                            <button onClick={() => window.open(`/varlik/${ilanId}`, '_blank')} className="p-2 bg-white/5 hover:bg-white text-slate-300 hover:text-black rounded-lg transition-colors" title="İlanı Gör">
+                              <Eye size={14} />
+                            </button>
+                            <button onClick={() => handleGlobalDurumDegistir(ilan)} className={`p-2 rounded-lg transition-colors ${durum === 'pasif' ? 'bg-[#00f260]/10 text-[#00f260] hover:bg-[#00f260] hover:text-black' : 'bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-black'}`} title={durum === 'pasif' ? 'Yayına Al' : 'Yayından Kaldır'}>
+                              <Power size={14} />
+                            </button>
+                            <button onClick={() => handleGlobalIlanSil(ilanId, baslik)} className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg transition-colors" title="Kalıcı Olarak Sil">
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {filtrelenmisIlanlar.length === 0 && (
                       <tr>
                         <td colSpan={6} className="p-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">Sistemde varlık bulunamadı.</td>
@@ -291,25 +318,29 @@ export default function SiberAdminTerminali() {
                      <tr><th className="p-5">AJAN E-POSTA</th><th className="p-5">STATÜ</th><th className="p-5 text-right">SİBER KALKAN</th></tr>
                   </thead>
                   <tbody className="text-[11px] font-bold">
-                     {filtrelenmisKullanicilar.map((k: any, index: number) => (
-                        <tr key={k._id || `user-${index}`} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                           <td className="p-5 text-white text-sm">{k.email || "Bilinmeyen Mail"}</td>
-                           <td className="p-5">
-                             {ADMIN_EMAILS.includes(String(k.email || "").toLowerCase()) ? (
-                               <span className="bg-red-500/20 text-red-500 px-3 py-1 rounded-lg uppercase text-[9px] font-black">MASTER ADMİN</span>
-                             ) : (
-                               <span className="bg-[#00f260]/10 text-[#00f260] px-3 py-1 rounded-lg uppercase text-[9px] font-black">AKTİF AJAN</span>
-                             )}
-                           </td>
-                           <td className="p-5 text-right">
-                              {String(k.email || "").toLowerCase() !== ADMIN_EMAILS[0] && (
-                                 <button onClick={() => handleKullaniciSil(k.email)} className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all shadow-lg flex items-center gap-2 ml-auto">
-                                   <Trash2 size={12} /> SİL
-                                 </button>
-                              )}
-                           </td>
-                        </tr>
-                     ))}
+                     {filtrelenmisKullanicilar.map((k: any, index: number) => {
+                        const userEmail = getSafeText(k.email, "Bilinmeyen Email");
+                        const userId = getSafeText(k._id, index);
+                        return (
+                          <tr key={`user-${userId}`} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                             <td className="p-5 text-white text-sm">{userEmail}</td>
+                             <td className="p-5">
+                               {ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? (
+                                 <span className="bg-red-500/20 text-red-500 px-3 py-1 rounded-lg uppercase text-[9px] font-black">MASTER ADMİN</span>
+                               ) : (
+                                 <span className="bg-[#00f260]/10 text-[#00f260] px-3 py-1 rounded-lg uppercase text-[9px] font-black">AKTİF AJAN</span>
+                               )}
+                             </td>
+                             <td className="p-5 text-right">
+                                {userEmail.toLowerCase() !== ADMIN_EMAILS[0] && (
+                                   <button onClick={() => handleKullaniciSil(userEmail)} className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all shadow-lg flex items-center gap-2 ml-auto">
+                                     <Trash2 size={12} /> SİL
+                                   </button>
+                                )}
+                             </td>
+                          </tr>
+                        )
+                     })}
                      {filtrelenmisKullanicilar.length === 0 && (
                       <tr>
                         <td colSpan={3} className="p-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">Kullanıcı bulunamadı.</td>
