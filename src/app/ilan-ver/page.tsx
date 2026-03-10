@@ -7,7 +7,8 @@ export default function IlanVer() {
     title: "",
     deger: "",
     takasIstegi: "",
-    kategori: "Teknoloji Endeksi",
+    kategori: "", // Boş başlatıyoruz ki kullanıcı seçmek zorunda kalsın
+    sehir: "Türkiye", // Veritabanı hata vermesin diye varsayılan
     images: [] as string[]
   });
   
@@ -75,10 +76,10 @@ export default function IlanVer() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.images.length === 0) return alert("En az bir medya mühürlemelisin!");
+    if (!formData.kategori) return alert("Lütfen bir kategori seçin!");
     
     setLoading(true);
     try {
-      // ⚠️ API Adresini duruma göre kontrol et: /api/varlik-ekle mi yoksa /api/assets mi?
       const res = await fetch('/api/varlik-ekle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,6 +87,7 @@ export default function IlanVer() {
            baslik: formData.title,
            fiyat: formData.deger,
            kategori: formData.kategori,
+           sehir: formData.sehir, // Şehir bilgisi de gidiyor
            aciklama: formData.takasIstegi,
            resimler: formData.images
         })
@@ -93,7 +95,7 @@ export default function IlanVer() {
       
       if (res.ok) {
         setSuccess(true);
-        setFormData({ title: "", deger: "", takasIstegi: "", kategori: "Teknoloji Endeksi", images: [] });
+        setFormData({ title: "", deger: "", takasIstegi: "", kategori: "", sehir: "Türkiye", images: [] });
       } else {
          const errorData = await res.json();
          alert(`Sunucu Hatası: ${errorData.message || "Bilinmeyen hata"}`);
@@ -143,16 +145,70 @@ export default function IlanVer() {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Tahmini Değer (₺)</label>
                   <input type="number" required placeholder="120000" className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-[#00f260] font-black focus:border-[#00f260]/50 outline-none" value={formData.deger} onChange={(e) => setFormData({...formData, deger: e.target.value})} />
                 </div>
+                
+                {/* 🚀 SİBER KATEGORİ AĞACI BURADA */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Kategori</label>
-                  <select className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold appearance-none" value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})}>
-                    <option>Teknoloji Endeksi</option>
-                    <option>Araç & Mobilite</option>
-                    <option>Gayrimenkul</option>
-                    <option>Moda & Lüks</option>
-                    <option>Diğer Varlıklar</option>
+                  <select 
+                    required
+                    className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold appearance-none" 
+                    value={formData.kategori} 
+                    onChange={(e) => setFormData({...formData, kategori: e.target.value})}
+                  >
+                    <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
+                    
+                    <optgroup label="🏢 EMLAK & GAYRİMENKUL">
+                      <option value="Emlak - Konut">Konut / Ev</option>
+                      <option value="Emlak - İşyeri & Mağaza">İşyeri / Dükkan / Mağaza / Fabrika</option>
+                      <option value="Emlak - Arsa & Tarla">Arsa / Tarla</option>
+                    </optgroup>
+
+                    <optgroup label="🚗 VASITA & MOBİLİTE">
+                      <option value="Vasıta - Otomobil">Otomobil (Araç)</option>
+                      <option value="Vasıta - Motosiklet & Bisiklet">Motosiklet / Bisiklet / Scooter</option>
+                      <option value="Vasıta - Deniz & Diğer">Deniz Araçları / Akülü Araçlar</option>
+                      <option value="Vasıta - Yedek Parça">Yedek Parça & Donanım</option>
+                    </optgroup>
+
+                    <optgroup label="💻 ELEKTRONİK & TEKNOLOJİ">
+                      <option value="Elektronik - Telefon">Cep Telefonu</option>
+                      <option value="Elektronik - Bilgisayar">Bilgisayar / Donanım</option>
+                      <option value="Elektronik - TV & Görüntü">Televizyon / Ses / Görüntü</option>
+                      <option value="Elektronik - Oyun Konsolu">PlayStation / Oyun Konsolu</option>
+                    </optgroup>
+
+                    <optgroup label="🛋️ EV, YAŞAM & BEYAZ EŞYA">
+                      <option value="Ev - Mobilya & Tekstil">Mobilya / Halı / Ev Tekstili</option>
+                      <option value="Ev - Beyaz Eşya & Isıtıcı">Beyaz Eşya / Isıtıcı</option>
+                      <option value="Ev - Dekorasyon & Banyo">Duş Eşyaları / Dekorasyon</option>
+                    </optgroup>
+
+                    <optgroup label="⌚ MODA, SAAT & KOZMETİK">
+                      <option value="Moda - Giyim & Ayakkabı">Elbise / Giyim</option>
+                      <option value="Moda - Saat & Takı">Saat / Takı / Özel Eşya</option>
+                      <option value="Kozmetik & Kişisel Bakım">Kozmetik / Kişisel Bakım</option>
+                    </optgroup>
+
+                    <optgroup label="🎨 ANTİKA, SANAT & HOBİ">
+                      <option value="Sanat - Antika & El Sanatı">Antika Eserler / El Sanatları</option>
+                      <option value="Sanat - Özel Tasarım">Özel Tasarımlar</option>
+                      <option value="Hobi - Oyuncak & Kitap">Oyuncak / Kitap / Kırtasiye</option>
+                    </optgroup>
+
+                    <optgroup label="⚙️ SANAYİ & DİĞER">
+                      <option value="Sanayi - Makine & Nalbur">Makine / Nalbur Ürünleri</option>
+                      <option value="Evcil Hayvan & Petshop">Canlı Hayvan / Petshop</option>
+                      <option value="Gıda & İçecek">Gıda / Yiyecek / İçecek</option>
+                      <option value="Diğer">Diğer İlanlar</option>
+                    </optgroup>
                   </select>
                 </div>
+              </div>
+
+              {/* 🏙️ ŞEHİR GİRİŞİ (Varlık Şeması Hata Vermesin Diye) */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Bulunduğu Şehir</label>
+                <input type="text" required placeholder="Örn: İstanbul" className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.sehir} onChange={(e) => setFormData({...formData, sehir: e.target.value})} />
               </div>
 
               <div className="space-y-2">
