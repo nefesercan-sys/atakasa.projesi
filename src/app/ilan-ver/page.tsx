@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useRef } from "react";
+import imageCompression from 'browser-image-compression'; // 🚀 Sıkıştırma Motoru
 
 export default function IlanVer() {
   const [formData, setFormData] = useState({
@@ -8,15 +8,70 @@ export default function IlanVer() {
     deger: "",
     takasIstegi: "",
     kategori: "Teknoloji",
+    mediaBase64: [] as string[] // Sıkıştırılmış görseller burada toplanacak
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 🚀 SİBER SIKIŞTIRMA ALGORİTMASI
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setIsCompressing(true);
+    const files = Array.from(e.target.files);
+    const compressedBase64Array: string[] = [];
+
+    // Sıkıştırma ayarları (Kalite bozulmadan boyutu ezer)
+    const options = {
+      maxSizeMB: 0.5, // Maksimum 500 KB (Vercel limitinin %10'u)
+      maxWidthOrHeight: 1024, // Boyut küçültme
+      useWebWorker: true, // İşlemi arka planda yap (arayüz donmasın)
+    };
+
+    try {
+      for (const file of files) {
+        // Video ise atla veya boyutunu kontrol et (Basit önlem)
+        if (file.type.startsWith('video/')) {
+           alert("Video yükleme geçici olarak devre dışı. Lütfen fotoğraf seçin.");
+           continue; 
+        }
+
+        // Fotoğrafı Sıkıştır
+        const compressedFile = await imageCompression(file, options);
+        
+        // Sıkıştırılmış dosyayı Base64 formatına çevir
+        const reader = new FileReader();
+        const promise = new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+        });
+        reader.readAsDataURL(compressedFile);
+        const base64data = await promise;
+        
+        compressedBase64Array.push(base64data);
+      }
+
+      setFormData(prev => ({ ...prev, mediaBase64: [...prev.mediaBase64, ...compressedBase64Array] }));
+    } catch (error) {
+      console.error("Sıkıştırma sırasında siber hata:", error);
+      alert("Görseller sıkıştırılırken bir hata oluştu.");
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      mediaBase64: prev.mediaBase64.filter((_, i) => i !== index)
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Siber Not: Burada /api/assets rotasına veriyi yolluyoruz (Daha önce kurmuştuk)
     try {
       const res = await fetch('/api/assets', {
         method: 'POST',
@@ -26,10 +81,14 @@ export default function IlanVer() {
       
       if (res.ok) {
         setSuccess(true);
-        setFormData({ title: "", deger: "", takasIstegi: "", kategori: "Teknoloji" });
+        setFormData({ title: "", deger: "", takasIstegi: "", kategori: "Teknoloji", mediaBase64: [] });
+      } else {
+         const errorData = await res.json();
+         alert(`Sunucu Hatası: ${errorData.message || "Bilinmeyen hata"}`);
       }
     } catch (error) {
       console.error("Yükleme Hatası:", error);
+      alert("Sistem bağlantısı koptu. Veri çok büyük veya sunucu yanıt vermiyor.");
     } finally {
       setLoading(false);
     }
@@ -131,20 +190,58 @@ export default function IlanVer() {
                 ></textarea>
               </div>
 
-              {/* Görsel Yükleme Alanı (Görsel Estetik, İleride Cloudinary eklenecek) */}
-              <div className="border-2 border-dashed border-white/[0.1] rounded-3xl p-10 text-center hover:border-[#00f260]/30 transition-colors cursor-pointer group bg-white/[0.01]">
-                <div className="w-16 h-16 bg-white/[0.05] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-[#00f260]/20 transition-colors">
-                  <span className="text-2xl text-slate-400 group-hover:text-[#00f260]">📷</span>
+              {/* GÖRSEL YÜKLEME VE ÖNİZLEME ALANI */}
+              <div className="space-y-4">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  className="hidden" 
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+                
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-white/[0.1] rounded-3xl p-10 text-center hover:border-[#00f260]/30 transition-colors cursor-pointer group bg-white/[0.01]"
+                >
+                  <div className="w-16 h-16 bg-white/[0.05] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-[#00f260]/20 transition-colors">
+                    <span className="text-2xl text-slate-400 group-hover:text-[#00f260]">
+                      {isCompressing ? "⏳" : "📷"}
+                    </span>
+                  </div>
+                  <p className="text-white font-bold tracking-wide mb-1">
+                    {isCompressing ? "Siber Sıkıştırma Aktif..." : "Varlık Görsellerini Yükle"}
+                  </p>
+                  <p className="text-slate-500 text-xs uppercase tracking-widest">
+                    Fotoğraflar otomatik sıkıştırılır. (Maks 5)
+                  </p>
                 </div>
-                <p className="text-white font-bold tracking-wide mb-1">Varlık Görsellerini Yükle</p>
-                <p className="text-slate-500 text-xs uppercase tracking-widest">Sürükle bırak veya tıkla (Maks 5 Fotoğraf)</p>
+
+                {/* Yüklenen Görsellerin Önizlemesi */}
+                {formData.mediaBase64.length > 0 && (
+                  <div className="flex gap-4 overflow-x-auto py-2">
+                    {formData.mediaBase64.map((imgSrc, index) => (
+                      <div key={index} className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden border border-white/10">
+                        <img src={imgSrc} alt={`Yüklenen ${index}`} className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"
+                        >
+                          X
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* MÜHÜRLE BUTONU */}
               <button 
                 type="submit" 
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-[#00f260] to-emerald-500 text-black font-black uppercase tracking-widest py-6 rounded-2xl hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,242,96,0.3)] transition-all duration-300 mt-4"
+                disabled={loading || isCompressing}
+                className="w-full bg-gradient-to-r from-[#00f260] to-emerald-500 text-black font-black uppercase tracking-widest py-6 rounded-2xl hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,242,96,0.3)] transition-all duration-300 mt-4 disabled:opacity-50"
               >
                 {loading ? "Sisteme Aktarılıyor..." : "VARLIĞI PİYASAYA SÜR"}
               </button>
