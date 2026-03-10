@@ -5,7 +5,6 @@ const varlikSchema = new Schema(
     baslik: { type: String, required: true },
     fiyat: { type: Number, required: true },
     
-    // 📉 BORSA HAFIZASI (Fiyat Geçmişi Analizi İçin)
     eskiFiyat: { type: Number, default: 0 }, 
     fiyatGuncellemeTarihi: { type: Date, default: Date.now },
     
@@ -15,19 +14,26 @@ const varlikSchema = new Schema(
     ilce: { type: String, required: true },
     aciklama: { type: String },
     takasIstegi: { type: String },
-    resimler: [{ type: String }], // Görsel linklerini tutacak dizi
+    resimler: [{ type: String }],
     satici: { type: Schema.Types.ObjectId, ref: "User", required: true },
     aktif: { type: Boolean, default: true },
 
-    // 📊 SİBER ANALİZ METRİKLERİ (Filtreleme ve "En"ler Listesi İçin)
-    goruntulenmeSayisi: { type: Number, default: 0 }, // En çok incelenenler
-    takasTeklifiSayisi: { type: Number, default: 0 }, // En çok takas edilenler
-    begeniSayisi: { type: Number, default: 0 },       // En çok beğenilenler
+    goruntulenmeSayisi: { type: Number, default: 0 },
+    takasTeklifiSayisi: { type: Number, default: 0 },
+    begeniSayisi: { type: Number, default: 0 },
   },
   { 
-    timestamps: true // Oluşturulma ve güncelleme tarihlerini otomatik tutar
+    timestamps: true
   }
 );
+
+// ✅ HIZLANDIRICI INDEX'LER
+varlikSchema.index({ createdAt: -1 });
+varlikSchema.index({ kategori: 1, createdAt: -1 });
+varlikSchema.index({ satici: 1, createdAt: -1 });
+varlikSchema.index({ sehir: 1, createdAt: -1 });
+varlikSchema.index({ sehir: 1, kategori: 1, createdAt: -1 });
+varlikSchema.index({ aktif: 1, createdAt: -1 });
 
 const Varlik = models.Varlik || mongoose.model("Varlik", varlikSchema);
 export default Varlik;
