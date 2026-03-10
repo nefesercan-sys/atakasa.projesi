@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useRef } from "react";
-import imageCompression from 'browser-image-compression'; // 🚀 Sıkıştırma Motoru
 
 export default function IlanVer() {
   const [formData, setFormData] = useState({
@@ -15,7 +14,48 @@ export default function IlanVer() {
   const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 🚀 SİBER SIKIŞTIRMA ALGORİTMASI
+  // 🚀 YERLEŞİK SİBER SIKIŞTIRMA MOTORU (Kütüphane Gerektirmez!)
+  const compressImageLocally = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800; // Maksimum genişlik
+          const MAX_HEIGHT = 800; // Maksimum yükseklik
+          let width = img.width;
+          let height = img.height;
+
+          // En-boy oranını koruyarak yeniden boyutlandır
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // %70 Kalite ile JPEG formatında Base64'e çevir (Vercel limitini ezer)
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
@@ -23,32 +63,16 @@ export default function IlanVer() {
     const files = Array.from(e.target.files);
     const compressedBase64Array: string[] = [];
 
-    // Sıkıştırma ayarları (Kalite bozulmadan boyutu ezer)
-    const options = {
-      maxSizeMB: 0.5, // Maksimum 500 KB (Vercel limitinin %10'u)
-      maxWidthOrHeight: 1024, // Boyut küçültme
-      useWebWorker: true, // İşlemi arka planda yap (arayüz donmasın)
-    };
-
     try {
       for (const file of files) {
-        // Video ise atla veya boyutunu kontrol et (Basit önlem)
+        // Video ise atla
         if (file.type.startsWith('video/')) {
            alert("Video yükleme geçici olarak devre dışı. Lütfen fotoğraf seçin.");
            continue; 
         }
 
-        // Fotoğrafı Sıkıştır
-        const compressedFile = await imageCompression(file, options);
-        
-        // Sıkıştırılmış dosyayı Base64 formatına çevir
-        const reader = new FileReader();
-        const promise = new Promise<string>((resolve) => {
-          reader.onloadend = () => resolve(reader.result as string);
-        });
-        reader.readAsDataURL(compressedFile);
-        const base64data = await promise;
-        
+        // 🚀 Kendi yazdığımız motorla sıkıştır
+        const base64data = await compressImageLocally(file);
         compressedBase64Array.push(base64data);
       }
 
