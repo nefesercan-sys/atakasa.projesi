@@ -92,5 +92,5 @@ export default function KategoriSayfasi() {
         )}
       </div>
     </div>
-  );
+  ); 
 }
