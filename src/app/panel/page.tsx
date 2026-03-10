@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
-import { LogOut } from "lucide-react"; // 🚀 SİBER ÇIKIŞ İKONU EKLENDİ
+import { LogOut } from "lucide-react"; // 🚀 ÇIKIŞ İKONU EKLENDİ
 
 // 📡 SWR VERİ ÇEKME MOTORU
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -19,9 +19,8 @@ export default function SiberBorsaPaneli() {
   const [aktifSekme, setAktifSekme] = useState("ozet_radar");
   const [altFiltre, setAltFiltre] = useState("hepsi");
   const [kargoKoduForm, setKargoKoduForm] = useState("");
-  const [sifreForm, setSifreForm] = useState({ eski: "", yeni: "", tekrar: "" });
 
-  // 📡 SWR CANLI RADAR BAĞLANTILARI (E-posta sinyali hedefe kilitlendi 🎯)
+  // 📡 SWR CANLI RADAR BAĞLANTILARI
   const { data: walletData } = useSWR(aktifEmail ? `/api/wallet?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
   const { data: listingsData } = useSWR(aktifEmail ? `/api/listings?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
   const { data: takasData, mutate: mutateTakas } = useSWR(aktifEmail ? `/api/takas?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
@@ -32,7 +31,7 @@ export default function SiberBorsaPaneli() {
   const safeTakas = Array.isArray(takasData) ? takasData : (takasData?.takaslar || takasData?.data || []);
   const safeListings = Array.isArray(listingsData) ? listingsData : (listingsData?.ilanlar || listingsData?.data || []);
 
-  // 🔄 VERİLERİ SWR'DAN AYRIŞTIRMA (Çökme Korumalı)
+  // 🔄 VERİLERİ SWR'DAN AYRIŞTIRMA
   const bakiye = walletData?.balance || 0;
   const ilanlarim = safeListings.filter((i: any) => String(i?.sellerEmail || i?.userId || "").toLowerCase() === aktifEmail);
   
@@ -123,13 +122,14 @@ export default function SiberBorsaPaneli() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans italic flex flex-col md:flex-row">
       
-      {/* 🧭 SOL PANEL */}
+      {/* 🧭 SOL PANEL (MENÜ) */}
       <div className="w-full md:w-72 bg-[#0a0a0a]/90 backdrop-blur-xl border-r border-white/5 flex flex-col pt-24 z-20 shadow-[20px_0_50px_rgba(0,0,0,0.5)] md:h-screen md:sticky md:top-0">
         <div className="px-8 mb-10 text-center md:text-left">
           <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 cursor-pointer hover:text-[#00f260] transition-colors" onClick={() => router.push('/')}>A-TAKASA<span className="text-[#00f260]">.</span></h1>
           <p className="text-slate-500 text-[10px] font-black tracking-[0.3em] uppercase truncate">{aktifEmail}</p>
         </div>
 
+        {/* 🚀 flex-1 eklendi ki buton en alta itilsin */}
         <nav className="flex flex-row md:flex-col gap-2 px-6 overflow-x-auto md:overflow-y-auto no-scrollbar pb-6 md:pb-0 flex-1">
           {[
             { id: "ozet_radar", icon: "📟", ad: "Siber Radar" },
@@ -147,7 +147,7 @@ export default function SiberBorsaPaneli() {
             </button>
           ))}
           
-          {/* 🚀 SİBER ÇIKIŞ BUTONU BURADA */}
+          {/* 🚀 SİBER ÇIKIŞ BUTONU (MASAÜSTÜ İÇİN EN ALTTA) */}
           <div className="mt-auto pt-6 pb-6 w-full hidden md:block">
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
@@ -160,7 +160,7 @@ export default function SiberBorsaPaneli() {
         </nav>
       </div>
 
-      {/* MOBİL İÇİN ÇIKIŞ BUTONU (ALT KISIMDA) */}
+      {/* 🚀 MOBİL İÇİN ÇIKIŞ BUTONU (MENÜNÜN ALTINDA GÖRÜNÜR) */}
       <div className="block md:hidden px-4 mt-6 mb-24 w-full">
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
@@ -171,7 +171,7 @@ export default function SiberBorsaPaneli() {
         </button>
       </div>
 
-      {/* 📡 SAĞ PANEL */}
+      {/* 📡 SAĞ PANEL (İÇERİK) */}
       <div className="flex-1 bg-[#050505] p-4 md:p-12 md:pt-24 relative overflow-x-hidden min-h-screen">
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-[#00f260] opacity-[0.03] blur-[150px] rounded-full pointer-events-none"></div>
 
