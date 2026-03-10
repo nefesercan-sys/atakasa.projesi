@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Play } from "lucide-react";
+import { Play, Share2 } from "lucide-react"; // 🚀 Share2 eklendi
 
 export default function Home() {
   const { data: session } = useSession();
@@ -184,9 +184,33 @@ export default function Home() {
     const ilkMedya = getIlkMedya(ilan);
     const videoVar = isVideo(ilkMedya);
 
+    // 🚀 SİBER PAYLAŞIM MOTORU
+    const handleShare = async (e: React.MouseEvent) => {
+      e.stopPropagation(); 
+      const shareUrl = `${window.location.origin}/varlik/${ilan._id}`;
+      const shareData = {
+        title: `${ilan.baslik} | At takasa.com`,
+        text: `Şu ilana bak! Tam senlik bir siber varlık. Zararına satma, At takasa! ⚡`,
+        url: shareUrl,
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) {
+          console.log("Paylaşım iptal edildi.");
+        }
+      } else {
+        navigator.clipboard.writeText(shareUrl);
+        alert("🔗 İlan Linki Kopyalandı!");
+      }
+    };
+
     return (
       <>
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#00f260]/40 transition-all group shadow-2xl flex flex-col h-full relative">
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#00f260]/40 transition-all group shadow-2xl flex flex-col h-full relative" itemScope itemType="https://schema.org/Product">
+          <meta itemProp="name" content={`${ilan.baslik} | At takasa.com`} />
+          <meta itemProp="description" content={ilan.aciklama || aktifSlogan} />
 
           {/* ── DEĞİŞİM ROZET ── */}
           <div className={`absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl font-black text-[11px] backdrop-blur-md border shadow-lg ${
@@ -240,6 +264,7 @@ export default function Home() {
                   src={ilkMedya}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   alt={ilan.baslik || "Varlık"}
+                  itemProp="image"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-90" />
               </>
@@ -259,16 +284,25 @@ export default function Home() {
             >
               {ilan.baslik}
             </h3>
-            <div className="flex items-end justify-between mb-6">
+            <div className="flex items-end justify-between mb-6" itemProp="offers" itemScope itemType="https://schema.org/Offer">
               <span className="text-white font-black text-3xl tracking-tighter">
-                {Number(ilan.fiyat).toLocaleString()} <span className="text-xl text-[#00f260]">₺</span>
+                <span itemProp="price">{Number(ilan.fiyat).toLocaleString()}</span>
+                <meta itemProp="priceCurrency" content="TRY" />
+                <span className="text-xl text-[#00f260] ml-1">₺</span>
               </span>
               <span className="text-slate-500 text-[10px] font-bold">{new Date(ilan.createdAt).toLocaleDateString()}</span>
             </div>
+            
+            {/* 🚀 BUTONLAR + PAYLAŞ MOTURU */}
             <div className="mt-auto grid grid-cols-2 gap-2">
-              <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="bg-white/5 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all border border-white/10">🔍 İNCELE</button>
-              <button onClick={() => handleSepeteEkle(ilan)} className="bg-cyan-500/10 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all border border-cyan-500/20">🛒 SEPETE AT</button>
-              <button onClick={() => openModal(ilan, "takas")} className="bg-[#00f260]/10 text-[#00f260] py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#00f260] hover:text-black transition-all border border-[#00f260]/20">🔄 TAKAS YAP</button>
+              <div className="flex gap-1 w-full">
+                <button onClick={handleShare} className="bg-white/5 text-slate-300 p-3 rounded-xl hover:bg-cyan-500 hover:text-black transition-all border border-white/10 flex items-center justify-center shrink-0" title="İlanı Paylaş">
+                  <Share2 size={16} />
+                </button>
+                <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="w-full bg-white/5 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all border border-white/10">🔍 İNCELE</button>
+              </div>
+              <button onClick={() => handleSepeteEkle(ilan)} className="bg-cyan-500/10 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all border border-cyan-500/20">🛒 SEPETE</button>
+              <button onClick={() => openModal(ilan, "takas")} className="bg-[#00f260]/10 text-[#00f260] py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#00f260] hover:text-black transition-all border border-[#00f260]/20">🔄 TAKAS</button>
               <button onClick={() => openModal(ilan, "satinal")} className="bg-[#00f260] text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_15px_rgba(0,242,96,0.3)]">💳 SATIN AL</button>
             </div>
           </div>
