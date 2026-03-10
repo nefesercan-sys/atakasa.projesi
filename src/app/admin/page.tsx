@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -8,14 +8,14 @@ import { LogOut, Trash2, Power, ShieldAlert, Activity, Users, Database, Eye } fr
 // 📡 SWR VERİ ÇEKME MOTORU
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-// 👑 MASTER ADMİN MAİLİ (Sadece bu mail buraya girebilir!)
+// 👑 MASTER ADMİN MAİLİ
 const ADMIN_EMAILS = ["ercannefes@gmail.com"];
 
 export default function SiberAdminTerminali() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const aktifEmail = session?.user?.email?.toLowerCase() || "";
+  const aktifEmail = String(session?.user?.email || "").toLowerCase();
   const isMasterAdmin = ADMIN_EMAILS.includes(aktifEmail);
 
   // 🎛️ ADMİN KONTROLLERİ
@@ -26,7 +26,7 @@ export default function SiberAdminTerminali() {
   const { data: allListingsData, mutate: mutateListings } = useSWR(isMasterAdmin ? `/api/varliklar` : null, fetcher, { refreshInterval: 5000 });
   const { data: allUsersData, mutate: mutateUsers } = useSWR(isMasterAdmin ? `/api/admin/users` : null, fetcher, { refreshInterval: 5000 });
   
-  // 🛡️ ÇÖKMEYİ ENGELLEYEN SİBER ZIRH
+  // 🛡️ DİZİ (ARRAY) ZIRHI
   const safeListings = Array.isArray(allListingsData) ? allListingsData : (allListingsData?.data || allListingsData?.ilanlar || []);
   const safeUsers = Array.isArray(allUsersData) ? allUsersData : (allUsersData?.data || []);
 
@@ -36,15 +36,18 @@ export default function SiberAdminTerminali() {
   const pasifIlan = toplamIlan - aktifIlan;
   const toplamHacim = safeListings.reduce((acc: number, ilan: any) => acc + Number(ilan.price || ilan.fiyat || 0), 0);
 
-  // 🔍 FİLTRELEME MOTORU
-  const filtrelenmisIlanlar = safeListings.filter((ilan: any) => 
-    (ilan.baslik?.toLowerCase().includes(arama.toLowerCase()) || ilan.title?.toLowerCase().includes(arama.toLowerCase())) || 
-    (ilan.sellerEmail?.toLowerCase().includes(arama.toLowerCase()) || ilan.satici?.toLowerCase().includes(arama.toLowerCase()))
-  );
+  // 🔍 FİLTRELEME MOTORU (🚀 ÇÖKMEYİ ENGELLEYEN YENİ ZIRH)
+  const filtrelenmisIlanlar = safeListings.filter((ilan: any) => {
+    const baslik = String(ilan?.baslik || ilan?.title || "").toLowerCase();
+    const satici = String(ilan?.sellerEmail || ilan?.satici || ilan?.userId || "").toLowerCase();
+    const aramaMetni = arama.toLowerCase();
+    return baslik.includes(aramaMetni) || satici.includes(aramaMetni);
+  });
 
-  const filtrelenmisKullanicilar = safeUsers.filter((k: any) => 
-    (k.email?.toLowerCase().includes(arama.toLowerCase()))
-  );
+  const filtrelenmisKullanicilar = safeUsers.filter((k: any) => {
+    const email = String(k?.email || "").toLowerCase();
+    return email.includes(arama.toLowerCase());
+  });
 
   // ── YÜKLENİYOR VE GÜVENLİK DUVARI ──
   if (status === "loading") {
@@ -116,7 +119,7 @@ export default function SiberAdminTerminali() {
   return (
     <div className="min-h-screen bg-[#020202] text-white font-sans italic flex flex-col md:flex-row selection:bg-red-500 selection:text-white">
       
-      {/* 🧭 ADMİN SOL PANEL (Kırmızı/Karanlık Konsept) */}
+      {/* 🧭 ADMİN SOL PANEL */}
       <div className="w-full md:w-72 bg-[#050505] border-r border-red-500/20 flex flex-col pt-24 z-20 shadow-[20px_0_50px_rgba(239,68,68,0.1)] md:h-screen md:sticky md:top-0">
         
         <div className="px-8 mb-10 text-center md:text-left shrink-0">
@@ -221,16 +224,16 @@ export default function SiberAdminTerminali() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtrelenmisIlanlar.map((ilan: any) => (
-                      <tr key={ilan._id} className={`border-b border-white/5 hover:bg-white/[0.01] transition-colors ${ilan.durum === 'pasif' ? 'opacity-60 grayscale' : ''}`}>
+                    {filtrelenmisIlanlar.map((ilan: any, index: number) => (
+                      <tr key={ilan._id || `ilan-${index}`} className={`border-b border-white/5 hover:bg-white/[0.01] transition-colors ${ilan.durum === 'pasif' ? 'opacity-60 grayscale' : ''}`}>
                         <td className="p-5">
                           <div className="w-12 h-12 rounded-lg bg-black overflow-hidden border border-white/10">
                              {ilan.resimler?.[0]?.includes(".mp4") ? <video src={ilan.resimler[0]} className="w-full h-full object-cover" /> : <img src={ilan.resimler?.[0] || "https://placehold.co/50"} className="w-full h-full object-cover" />}
                           </div>
                         </td>
                         <td className="p-5">
-                          <p className="font-bold text-sm text-white truncate max-w-[200px]" title={ilan.baslik || ilan.title}>{ilan.baslik || ilan.title}</p>
-                          <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">{ilan.kategori} | {ilan.sehir}</p>
+                          <p className="font-bold text-sm text-white truncate max-w-[200px]" title={ilan.baslik || ilan.title}>{ilan.baslik || ilan.title || "İsimsiz İlan"}</p>
+                          <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">{ilan.kategori || "Diğer"} | {ilan.sehir || "Türkiye"}</p>
                         </td>
                         <td className="p-5">
                           <p className="text-xs text-cyan-400 truncate max-w-[150px]">{ilan.sellerEmail || ilan.satici || ilan.userId || "Bilinmiyor"}</p>
@@ -288,18 +291,18 @@ export default function SiberAdminTerminali() {
                      <tr><th className="p-5">AJAN E-POSTA</th><th className="p-5">STATÜ</th><th className="p-5 text-right">SİBER KALKAN</th></tr>
                   </thead>
                   <tbody className="text-[11px] font-bold">
-                     {filtrelenmisKullanicilar.map((k: any) => (
-                        <tr key={k._id || k.email} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                           <td className="p-5 text-white text-sm">{k.email}</td>
+                     {filtrelenmisKullanicilar.map((k: any, index: number) => (
+                        <tr key={k._id || `user-${index}`} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                           <td className="p-5 text-white text-sm">{k.email || "Bilinmeyen Mail"}</td>
                            <td className="p-5">
-                             {ADMIN_EMAILS.includes(k.email.toLowerCase()) ? (
+                             {ADMIN_EMAILS.includes(String(k.email || "").toLowerCase()) ? (
                                <span className="bg-red-500/20 text-red-500 px-3 py-1 rounded-lg uppercase text-[9px] font-black">MASTER ADMİN</span>
                              ) : (
                                <span className="bg-[#00f260]/10 text-[#00f260] px-3 py-1 rounded-lg uppercase text-[9px] font-black">AKTİF AJAN</span>
                              )}
                            </td>
                            <td className="p-5 text-right">
-                              {k.email.toLowerCase() !== ADMIN_EMAILS[0] && (
+                              {String(k.email || "").toLowerCase() !== ADMIN_EMAILS[0] && (
                                  <button onClick={() => handleKullaniciSil(k.email)} className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all shadow-lg flex items-center gap-2 ml-auto">
                                    <Trash2 size={12} /> SİL
                                  </button>
