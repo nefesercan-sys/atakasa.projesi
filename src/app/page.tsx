@@ -40,9 +40,12 @@ export default function Home() {
   ];
 
   const sloganlar = [
-    "At Takasa, Daha Fazla Kazan.", "Elinde Tutma, Takasa At.",
-    "Takasa At, Değer Yarat.", "At Takasa, Hızlı Sat.",
-    "Özgürce, Güvende Takas Yap.", "Dilediğin Ürünü Bul, Takasa Gir."
+    "Değiştir. Kazan. Özgürleş.",
+    "Elinde Tutma, Takasa Gir.",
+    "Takasa Gir, Değer Yarat.",
+    "Değiştirilmediğin Her Şey Kayıp.",
+    "Özgürce, Güvende Takas Yap.",
+    "Değiştir. Kazan. Özgürleş."
   ];
   const [aktifSlogan, setAktifSlogan] = useState(sloganlar[0]);
 
@@ -51,7 +54,6 @@ export default function Home() {
     return () => clearInterval(sId);
   }, []);
 
-  // ✅ localStorage hatası önlendi — try/catch ile sarıldı
   useEffect(() => {
     try {
       const bozukVeri = localStorage.getItem('atakasa_sepet');
@@ -77,7 +79,6 @@ export default function Home() {
   useEffect(() => {
     if (session?.user?.email && ilanlar.length > 0) {
       const kEmail = session.user.email.toLowerCase();
-      // ✅ satici artık obje olarak geliyor — email karşılaştırması güncellendi
       setBenimIlanlarim(ilanlar.filter((i: any) => {
         const sEmail = (i.satici?.email || i.sellerEmail || i.satici || "").toString().toLowerCase();
         return sEmail === kEmail;
@@ -105,7 +106,6 @@ export default function Home() {
 
   const openModal = (ilan: any, tur: "takas" | "satinal") => {
     if (!session) return router.push("/giris");
-    // ✅ satici obje olarak geliyor
     const saticiEmail = (ilan.satici?.email || ilan.sellerEmail || "").toLowerCase();
     if (saticiEmail === session.user?.email?.toLowerCase()) return alert("SİBER ENGEL: Kendi varlığınızla işlem yapamazsınız!");
     setSeciliIlan(ilan); setModalTuru(tur);
@@ -114,7 +114,6 @@ export default function Home() {
   
   const closeModal = () => { setSeciliIlan(null); setModalTuru(null); setSecilenBenimIlanim(""); setEklenecekNakit(""); };
 
-  // ✅ localStorage try/catch ile korundu
   const handleSepeteEkle = (ilan: any) => {
     try {
       const mevcutSepet = JSON.parse(localStorage.getItem('atakasa_sepet') || '[]');
@@ -143,7 +142,6 @@ export default function Home() {
       const res = await fetch("/api/takas", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          // ✅ satici obje — email doğru alınıyor
           aliciEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail, 
           hedefIlanId: seciliIlan._id, 
           hedefIlanBaslik: seciliIlan.baslik, 
@@ -167,7 +165,6 @@ export default function Home() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           listingId: seciliIlan._id, 
-          // ✅ satici obje — email doğru alınıyor
           sellerEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail, 
           adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon,
           adres: siparisForm.adres, not: siparisForm.not,
@@ -218,35 +215,63 @@ export default function Home() {
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] blur-[150px] rounded-full"></div>
       </div>
 
-      <div className="sticky top-0 z-[100] bg-[#050505]/95 backdrop-blur-3xl border-b border-white/5 pt-8 pb-4 px-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      <div className="sticky top-0 z-[100] bg-[#050505]/95 backdrop-blur-3xl border-b border-white/5 pt-6 pb-4 px-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
-            <div className="flex items-center gap-4 cursor-pointer mr-auto" onClick={() => {setAktifKategori("Hepsi"); setSearchTerm("");}}>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.4)] relative overflow-hidden group">
+
+          {/* ── Üست BAR: Logo + Arama + Butonlar ── */}
+          <div className="flex items-center gap-3 mb-5">
+
+            {/* Logo */}
+            <div className="flex items-center gap-3 cursor-pointer shrink-0" onClick={() => { setAktifKategori("Hepsi"); setSearchTerm(""); }}>
+              <div className="w-11 h-11 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,242,96,0.4)] relative overflow-hidden group shrink-0">
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
-                <span className="text-3xl font-black text-black relative z-10 italic">A<span className="text-white drop-shadow-md">⇄</span></span>
+                <span className="text-xl font-black text-black relative z-10 italic">A<span className="text-white">⇄</span></span>
               </div>
-              <div className="flex flex-col">
-                <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic leading-none hover:text-[#00f260] transition-colors">A-TAKASA<span className="text-[#00f260]">.</span></h1>
-                <p className="text-[#00f260] text-[9px] font-black tracking-[0.2em] uppercase mt-1 animate-pulse">{aktifSlogan}</p>
+              <div className="hidden md:flex flex-col">
+                <h1 className="text-2xl font-black tracking-tighter uppercase italic leading-none hover:text-[#00f260] transition-colors">A-TAKASA<span className="text-[#00f260]">.</span></h1>
+                <p className="text-[#00f260] text-[8px] font-black tracking-[0.15em] uppercase animate-pulse">{aktifSlogan}</p>
               </div>
             </div>
-            <div className="flex w-full md:w-auto gap-2 max-w-xl flex-1">
-              <div className="relative flex-1 group">
-                <input type="text" placeholder="Varlık veya kelime ara..." value={searchTerm} className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] px-6 py-4 outline-none focus:border-[#00f260] text-sm transition-all" onChange={(e) => setSearchTerm(e.target.value)} />
-                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black tracking-widest uppercase">🔍</span>
-              </div>
-              <button onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)} className={`px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260] shadow-[0_0_15px_rgba(0,242,96,0.4)]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}>
-                🛠️ RADAR
-              </button>
-              <button onClick={() => router.push('/sepet')} className="px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]">
-                🛒 SEPET
-              </button>
+
+            {/* ── TEK ARAMA ÇUBUĞU ── */}
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Varlık veya kelime ara..."
+                value={searchTerm}
+                className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] pl-5 pr-12 py-3.5 outline-none focus:border-[#00f260] text-sm transition-all"
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black">🔍</span>
             </div>
+
+            {/* Butonlar */}
+            <button
+              onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
+              className={`px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border shrink-0 ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}
+            >
+              🛠️ <span className="hidden sm:inline">RADAR</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/sepet')}
+              className="px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shrink-0"
+            >
+              🛒 <span className="hidden sm:inline">SEPET</span>
+            </button>
+
+            {/* ✅ YENİ: İLAN VER BUTONU */}
+            <button
+              onClick={() => session ? router.push('/varlik-ekle') : router.push('/giris')}
+              className="px-5 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all bg-[#00f260] text-black hover:scale-105 shadow-[0_0_15px_rgba(0,242,96,0.3)] shrink-0 whitespace-nowrap"
+            >
+              ⚡ <span className="hidden sm:inline">İLAN VER</span>
+            </button>
           </div>
 
+          {/* RADAR FİLTRE MENÜSÜ */}
           {filtreMenusuAcik && (
-            <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-6 animate-in slide-in-from-top duration-300 shadow-[0_0_30px_rgba(0,242,96,0.1)]">
+            <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-5 shadow-[0_0_30px_rgba(0,242,96,0.1)]">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="flex flex-col">
                   <label className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-2">BÖLGE / ŞEHİR</label>
@@ -255,39 +280,40 @@ export default function Home() {
                   </select>
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MİN TAVAN (₺)</label>
+                  <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MİN FIYAT (₺)</label>
                   <input type="number" placeholder="Örn: 1000" value={minFiyat} onChange={(e) => setMinFiyat(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-[#00f260]" />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MAX TABAN (₺)</label>
+                  <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MAX FIYAT (₺)</label>
                   <input type="number" placeholder="Örn: 50000" value={maxFiyat} onChange={(e) => setMaxFiyat(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-[#00f260]" />
                 </div>
                 <div className="flex items-end">
                   <button onClick={() => setSadeceTakaslik(!sadeceTakaslik)} className={`w-full py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${sadeceTakaslik ? 'bg-amber-500/20 text-amber-500 border-amber-500' : 'bg-[#050505] text-slate-500 border-white/10 hover:border-amber-500/50'}`}>
-                    {sadeceTakaslik ? '🔄 SADECE TAKASA AÇIK OLANLAR' : '🔄 TAKAS DURUMU FARK ETMEZ'}
+                    {sadeceTakaslik ? '🔄 SADECE TAKAS' : '🔄 TAKAS DURUMU'}
                   </button>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-white/5 flex justify-end gap-3">
-                <button onClick={() => {setAktifSehir("Tüm Şehirler"); setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false);}} className="px-6 py-2 rounded-lg text-slate-500 text-[10px] font-black uppercase hover:text-white transition-colors">Sıfırla</button>
-                <button onClick={() => setFiltreMenusuAcik(false)} className="px-8 py-2 bg-[#00f260] text-black rounded-lg text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(0,242,96,0.4)]">Taramayı Başlat</button>
+                <button onClick={() => { setAktifSehir("Tüm Şehirler"); setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false); }} className="px-6 py-2 rounded-lg text-slate-500 text-[10px] font-black uppercase hover:text-white transition-colors">Sıfırla</button>
+                <button onClick={() => setFiltreMenusuAcik(false)} className="px-8 py-2 bg-[#00f260] text-black rounded-lg text-[10px] font-black uppercase tracking-widest">Taramayı Başlat</button>
               </div>
             </div>
           )}
 
+          {/* KATEGORİ FİLTRELERİ */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-            <button onClick={() => {setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar");}} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${aktifKategori === "Hepsi" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
+            <button onClick={() => { setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar"); }} className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${aktifKategori === "Hepsi" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
               🌐 KARIŞIK AKIŞ
             </button>
             {sektorler.map(s => (
-              <button key={s.ad} onClick={() => {setAktifKategori(s.ad); setAktifAltFiltre("Yeni İlanlar");}} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${aktifKategori === s.ad ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
-                {s.ad} <span className="opacity-50 text-[8px]">{s.degisim}%</span>
+              <button key={s.ad} onClick={() => { setAktifKategori(s.ad); setAktifAltFiltre("Yeni İlanlar"); }} className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1 ${aktifKategori === s.ad ? 'bg-white text-black' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
+                {s.ad} <span className="opacity-40 text-[8px]">{s.degisim}%</span>
               </button>
             ))}
           </div>
 
           {aktifKategori !== "Hepsi" && (
-            <div className="flex gap-2 mt-3 animate-in slide-in-from-top duration-300 overflow-x-auto no-scrollbar">
+            <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
               {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map(f => (
                 <button key={f} onClick={() => setAktifAltFiltre(f)} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${aktifAltFiltre === f ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-500 bg-transparent hover:text-white'}`}>{f}</button>
               ))}
@@ -326,6 +352,7 @@ export default function Home() {
         )}
       </main>
 
+      {/* MODALLAR */}
       {seciliIlan && modalTuru && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-lg w-full shadow-[0_0_50px_rgba(0,242,96,0.2)] relative flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 no-scrollbar">
@@ -338,7 +365,6 @@ export default function Home() {
                 <p className="text-gray-400 font-black text-xl">{Number(seciliIlan.fiyat).toLocaleString()} ₺</p>
               </div>
             </div>
-            
             {modalTuru === "takas" ? (
               <div className="space-y-4">
                 <label className="text-cyan-400 text-[10px] font-black uppercase tracking-widest block">1. Vereceğiniz Varlığı Seçin</label>
@@ -382,15 +408,17 @@ export default function Home() {
         </div>
       )}
 
+      {/* MOBİL ALT BAR — İLAN VER butonu kaldırıldı (üstte var) */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[400px] z-[200] bg-[#050505] border border-white/10 px-6 py-3 rounded-full flex justify-between items-center md:hidden">
         <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
           <span className="text-xl">🏠</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">VİTRİN</span>
         </button>
-        <button onClick={() => {setAktifKategori("Hepsi"); window.scrollTo({top: 0, behavior: 'smooth'});}} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+        <button onClick={() => { setAktifKategori("Hepsi"); window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
           <span className="text-xl">📂</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">SEKTÖR</span>
         </button>
+        {/* ✅ Orta buton: İLAN VER */}
         <div className="relative -top-6">
-          <button onClick={() => router.push('/varlik-ekle')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
+          <button onClick={() => session ? router.push('/varlik-ekle') : router.push('/giris')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
             ⚡
           </button>
         </div>
