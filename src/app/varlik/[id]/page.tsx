@@ -150,7 +150,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     } catch { alert("Sipariş ağına ulaşılamadı."); }
   };
 
-  // ── MEDYA YARDIMCILARI ──────────────────────────────────────
   const isVideo = (url: string) =>
     url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video'));
 
@@ -188,6 +187,35 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
 
   return (
     <div className="min-h-screen bg-[#020202] py-8 md:py-24 px-4 text-white font-sans selection:bg-[#00f260] selection:text-black">
+      
+      {/* 🤖 GOOGLE YAPAY ZEKA KANCASI (JSON-LD) - GÖRÜNMEZ SEO ZIRHI */}
+      {ilan && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org/",
+              "@type": "Product",
+              "name": ilan.baslik || "İsimsiz Varlık",
+              "image": tumMedya[0] || "https://atakasa.com/logo.png",
+              "description": ilan.aciklama || "Atakasa platformunda takas ilanı",
+              "brand": {
+                "@type": "Brand",
+                "name": ilan.kategori || "Atakasa",
+              },
+              "offers": {
+                "@type": "Offer",
+                "url": `https://atakasa.com/varlik/${ilan._id}`,
+                "priceCurrency": "TRY",
+                "price": ilan.fiyat || ilan.price || "0",
+                "availability": ilan.durum === "pasif" ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+                "itemCondition": "https://schema.org/UsedCondition"
+              }
+            })
+          }}
+        />
+      )}
+
       <div className="max-w-6xl mx-auto bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row relative z-10">
 
         {/* ── SOL PANEL ── */}
@@ -206,13 +234,11 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                   className="w-full h-full object-cover opacity-60"
                   muted playsInline preload="metadata"
                 />
-                {/* VİDEO OYNA BUTONU */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-20 h-20 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(0,242,96,0.6)] group-hover:scale-110 transition-transform duration-300">
                     <Play size={32} className="text-black ml-1" fill="black" />
                   </div>
                 </div>
-                {/* VİDEO ROZET */}
                 <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-1.5 z-10">
                   <Play size={10} className="text-[#00f260]" fill="#00f260" />
                   <span className="text-white text-[9px] font-black uppercase tracking-widest">VİDEO</span>
@@ -228,7 +254,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
             )}
           </div>
 
-          {/* KÜÇÜK MEDYA GALERİ — birden fazla varsa */}
+          {/* KÜÇÜK MEDYA GALERİ */}
           {tumMedya.length > 1 && (
             <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
               {tumMedya.map((medya, idx) => (
@@ -277,7 +303,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                 ))
               )}
             </div>
-            {/* Yorum formu — kendi ilanına yorum yapamaz */}
+            {/* Yorum formu */}
             {session?.user && !ilaninSahibiyim && (
               <div className="bg-[#000000] p-5 rounded-2xl border border-cyan-500/20">
                 <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-3">Satıcıyı Değerlendir</p>
@@ -341,7 +367,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                 {Number(ilan.fiyat || 0).toLocaleString()} <span className="text-2xl text-zinc-500 italic">₺</span>
               </div>
 
-              {/* Takas isteği varsa göster */}
               {ilan.takasIstegi && (
                 <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-4 mb-4">
                   <p className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-1">🔄 Takas İsteği</p>
