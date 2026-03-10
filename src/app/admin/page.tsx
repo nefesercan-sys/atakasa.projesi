@@ -11,11 +11,11 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 // 👑 MASTER ADMİN MAİLİ
 const ADMIN_EMAILS = ["ercannefes@gmail.com"];
 
-// 🛡️ SİBER KORUMA FONKSİYONLARI (Çökmeleri Engeller)
+// 🛡️ SİBER KORUMA FONKSİYONLARI
 const getSafeText = (val: any, fallback: string) => {
   if (!val) return fallback;
   if (typeof val === 'string' || typeof val === 'number') return String(val);
-  return fallback; // Obje veya array ise React'in çökmesini engeller
+  return fallback;
 };
 
 const getMediaUrl = (ilan: any) => {
@@ -44,13 +44,14 @@ export default function SiberAdminTerminali() {
   const { data: allListingsData, mutate: mutateListings } = useSWR(isMasterAdmin ? `/api/varliklar` : null, fetcher, { refreshInterval: 5000 });
   const { data: allUsersData, mutate: mutateUsers } = useSWR(isMasterAdmin ? `/api/admin/users` : null, fetcher, { refreshInterval: 5000 });
   
-  // 🛡️ DİZİ (ARRAY) ZIRHI
-  let rawListings = [];
+  // 🛡️ DİZİ (ARRAY) ZIRHI & TİP GÜVENLİĞİ (HATA BURADAYDI)
+  let rawListings: any[] = [];
   if (Array.isArray(allListingsData)) rawListings = allListingsData;
   else if (allListingsData?.data && Array.isArray(allListingsData.data)) rawListings = allListingsData.data;
   else if (allListingsData?.ilanlar && Array.isArray(allListingsData.ilanlar)) rawListings = allListingsData.ilanlar;
 
-  const safeListings = rawListings.filter(item => item !== null && typeof item === 'object');
+  // TypeScript'in hata verdiği yer düzeltildi (item: any eklendi)
+  const safeListings = rawListings.filter((item: any) => item !== null && typeof item === 'object');
   const safeUsers = Array.isArray(allUsersData) ? allUsersData : (allUsersData?.data || []);
 
   // 📊 ADMİN İSTATİSTİKLERİ
@@ -207,6 +208,15 @@ export default function SiberAdminTerminali() {
                 </p>
               </div>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-[2rem] shadow-xl relative overflow-hidden group hover:border-white/20 transition-colors cursor-pointer" onClick={() => setAktifSekme('kullanicilar')}>
+                <div className="absolute -right-5 -top-5 text-7xl opacity-5 group-hover:scale-110 transition-transform">👥</div>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Kayıtlı Ajanlar</p>
+                <p className="text-4xl font-black text-white">{safeUsers.length}</p>
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -239,7 +249,6 @@ export default function SiberAdminTerminali() {
                   </thead>
                   <tbody>
                     {filtrelenmisIlanlar.map((ilan: any, index: number) => {
-                      // HATA ÖNLEYİCİ DEĞİŞKENLER
                       const medyaUrl = getMediaUrl(ilan);
                       const isVideo = medyaUrl.toLowerCase().includes('.mp4') || medyaUrl.toLowerCase().includes('.webm');
                       const baslik = getSafeText(ilan.baslik || ilan.title, "İsimsiz İlan");
