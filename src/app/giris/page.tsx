@@ -4,16 +4,23 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { ShieldAlert } from "lucide-react";
 
 export default function GirisYap() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // 🛡️ SİBER KİLİT: Sözleşme onay durumu
+  const [sozlesmeKabul, setSozlesmeKabul] = useState(false);
+  
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!sozlesmeKabul) return; // Çift dikiş güvenlik
+    
     setLoading(true);
     setError("");
 
@@ -52,8 +59,31 @@ export default function GirisYap() {
           
           {error && <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black p-4 rounded-xl text-center uppercase tracking-widest animate-pulse">{error}</div>}
 
-          <button disabled={loading} className="w-full mt-4 py-5 bg-gradient-to-r from-[#00f260] to-emerald-400 text-black rounded-[2rem] font-black uppercase tracking-widest hover:scale-[1.02] shadow-[0_10px_30px_rgba(0,242,96,0.3)] transition-all">
-             {loading ? "AĞA BAĞLANILIYOR..." : "KAPILARI AÇ"}
+          {/* ⚖️ ULTRA GÜVENLİK: KVKK VE SÖZLEŞME ONAY KUTUSU */}
+          <div className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-2xl flex items-start gap-3 mt-2">
+            <div className="pt-1">
+              <input 
+                type="checkbox" 
+                id="kvkk" 
+                checked={sozlesmeKabul}
+                onChange={(e) => setSozlesmeKabul(e.target.checked)}
+                className="w-5 h-5 accent-[#00f260] cursor-pointer rounded bg-black border-white/10"
+              />
+            </div>
+            <label htmlFor="kvkk" className="text-[10px] text-slate-400 cursor-pointer leading-relaxed tracking-wider uppercase font-bold">
+              Giriş yaparak <Link href="/sozlesme" className="text-[#00f260] hover:underline">Kullanıcı Sözleşmesini</Link> ve <Link href="/sozlesme" className="text-[#00f260] hover:underline">KVKK Metnini</Link> kabul ediyorum.
+            </label>
+          </div>
+
+          <button 
+            disabled={loading || !sozlesmeKabul} 
+            className={`w-full py-5 rounded-[2rem] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2
+              ${sozlesmeKabul 
+                ? 'bg-gradient-to-r from-[#00f260] to-emerald-400 text-black hover:scale-[1.02] shadow-[0_10px_30px_rgba(0,242,96,0.3)]' 
+                : 'bg-white/[0.05] text-white/30 cursor-not-allowed border border-white/5'}`}
+          >
+            {!sozlesmeKabul ? <ShieldAlert size={16} className="opacity-50" /> : null}
+            {loading ? "AĞA BAĞLANILIYOR..." : sozlesmeKabul ? "KAPILARI AÇ" : "ÖNCE SÖZLEŞMEYİ ONAYLA"}
           </button>
         </form>
 
