@@ -2,44 +2,31 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
 
 export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
   
-  // 📡 ANA STATE'LER
   const [ilanlar, setIlanlar] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // 🎛️ KATEGORİ VE YENİ GELİŞMİŞ FİLTRE STATE'LERİ
   const [aktifKategori, setAktifKategori] = useState("Hepsi");
   const [aktifAltFiltre, setAktifAltFiltre] = useState("Yeni İlanlar");
-  
-  // 🟢 YENİ EKLENEN RADAR FİLTRELERİ
   const [aktifSehir, setAktifSehir] = useState("Tüm Şehirler");
   const [minFiyat, setMinFiyat] = useState("");
   const [maxFiyat, setMaxFiyat] = useState("");
   const [sadeceTakaslik, setSadeceTakaslik] = useState(false);
   const [filtreMenusuAcik, setFiltreMenusuAcik] = useState(false); 
-
   const sehirler = ["Tüm Şehirler", "İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana", "Konya"];
-  // 🛡️ MODAL STATE'LERİ
   const [seciliIlan, setSeciliIlan] = useState<any>(null);
   const [modalTuru, setModalTuru] = useState<"takas" | "satinal" | null>(null);
   const [benimIlanlarim, setBenimIlanlarim] = useState<any[]>([]);
-  
-  // Takas Formu
   const [secilenBenimIlanim, setSecilenBenimIlanim] = useState("");
   const [eklenecekNakit, setEklenecekNakit] = useState("");
-  
-  // 🛒 YENİLENMİŞ SİPARİŞ STATE'LERİ
   const [siparisForm, setSiparisForm] = useState({ adSoyad: "", telefon: "", adres: "", not: "", odemeYontemi: "kredi_karti" });
   const [kabulSozlesme, setKabulSozlesme] = useState(false);
   const [kabulYasalZirh, setKabulYasalZirh] = useState(false);
 
-  // 📂 SİBER SEKTÖRLER (Kategoriler)
   const sektorler = [
     { ad: "Elektronik", degisim: "+4.2" }, { ad: "Emlak", degisim: "+1.8" },
     { ad: "Araç", degisim: "-2.4" }, { ad: "2. El", degisim: "+0.5" },
@@ -53,12 +40,9 @@ export default function Home() {
   ];
 
   const sloganlar = [
-    "At Takasa, Daha Fazla Kazan.", 
-    "Elinde Tutma, Takasa At.", 
-    "Takasa At, Değer Yarat.", 
-    "At Takasa, Hızlı Sat.", 
-    "Özgürce, Güvende Takas Yap.", 
-    "Dilediğin Ürünü Bul, Takasa Gir."
+    "At Takasa, Daha Fazla Kazan.", "Elinde Tutma, Takasa At.",
+    "Takasa At, Değer Yarat.", "At Takasa, Hızlı Sat.",
+    "Özgürce, Güvende Takas Yap.", "Dilediğin Ürünü Bul, Takasa Gir."
   ];
   const [aktifSlogan, setAktifSlogan] = useState(sloganlar[0]);
 
@@ -67,13 +51,21 @@ export default function Home() {
     return () => clearInterval(sId);
   }, []);
 
-  // 📡 SİBER VERİ ÇEKME (ZIRHLANDIRILDI: Artık boş gelmeyecek!)
+  // ✅ localStorage hatası önlendi — try/catch ile sarıldı
+  useEffect(() => {
+    try {
+      const bozukVeri = localStorage.getItem('atakasa_sepet');
+      if (bozukVeri) JSON.parse(bozukVeri);
+    } catch {
+      localStorage.removeItem('atakasa_sepet');
+    }
+  }, []);
+
   useEffect(() => {
     const veriCek = async () => {
       try {
         const res = await fetch("/api/varliklar");
         const data = await res.json();
-        // GÜVENLİK: API paketle gönderiyorsa bile içindeki listeyi bulur
         const liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
         setIlanlar(liste);
       } catch (err) { console.error("Sinyal koptu:", err); } 
@@ -85,26 +77,27 @@ export default function Home() {
   useEffect(() => {
     if (session?.user?.email && ilanlar.length > 0) {
       const kEmail = session.user.email.toLowerCase();
-      setBenimIlanlarim(ilanlar.filter((i: any) => (i.sellerEmail || i.satici || "").toLowerCase() === kEmail));
+      // ✅ satici artık obje olarak geliyor — email karşılaştırması güncellendi
+      setBenimIlanlarim(ilanlar.filter((i: any) => {
+        const sEmail = (i.satici?.email || i.sellerEmail || i.satici || "").toString().toLowerCase();
+        return sEmail === kEmail;
+      }));
     }
   }, [session, ilanlar]);
 
   const getResim = (ilan: any) => ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/600x400/030712/00f260?text=A-TAKASA";
 
-  // 🛠️ GELİŞMİŞ RADAR FİLTRELEME MOTORU
   const filtrelenmisIlanlar = () => {
     let liste = [...ilanlar];
-    
-    if (searchTerm) liste = liste.filter(i => (i.title || i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) || (i.description || i.aciklama || "").toLowerCase().includes(searchTerm.toLowerCase()));
-    if (aktifKategori !== "Hepsi") liste = liste.filter(i => (i.kategori || i.category) === aktifKategori);
-    if (aktifSehir !== "Tüm Şehirler") liste = liste.filter(i => (i.sehir || i.city || "TÜRKİYE").toUpperCase() === aktifSehir.toUpperCase());
-    if (minFiyat) liste = liste.filter(i => Number(i.price || i.fiyat) >= Number(minFiyat));
-    if (maxFiyat) liste = liste.filter(i => Number(i.price || i.fiyat) <= Number(maxFiyat));
-
+    if (searchTerm) liste = liste.filter(i => (i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) || (i.aciklama || "").toLowerCase().includes(searchTerm.toLowerCase()));
+    if (aktifKategori !== "Hepsi") liste = liste.filter(i => i.kategori === aktifKategori);
+    if (aktifSehir !== "Tüm Şehirler") liste = liste.filter(i => (i.sehir || "").toUpperCase() === aktifSehir.toUpperCase());
+    if (minFiyat) liste = liste.filter(i => Number(i.fiyat) >= Number(minFiyat));
+    if (maxFiyat) liste = liste.filter(i => Number(i.fiyat) <= Number(maxFiyat));
     switch (aktifAltFiltre) {
       case "En Çok Fiyatı Düşenler": liste.sort((a, b) => (a.degisimYuzdesi || 0) - (b.degisimYuzdesi || 0)); break;
       case "En Çok Yükselenler": liste.sort((a, b) => (b.degisimYuzdesi || 0) - (a.degisimYuzdesi || 0)); break;
-      case "En Çok Takas Edilenler": liste.sort((a, b) => (b.takasSayisi || 0) - (a.takasSayisi || 0)); break;
+      case "En Çok Takas Edilenler": liste.sort((a, b) => (b.takasTeklifiSayisi || 0) - (a.takasTeklifiSayisi || 0)); break;
       default: liste.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return liste;
@@ -112,37 +105,35 @@ export default function Home() {
 
   const openModal = (ilan: any, tur: "takas" | "satinal") => {
     if (!session) return router.push("/giris");
-    if ((ilan.satici || ilan.sellerEmail || "").toLowerCase() === session.user?.email?.toLowerCase()) return alert("SİBER ENGEL: Kendi varlığınızla işlem yapamazsınız!");
+    // ✅ satici obje olarak geliyor
+    const saticiEmail = (ilan.satici?.email || ilan.sellerEmail || "").toLowerCase();
+    if (saticiEmail === session.user?.email?.toLowerCase()) return alert("SİBER ENGEL: Kendi varlığınızla işlem yapamazsınız!");
     setSeciliIlan(ilan); setModalTuru(tur);
     setKabulSozlesme(false); setKabulYasalZirh(false);
   };
   
   const closeModal = () => { setSeciliIlan(null); setModalTuru(null); setSecilenBenimIlanim(""); setEklenecekNakit(""); };
 
-  // 🛒 🚀 YENİ SİBER SEPET MOTORU (Eski ve Yeni Hafızayı Eşitledik)
+  // ✅ localStorage try/catch ile korundu
   const handleSepeteEkle = (ilan: any) => {
-    // Sepet/page.tsx'teki şifreyle aynısı (atakasa_sepet)
-    const mevcutSepet = JSON.parse(localStorage.getItem('atakasa_sepet') || '[]');
-    
-    const urunId = ilan._id || ilan.id;
-    const zatenVarMi = mevcutSepet.find((item: any) => item.id === urunId);
-    
-    if (zatenVarMi) {
-      return alert("⚠️ Bu varlık zaten siber kasanızda bekliyor!");
+    try {
+      const mevcutSepet = JSON.parse(localStorage.getItem('atakasa_sepet') || '[]');
+      const urunId = ilan._id || ilan.id;
+      if (mevcutSepet.find((item: any) => item.id === urunId)) return alert("⚠️ Bu varlık zaten siber kasanızda bekliyor!");
+      const eklenecekUrun = {
+        id: urunId,
+        baslik: ilan.baslik,
+        fiyat: Number(ilan.fiyat),
+        resim: ilan.resimler?.[0] || "https://placehold.co/150x150/030712/00f260?text=A-TAKASA",
+        saticiMail: ilan.satici?.email || ilan.sellerEmail || ""
+      };
+      mevcutSepet.push(eklenecekUrun);
+      localStorage.setItem('atakasa_sepet', JSON.stringify(mevcutSepet));
+      alert("⚡ VARLIK SİBER KASAYA EKLENDİ!");
+    } catch {
+      localStorage.removeItem('atakasa_sepet');
+      alert("Önbellek temizlendi, tekrar deneyin.");
     }
-
-    const eklenecekUrun = {
-      id: urunId,
-      baslik: ilan.title || ilan.baslik,
-      fiyat: Number(ilan.price || ilan.fiyat),
-      resim: ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/150x150/030712/00f260?text=A-TAKASA",
-      saticiMail: ilan.sellerEmail || ilan.satici?.email || ilan.userId || ilan.satici
-    };
-
-    mevcutSepet.push(eklenecekUrun);
-    localStorage.setItem('atakasa_sepet', JSON.stringify(mevcutSepet));
-    
-    alert("⚡ VARLIK SİBER KASAYA (SEPETE) EKLENDİ!");
   };
 
   const handleTakasGonder = async () => {
@@ -152,10 +143,11 @@ export default function Home() {
       const res = await fetch("/api/takas", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          aliciEmail: seciliIlan.sellerEmail || seciliIlan.satici, 
+          // ✅ satici obje — email doğru alınıyor
+          aliciEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail, 
           hedefIlanId: seciliIlan._id, 
-          hedefIlanBaslik: seciliIlan.title || seciliIlan.baslik, 
-          hedefIlanFiyat: seciliIlan.price || seciliIlan.fiyat, 
+          hedefIlanBaslik: seciliIlan.baslik, 
+          hedefIlanFiyat: seciliIlan.fiyat, 
           teklifEdilenIlanId: id, 
           teklifEdilenIlanBaslik: baslik, 
           eklenenNakit: eklenecekNakit || 0,
@@ -164,31 +156,29 @@ export default function Home() {
       });
       if (res.ok) { alert("⚡ TAKAS TEKLİFİ BAŞARIYLA İLETİLDİ!"); closeModal(); }
       else { const err = await res.json(); alert(`İhlal: ${err.error}`); }
-    } catch (e) { alert("Sinyal koptu."); }
+    } catch { alert("Sinyal koptu."); }
   };
 
   const handleSiparisTamamla = async () => {
     if (!siparisForm.adSoyad || !siparisForm.adres || !siparisForm.telefon) return alert("Lütfen teslimat ve iletişim bilgilerini eksiksiz doldurun!");
     if (!kabulSozlesme || !kabulYasalZirh) return alert("🚨 İşleme devam etmek için sözleşmeleri onaylamalısınız!");
-    
     try {
       const res = await fetch("/api/orders", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           listingId: seciliIlan._id, 
-          sellerEmail: seciliIlan.sellerEmail || seciliIlan.satici, 
-          adSoyad: siparisForm.adSoyad, 
-          telefon: siparisForm.telefon,
-          adres: siparisForm.adres, 
-          not: siparisForm.not,
+          // ✅ satici obje — email doğru alınıyor
+          sellerEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail, 
+          adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon,
+          adres: siparisForm.adres, not: siparisForm.not,
           odemeYontemi: siparisForm.odemeYontemi, 
-          fiyat: seciliIlan.price || seciliIlan.fiyat,
+          fiyat: seciliIlan.fiyat,
           durum: "bekliyor"
         })
       });
       if (res.ok) { alert("📦 SİPARİŞ ONAYLANDI! Panelinizden takip edebilirsiniz."); closeModal(); }
       else { alert("Sipariş ağına ulaşılamadı."); }
-    } catch (error) { alert("Bağlantı hatası."); }
+    } catch { alert("Bağlantı hatası."); }
   };
 
   const BorsaKarti = ({ ilan }: { ilan: any }) => (
@@ -198,7 +188,6 @@ export default function Home() {
       }`}>
         {(ilan.degisimYuzdesi || 0) >= 0 ? '▲' : '▼'} %{Math.abs(ilan.degisimYuzdesi || 0)}
       </div>
-
       <div className="relative h-80 overflow-hidden cursor-pointer" onClick={() => router.push(`/varlik/${ilan._id}`)}>
         <img src={getResim(ilan)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Varlık" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-90"></div>
@@ -206,16 +195,13 @@ export default function Home() {
           📍 {ilan.sehir || "TÜRKİYE"}
         </div>
       </div>
-
       <div className="p-6 flex flex-col flex-1">
         <p className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-1">{ilan.kategori || "PİYASA"}</p>
-        <h3 className="text-white font-bold text-xl mb-4 truncate italic leading-tight group-hover:text-[#00f260] transition-colors cursor-pointer" onClick={() => router.push(`/varlik/${ilan._id}`)}>{ilan.title || ilan.baslik}</h3>
-        
+        <h3 className="text-white font-bold text-xl mb-4 truncate italic leading-tight group-hover:text-[#00f260] transition-colors cursor-pointer" onClick={() => router.push(`/varlik/${ilan._id}`)}>{ilan.baslik}</h3>
         <div className="flex items-end justify-between mb-6">
-          <span className="text-white font-black text-3xl tracking-tighter">{Number(ilan.price || ilan.fiyat).toLocaleString()} <span className="text-xl text-[#00f260]">₺</span></span>
+          <span className="text-white font-black text-3xl tracking-tighter">{Number(ilan.fiyat).toLocaleString()} <span className="text-xl text-[#00f260]">₺</span></span>
           <span className="text-slate-500 text-[10px] font-bold">{new Date(ilan.createdAt).toLocaleDateString()}</span>
         </div>
-
         <div className="mt-auto grid grid-cols-2 gap-2">
           <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="bg-white/5 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all border border-white/10">🔍 İNCELE</button>
           <button onClick={() => handleSepeteEkle(ilan)} className="bg-cyan-500/10 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all border border-cyan-500/20">🛒 SEPETE AT</button>
@@ -228,40 +214,32 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans italic pb-24 selection:bg-[#00f260] selection:text-black">
-      
       <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.03]">
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] blur-[150px] rounded-full"></div>
       </div>
 
       <div className="sticky top-0 z-[100] bg-[#050505]/95 backdrop-blur-3xl border-b border-white/5 pt-8 pb-4 px-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="max-w-7xl mx-auto">
-          
           <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
             <div className="flex items-center gap-4 cursor-pointer mr-auto" onClick={() => {setAktifKategori("Hepsi"); setSearchTerm("");}}>
-               <div className="w-14 h-14 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.4)] relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
-                  <span className="text-3xl font-black text-black relative z-10 italic">A<span className="text-white drop-shadow-md">⇄</span></span>
-               </div>
-               <div className="flex flex-col">
-                 <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic leading-none hover:text-[#00f260] transition-colors">A-TAKASA<span className="text-[#00f260]">.</span></h1>
-                 <p className="text-[#00f260] text-[9px] font-black tracking-[0.2em] uppercase mt-1 animate-pulse">{aktifSlogan}</p>
-               </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.4)] relative overflow-hidden group">
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
+                <span className="text-3xl font-black text-black relative z-10 italic">A<span className="text-white drop-shadow-md">⇄</span></span>
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic leading-none hover:text-[#00f260] transition-colors">A-TAKASA<span className="text-[#00f260]">.</span></h1>
+                <p className="text-[#00f260] text-[9px] font-black tracking-[0.2em] uppercase mt-1 animate-pulse">{aktifSlogan}</p>
+              </div>
             </div>
             <div className="flex w-full md:w-auto gap-2 max-w-xl flex-1">
               <div className="relative flex-1 group">
                 <input type="text" placeholder="Varlık veya kelime ara..." value={searchTerm} className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] px-6 py-4 outline-none focus:border-[#00f260] text-sm transition-all" onChange={(e) => setSearchTerm(e.target.value)} />
                 <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black tracking-widest uppercase">🔍</span>
               </div>
-              <button 
-                onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)} 
-                className={`px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260] shadow-[0_0_15px_rgba(0,242,96,0.4)]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}
-              >
+              <button onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)} className={`px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260] shadow-[0_0_15px_rgba(0,242,96,0.4)]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}>
                 🛠️ RADAR
               </button>
-              <button 
-                onClick={() => router.push('/sepet')} 
-                className="px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
-              >
+              <button onClick={() => router.push('/sepet')} className="px-6 py-4 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]">
                 🛒 SEPET
               </button>
             </div>
@@ -270,43 +248,34 @@ export default function Home() {
           {filtreMenusuAcik && (
             <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-6 animate-in slide-in-from-top duration-300 shadow-[0_0_30px_rgba(0,242,96,0.1)]">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                
                 <div className="flex flex-col">
                   <label className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-2">BÖLGE / ŞEHİR</label>
                   <select value={aktifSehir} onChange={(e) => setAktifSehir(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-cyan-500">
                     {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
-
                 <div className="flex flex-col">
                   <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MİN TAVAN (₺)</label>
                   <input type="number" placeholder="Örn: 1000" value={minFiyat} onChange={(e) => setMinFiyat(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-[#00f260]" />
                 </div>
-
                 <div className="flex flex-col">
                   <label className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-2">MAX TABAN (₺)</label>
                   <input type="number" placeholder="Örn: 50000" value={maxFiyat} onChange={(e) => setMaxFiyat(e.target.value)} className="w-full bg-[#050505] border border-white/10 text-white text-xs p-3 rounded-xl outline-none focus:border-[#00f260]" />
                 </div>
-
                 <div className="flex items-end">
-                   <button 
-                     onClick={() => setSadeceTakaslik(!sadeceTakaslik)}
-                     className={`w-full py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${sadeceTakaslik ? 'bg-amber-500/20 text-amber-500 border-amber-500' : 'bg-[#050505] text-slate-500 border-white/10 hover:border-amber-500/50'}`}
-                   >
-                     {sadeceTakaslik ? '🔄 SADECE TAKASA AÇIK OLANLAR' : '🔄 TAKAS DURUMU FARK ETMEZ'}
-                   </button>
+                  <button onClick={() => setSadeceTakaslik(!sadeceTakaslik)} className={`w-full py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${sadeceTakaslik ? 'bg-amber-500/20 text-amber-500 border-amber-500' : 'bg-[#050505] text-slate-500 border-white/10 hover:border-amber-500/50'}`}>
+                    {sadeceTakaslik ? '🔄 SADECE TAKASA AÇIK OLANLAR' : '🔄 TAKAS DURUMU FARK ETMEZ'}
+                  </button>
                 </div>
-
               </div>
-              
               <div className="mt-4 pt-4 border-t border-white/5 flex justify-end gap-3">
-                 <button onClick={() => {setAktifSehir("Tüm Şehirler"); setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false);}} className="px-6 py-2 rounded-lg text-slate-500 text-[10px] font-black uppercase hover:text-white transition-colors">Sıfırla</button>
-                 <button onClick={() => setFiltreMenusuAcik(false)} className="px-8 py-2 bg-[#00f260] text-black rounded-lg text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(0,242,96,0.4)]">Taramayı Başlat</button>
+                <button onClick={() => {setAktifSehir("Tüm Şehirler"); setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false);}} className="px-6 py-2 rounded-lg text-slate-500 text-[10px] font-black uppercase hover:text-white transition-colors">Sıfırla</button>
+                <button onClick={() => setFiltreMenusuAcik(false)} className="px-8 py-2 bg-[#00f260] text-black rounded-lg text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(0,242,96,0.4)]">Taramayı Başlat</button>
               </div>
             </div>
           )}
 
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mask-linear-right">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
             <button onClick={() => {setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar");}} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${aktifKategori === "Hepsi" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
               🌐 KARIŞIK AKIŞ
             </button>
@@ -357,7 +326,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* 🚀 MODALLAR (TAKAS / SATIN AL) */}
       {seciliIlan && modalTuru && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-lg w-full shadow-[0_0_50px_rgba(0,242,96,0.2)] relative flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 no-scrollbar">
@@ -366,8 +334,8 @@ export default function Home() {
               <img src={getResim(seciliIlan)} className="w-24 h-24 rounded-2xl object-cover border border-white/5" alt="Varlık" />
               <div>
                 <p className="text-[#00f260] text-[10px] font-black uppercase tracking-widest mb-1">{modalTuru === 'takas' ? 'SİBER TAKAS TEKLİFİ' : 'GÜVENLİ SATIN ALMA'}</p>
-                <h3 className="text-white font-bold text-lg leading-tight mb-2 pr-8">{seciliIlan.title || seciliIlan.baslik}</h3>
-                <p className="text-gray-400 font-black text-xl">{Number(seciliIlan.price || seciliIlan.fiyat).toLocaleString()} ₺</p>
+                <h3 className="text-white font-bold text-lg leading-tight mb-2 pr-8">{seciliIlan.baslik}</h3>
+                <p className="text-gray-400 font-black text-xl">{Number(seciliIlan.fiyat).toLocaleString()} ₺</p>
               </div>
             </div>
             
@@ -376,7 +344,7 @@ export default function Home() {
                 <label className="text-cyan-400 text-[10px] font-black uppercase tracking-widest block">1. Vereceğiniz Varlığı Seçin</label>
                 <select value={secilenBenimIlanim} onChange={(e) => setSecilenBenimIlanim(e.target.value)} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-5 rounded-2xl outline-none focus:border-cyan-500 transition-colors">
                   <option value="">-- Cüzdanınızdan Varlık Seçin --</option>
-                  {benimIlanlarim.map(b => <option key={b._id} value={`${b._id}|${b.title || b.baslik}`}>{b.title || b.baslik}</option>)}
+                  {benimIlanlarim.map(b => <option key={b._id} value={`${b._id}|${b.baslik}`}>{b.baslik}</option>)}
                 </select>
                 <label className="text-[#00f260] text-[10px] font-black uppercase tracking-widest block pt-2">2. Üste Nakit Ekle (₺) - Opsiyonel</label>
                 <input type="number" placeholder="Örn: 5000" value={eklenecekNakit} onChange={(e) => setEklenecekNakit(e.target.value)} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-5 rounded-2xl outline-none focus:border-[#00f260] transition-colors" />
@@ -386,30 +354,27 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="bg-[#00f260]/5 border border-[#00f260]/20 p-6 rounded-2xl mb-4 flex justify-between items-center">
                   <span className="text-[#00f260] text-[10px] font-black uppercase tracking-widest">ÖDENECEK TUTAR</span>
-                  <span className="text-3xl font-black text-white">{Number(seciliIlan.price || seciliIlan.fiyat).toLocaleString()} ₺</span>
+                  <span className="text-3xl font-black text-white">{Number(seciliIlan.fiyat).toLocaleString()} ₺</span>
                 </div>
                 <input type="text" placeholder="Teslim Alacak Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none focus:border-[#00f260]" />
                 <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e) => setSiparisForm({...siparisForm, telefon: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none focus:border-[#00f260]" />
                 <textarea placeholder="Açık Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none h-20 resize-none focus:border-[#00f260]"></textarea>
                 <textarea placeholder="Sipariş Notu (İsteğe Bağlı)" value={siparisForm.not} onChange={(e) => setSiparisForm({...siparisForm, not: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none h-16 resize-none focus:border-[#00f260]"></textarea>
-                
                 <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none focus:border-[#00f260]">
                   <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
                   <option value="havale">🏦 Havale / EFT</option>
                   <option value="kapida_odeme">📦 Kapıda Ödeme</option>
                 </select>
-
                 <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-3 mt-4">
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input type="checkbox" checked={kabulSozlesme} onChange={(e) => setKabulSozlesme(e.target.checked)} className="mt-1 accent-[#00f260] w-4 h-4 shrink-0" />
-                    <span className="text-slate-400 text-[9px] uppercase leading-tight group-hover:text-white transition-colors">Mesafeli Satış Sözleşmesi'ni okudum, anladım ve kabul ediyorum. Tüm sorumluluk tarafıma aittir.</span>
+                    <span className="text-slate-400 text-[9px] uppercase leading-tight group-hover:text-white transition-colors">Mesafeli Satış Sözleşmesi'ni okudum, anladım ve kabul ediyorum.</span>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input type="checkbox" checked={kabulYasalZirh} onChange={(e) => setKabulYasalZirh(e.target.checked)} className="mt-1 accent-[#00f260] w-4 h-4 shrink-0" />
-                    <span className="text-slate-400 text-[9px] uppercase leading-tight group-hover:text-white transition-colors"><span className="text-[#00f260] font-bold">🛡️ Yasal Zırh:</span> Bu işlem siber kalkan güvencesindedir. Teslimat tamamlanana kadar para havuza aktarılır. Onaylıyorum.</span>
+                    <span className="text-slate-400 text-[9px] uppercase leading-tight group-hover:text-white transition-colors"><span className="text-[#00f260] font-bold">🛡️ Yasal Zırh:</span> Teslimat tamamlanana kadar para havuza aktarılır. Onaylıyorum.</span>
                   </label>
                 </div>
-
                 <button onClick={handleSiparisTamamla} className="w-full mt-2 bg-[#00f260] text-black py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-all shadow-[0_0_30px_rgba(0,242,96,0.3)]">✅ GÜVENLİ ÖDEMEYİ TAMAMLA</button>
               </div>
             )}
@@ -417,27 +382,24 @@ export default function Home() {
         </div>
       )}
 
-      {/* 📱 SİBER MOBİL ALT BAR (NAVİGASYON) */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[400px] z-[200] bg-[#050505] border border-white/10 px-6 py-3 rounded-full flex justify-between items-center md:hidden">
-         <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
-           <span className="text-xl">🏠</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">VİTRİN</span>
-         </button>
-         <button onClick={() => {setAktifKategori("Hepsi"); window.scrollTo({top: 0, behavior: 'smooth'});}} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
-           <span className="text-xl">📂</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">SEKTÖR</span>
-         </button>
-         
-         <div className="relative -top-6">
-            <button onClick={() => router.push('/varlik-ekle')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
-              ⚡
-            </button>
-         </div>
-         
-         <button onClick={() => router.push('/mesajlar')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
-           <span className="text-xl">💬</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">MESAJ</span>
-         </button>
-         <button onClick={() => router.push('/panel')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
-           <span className="text-xl">👤</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">PANEL</span>
-         </button>
+        <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+          <span className="text-xl">🏠</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">VİTRİN</span>
+        </button>
+        <button onClick={() => {setAktifKategori("Hepsi"); window.scrollTo({top: 0, behavior: 'smooth'});}} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+          <span className="text-xl">📂</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">SEKTÖR</span>
+        </button>
+        <div className="relative -top-6">
+          <button onClick={() => router.push('/varlik-ekle')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
+            ⚡
+          </button>
+        </div>
+        <button onClick={() => router.push('/mesajlar')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+          <span className="text-xl">💬</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">MESAJ</span>
+        </button>
+        <button onClick={() => router.push('/panel')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
+          <span className="text-xl">👤</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">PANEL</span>
+        </button>
       </div>
     </div>
   );
