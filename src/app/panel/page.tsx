@@ -4,7 +4,19 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
-import { LogOut, Edit, Trash2, Power, Package } from "lucide-react"; // İkonlar eklendi
+import { LogOut, Edit, Trash2, Power, Package } from "lucide-react";
+
+// 🌍 TÜRKİYE'NİN 81 İLİ
+const sehirler = [
+  "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", 
+  "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", 
+  "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", 
+  "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", 
+  "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", 
+  "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", 
+  "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", 
+  "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
+];
 
 // 📡 SWR VERİ ÇEKME MOTORU
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -87,7 +99,7 @@ export default function SiberBorsaPaneli() {
       const res = await fetch(`/api/varliklar/${id}`, { method: "DELETE" });
       if (res.ok) {
         alert("🗑️ Varlık siber ağdan silindi.");
-        mutateListings(); // SWR ile listeyi anında güncelle
+        mutateListings(); 
       } else { alert("Silme işlemi başarısız."); }
     } catch (err) { alert("Bağlantı hatası."); }
   };
@@ -109,6 +121,7 @@ export default function SiberBorsaPaneli() {
     } catch (err) { alert("Bağlantı hatası."); }
   };
 
+  // 🚀 ZIRHLI VE GÜNCELLENMİŞ DÜZENLEME MOTORU
   const handleDuzenleKaydet = async (e: React.FormEvent) => {
     e.preventDefault();
     setIslemLoading(true);
@@ -117,16 +130,22 @@ export default function SiberBorsaPaneli() {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           baslik: duzenleModal.baslik,
-          fiyat: duzenleModal.fiyat,
+          fiyat: Number(duzenleModal.fiyat), // 🛡️ Kesin sayıya çevirdik
           aciklama: duzenleModal.aciklama,
-          kategori: duzenleModal.kategori
+          kategori: duzenleModal.kategori,
+          sehir: duzenleModal.sehir, // 🛡️ Şehir eklendi
+          ilce: duzenleModal.ilce, // 🛡️ İlçe eklendi
+          mahalle: duzenleModal.mahalle // 🛡️ Mahalle eklendi
         }),
       });
       if (res.ok) {
         alert("✅ Varlık başarıyla güncellendi!");
         setDuzenleModal(null);
-        mutateListings(); // Canlı listeyi güncelle
-      } else { alert("Güncelleme başarısız."); }
+        mutateListings(); 
+      } else { 
+        const err = await res.json();
+        alert(`Güncelleme başarısız: ${err.message || err.error || "Bilinmeyen hata"}`); 
+      }
     } catch (err) { alert("Bağlantı hatası."); } 
     finally { setIslemLoading(false); }
   };
@@ -313,7 +332,6 @@ export default function SiberBorsaPaneli() {
                       </div>
                     </div>
 
-                    {/* Varlık Aksiyon Butonları */}
                     <div className="grid grid-cols-3 gap-2 mt-auto">
                       <button onClick={() => setDuzenleModal(ilan)} className="flex items-center justify-center gap-1 bg-white/5 hover:bg-cyan-500 hover:text-black text-cyan-400 py-3 rounded-xl text-[9px] font-black uppercase transition-colors">
                         <Edit size={12} /> Düzenle
@@ -352,13 +370,12 @@ export default function SiberBorsaPaneli() {
                 </div>
               ) : (
                 gosterilenVeri().map((islem: any, index: number) => {
-                  if (!islem) return null; // Çökme koruması
+                  if (!islem) return null;
                   
                   const isTakas = aktifSekme.includes("teklifler");
                   const isSiparis = aktifSekme.includes("siparisler");
                   const guvenliID = String(islem._id || index); 
 
-                  // 🔄 TAKAS KARTI
                   if (isTakas) {
                     const benimRolum = String(islem.gonderenEmail || "").toLowerCase() === aktifEmail ? "gonderen" : "alici";
                     return (
@@ -395,7 +412,6 @@ export default function SiberBorsaPaneli() {
                     );
                   }
 
-                  // 📦 SİPARİŞ KARTI
                   if (isSiparis) {
                     const benimRolum = String(islem.sellerEmail || islem.saticiEmail || "").toLowerCase() === aktifEmail ? "satici" : "alici";
                     const islemDurumu = String(islem.durum || islem.status || "").toLowerCase();
@@ -458,26 +474,75 @@ export default function SiberBorsaPaneli() {
         )}
       </div>
 
-      {/* 📝 SİBER DÜZENLEME MODALI */}
+      {/* 🚀 SİBER DÜZENLEME MODALI (GÜNCELLENDİ VE ZIRHLANDI) */}
       {duzenleModal && (
         <div className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-md w-full shadow-[0_0_50px_rgba(0,242,96,0.2)]">
+          <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-2xl w-full shadow-[0_0_50px_rgba(0,242,96,0.2)] max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-6 border-b border-white/10 pb-4">Varlığı Düzenle</h3>
             
             <form onSubmit={handleDuzenleKaydet} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Başlık</label>
-                <input type="text" value={duzenleModal.baslik} onChange={e => setDuzenleModal({...duzenleModal, baslik: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-[#00f260]" required />
-              </div>
               
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Fiyat (₺)</label>
-                <input type="number" value={duzenleModal.fiyat} onChange={e => setDuzenleModal({...duzenleModal, fiyat: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-[#00f260] font-black outline-none focus:border-[#00f260]" required />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Başlık</label>
+                  <input type="text" value={duzenleModal.baslik || ""} onChange={e => setDuzenleModal({...duzenleModal, baslik: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-[#00f260]" required />
+                </div>
+                
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Fiyat (₺)</label>
+                  <input type="number" value={duzenleModal.fiyat || ""} onChange={e => setDuzenleModal({...duzenleModal, fiyat: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-[#00f260] font-black outline-none focus:border-[#00f260]" required />
+                </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Açıklama</label>
-                <textarea value={duzenleModal.aciklama} onChange={e => setDuzenleModal({...duzenleModal, aciklama: e.target.value})} rows={3} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:border-[#00f260] resize-none" required></textarea>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Kategori</label>
+                <select className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-[#00f260] appearance-none" value={duzenleModal.kategori || ""} onChange={e => setDuzenleModal({...duzenleModal, kategori: e.target.value})} required>
+                  <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
+                  <optgroup label="🏢 EMLAK & GAYRİMENKUL">
+                    <option value="Emlak - Konut">Konut / Ev</option><option value="Emlak - İşyeri & Mağaza">İşyeri / Dükkan / Mağaza / Fabrika</option><option value="Emlak - Arsa & Tarla">Arsa / Tarla</option>
+                  </optgroup>
+                  <optgroup label="🚗 VASITA & MOBİLİTE">
+                    <option value="Vasıta - Otomobil">Otomobil (Araç)</option><option value="Vasıta - Motosiklet & Bisiklet">Motosiklet / Bisiklet / Scooter</option><option value="Vasıta - Deniz & Diğer">Deniz Araçları / Akülü Araçlar</option><option value="Vasıta - Yedek Parça">Yedek Parça & Donanım</option>
+                  </optgroup>
+                  <optgroup label="💻 ELEKTRONİK & TEKNOLOJİ">
+                    <option value="Elektronik - Telefon">Cep Telefonu</option><option value="Elektronik - Bilgisayar">Bilgisayar / Donanım</option><option value="Elektronik - TV & Görüntü">Televizyon / Ses / Görüntü</option><option value="Elektronik - Oyun Konsolu">PlayStation / Oyun Konsolu</option>
+                  </optgroup>
+                  <optgroup label="🛋️ EV, YAŞAM & BEYAZ EŞYA">
+                    <option value="Ev - Mobilya & Tekstil">Mobilya / Halı / Ev Tekstili</option><option value="Ev - Beyaz Eşya & Isıtıcı">Beyaz Eşya / Isıtıcı</option><option value="Ev - Dekorasyon & Banyo">Duş Eşyaları / Dekorasyon</option>
+                  </optgroup>
+                  <optgroup label="⌚ MODA, SAAT & KOZMETİK">
+                    <option value="Moda - Giyim & Ayakkabı">Elbise / Giyim</option><option value="Moda - Saat & Takı">Saat / Takı / Özel Eşya</option><option value="Kozmetik & Kişisel Bakım">Kozmetik / Kişisel Bakım</option>
+                  </optgroup>
+                  <optgroup label="🎨 ANTİKA, SANAT & HOBİ">
+                    <option value="Sanat - Antika & El Sanatı">Antika Eserler / El Sanatları</option><option value="Sanat - Özel Tasarım">Özel Tasarımlar</option><option value="Hobi - Oyuncak & Kitap">Oyuncak / Kitap / Kırtasiye</option>
+                  </optgroup>
+                  <optgroup label="⚙️ SANAYİ & DİĞER">
+                    <option value="Sanayi - Makine & Nalbur">Makine / Nalbur Ürünleri</option><option value="Evcil Hayvan & Petshop">Canlı Hayvan / Petshop</option><option value="Gıda & İçecek">Gıda / Yiyecek / İçecek</option><option value="Diğer">Diğer İlanlar</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Şehir</label>
+                  <select className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-[#00f260] appearance-none" value={duzenleModal.sehir || ""} onChange={e => setDuzenleModal({...duzenleModal, sehir: e.target.value})} required>
+                    <option value="" disabled>Seçiniz...</option>
+                    {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">İlçe</label>
+                  <input type="text" value={duzenleModal.ilce || ""} onChange={e => setDuzenleModal({...duzenleModal, ilce: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-[#00f260]" required />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Mahalle</label>
+                  <input type="text" value={duzenleModal.mahalle || ""} onChange={e => setDuzenleModal({...duzenleModal, mahalle: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-[#00f260]" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-[#00f260] uppercase tracking-widest ml-2">Açıklama / Şartlar</label>
+                <textarea value={duzenleModal.aciklama || ""} onChange={e => setDuzenleModal({...duzenleModal, aciklama: e.target.value})} rows={3} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:border-[#00f260] resize-none" required></textarea>
               </div>
 
               <div className="flex gap-3 mt-6 pt-4 border-t border-white/10">
@@ -487,6 +552,7 @@ export default function SiberBorsaPaneli() {
                 </button>
               </div>
             </form>
+
           </div>
         </div>
       )}
