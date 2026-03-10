@@ -14,7 +14,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Şifre en az 6 karakter olmalıdır." }, { status: 400 });
     }
 
-    const db = await connectMongoDB();
+    // 🛡️ AKILLI VERİTABANI BAĞLANTISI (Hatayı Çözen Ana Zırh)
+    const conn = (await connectMongoDB()) as any;
+    let db;
+
+    if (conn && typeof conn.db === 'function') {
+      db = conn.db();
+    } else if (conn && conn.connection) {
+      db = conn.connection;
+    } else {
+      db = conn;
+    }
     
     // 🛡️ SİBER ZIRH 1: Büyük/Küçük Harf Uyumsuzluğunu Yok Et
     const guvenliEmail = email.toLowerCase();
