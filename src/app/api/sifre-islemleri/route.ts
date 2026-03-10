@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../lib/mongodb";// Eğer hata verirse: "../../../lib/mongodb" olarak değiştir
+import { connectMongoDB } from "../../../lib/mongodb";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 
@@ -38,12 +38,14 @@ export async function POST(req: Request) {
     const siteAdresi = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://atakasa.com";
     const resetUrl = `${siteAdresi}/sifre-yenile?token=${token}&email=${encodeURIComponent(email)}`;
 
-    // 4. E-Posta Gönderici (Nodemailer) Ayarları
+    // 4. ÇELİK ZIRHLI E-POSTA MOTORU (Sorunu çözen kısım burası!)
     const transporter = nodemailer.createTransport({
-      service: "gmail", 
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: Number(process.env.SMTP_PORT) || 465,
+      secure: true, // 465 portu için true zorunludur
       auth: {
         user: process.env.SMTP_USER, 
-        pass: process.env.SMTP_PASS, // DİKKAT: Burası Gmail Uygulama Şifresi olmalı!
+        pass: process.env.SMTP_PASS, // DİKKAT: Vercel'de bu şifre boşluksuz olmalı! (Örn: qjjvbvcxopsylmzv)
       },
     });
 
