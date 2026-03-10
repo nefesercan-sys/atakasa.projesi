@@ -192,8 +192,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     </div>
   );
 
-  const ilaninSahibiyim = session?.user?.email?.toLowerCase() === (ilan.satici?.email || ilan.sellerEmail || ilan.userId)?.toLowerCase();
-
   return (
     <div className="min-h-screen bg-[#020202] py-8 md:py-24 px-4 text-white font-sans selection:bg-[#00f260] selection:text-black">
       <div className="max-w-6xl mx-auto bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row relative z-10">
@@ -227,7 +225,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
                 ))
               )}
             </div>
-            {session?.user && !ilaninSahibiyim && (
+            {session?.user && (
               <div className="bg-[#000000] p-5 rounded-2xl border border-cyan-500/20">
                 <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-3">Satıcıyı Değerlendir</p>
                 <div className="flex gap-2 mb-4">
@@ -250,16 +248,12 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
             <button onClick={() => setAktifSekme("incele")} className={`flex-1 py-4 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${aktifSekme === "incele" ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}>
               🔍 İncele
             </button>
-            {!ilaninSahibiyim && (
-              <>
-                <button onClick={() => setAktifSekme("takas")} className={`flex-1 py-4 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${aktifSekme === "takas" ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}>
-                  TAKAS YAP
-                </button>
-                <button onClick={() => setAktifSekme("satinal")} className={`flex-1 py-4 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${aktifSekme === "satinal" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'text-slate-500 hover:text-white'}`}>
-                  SATIN AL
-                </button>
-              </>
-            )}
+            <button onClick={() => setAktifSekme("takas")} className={`flex-1 py-4 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${aktifSekme === "takas" ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}>
+              TAKAS YAP
+            </button>
+            <button onClick={() => setAktifSekme("satinal")} className={`flex-1 py-4 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${aktifSekme === "satinal" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'text-slate-500 hover:text-white'}`}>
+              SATIN AL
+            </button>
           </div>
 
           {/* İNCELE */}
@@ -274,11 +268,10 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
               <p className="text-zinc-400 text-sm mb-8 leading-relaxed flex-1 font-medium whitespace-pre-line">
                 {ilan.aciklama || ilan.description || "Açıklama belirtilmemiş."}
               </p>
-              {!ilaninSahibiyim && (
-                <Link href={`/mesajlar?satici=${ilan.satici?.email || ilan.sellerEmail || ilan.userId}&ilan=${ilan._id}`} className="w-full bg-white/5 text-white py-5 rounded-2xl border border-white/10 font-black uppercase tracking-widest text-[11px] hover:bg-white/10 transition-all flex justify-center items-center gap-2 mt-auto">
-                  <MessageCircle size={18} /> SATICIYA MESAJ GÖNDER
-                </Link>
-              )}
+              
+              <Link href={`/mesajlar?satici=${ilan.satici?.email || ilan.sellerEmail || ilan.userId}&ilan=${ilan._id}`} className="w-full bg-white/5 text-white py-5 rounded-2xl border border-white/10 font-black uppercase tracking-widest text-[11px] hover:bg-white/10 transition-all flex justify-center items-center gap-2 mt-auto">
+                <MessageCircle size={18} /> SATICIYA MESAJ GÖNDER
+              </Link>
             </div>
           )}
 
