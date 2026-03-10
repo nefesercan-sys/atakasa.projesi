@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
-import { LogOut } from "lucide-react"; // 🚀 ÇIKIŞ İKONU EKLENDİ
+import { LogOut } from "lucide-react";
 
 // 📡 SWR VERİ ÇEKME MOTORU
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -124,13 +124,15 @@ export default function SiberBorsaPaneli() {
       
       {/* 🧭 SOL PANEL (MENÜ) */}
       <div className="w-full md:w-72 bg-[#0a0a0a]/90 backdrop-blur-xl border-r border-white/5 flex flex-col pt-24 z-20 shadow-[20px_0_50px_rgba(0,0,0,0.5)] md:h-screen md:sticky md:top-0">
-        <div className="px-8 mb-10 text-center md:text-left">
+        
+        {/* LOGO BÖLÜMÜ */}
+        <div className="px-8 mb-10 text-center md:text-left shrink-0">
           <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 cursor-pointer hover:text-[#00f260] transition-colors" onClick={() => router.push('/')}>A-TAKASA<span className="text-[#00f260]">.</span></h1>
           <p className="text-slate-500 text-[10px] font-black tracking-[0.3em] uppercase truncate">{aktifEmail}</p>
         </div>
 
-        {/* 🚀 flex-1 eklendi ki buton en alta itilsin */}
-        <nav className="flex flex-row md:flex-col gap-2 px-6 overflow-x-auto md:overflow-y-auto no-scrollbar pb-6 md:pb-0 flex-1">
+        {/* KAYDIRILABİLİR MENÜ LİSTESİ */}
+        <nav className="flex flex-row md:flex-col gap-2 px-6 overflow-x-auto md:overflow-y-auto no-scrollbar flex-1 pb-6 md:pb-0">
           {[
             { id: "ozet_radar", icon: "📟", ad: "Siber Radar" },
             { id: "gelen_siparisler", icon: "📦", ad: "Satışlarım", bildirim: bekleyenSatis },
@@ -146,21 +148,22 @@ export default function SiberBorsaPaneli() {
               {menu.bildirim && menu.bildirim > 0 ? <span className="bg-red-500 text-white px-2 py-0.5 rounded-md text-[8px] animate-pulse">{menu.bildirim}</span> : null}
             </button>
           ))}
-          
-          {/* 🚀 SİBER ÇIKIŞ BUTONU (MASAÜSTÜ İÇİN EN ALTTA) */}
-          <div className="mt-auto pt-6 pb-6 w-full hidden md:block">
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-500 hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(239,68,68,0.1)] group"
-            >
-              <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
-              SİSTEMDEN ÇIKIŞ YAP
-            </button>
-          </div>
         </nav>
+
+        {/* 🚀 MASAÜSTÜ İÇİN SABİTLENMİŞ ÇIKIŞ BUTONU (MENÜNÜN DIŞINDA, EN ALTTA) */}
+        <div className="hidden md:block px-6 py-8 border-t border-white/5 bg-[#0a0a0a]/90 shrink-0 mt-auto">
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="w-full flex items-center justify-start gap-3 px-5 py-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-500 hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(239,68,68,0.1)] group"
+          >
+            <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+            SİSTEMDEN ÇIKIŞ YAP
+          </button>
+        </div>
+
       </div>
 
-      {/* 🚀 MOBİL İÇİN ÇIKIŞ BUTONU (MENÜNÜN ALTINDA GÖRÜNÜR) */}
+      {/* 🚀 MOBİL İÇİN ÇIKIŞ BUTONU (LİSTENİN ALTINDA GÖRÜNÜR) */}
       <div className="block md:hidden px-4 mt-6 mb-24 w-full">
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
