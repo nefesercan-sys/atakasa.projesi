@@ -44,13 +44,12 @@ export default function SiberAdminTerminali() {
   const { data: allListingsData, mutate: mutateListings } = useSWR(isMasterAdmin ? `/api/varliklar` : null, fetcher, { refreshInterval: 5000 });
   const { data: allUsersData, mutate: mutateUsers } = useSWR(isMasterAdmin ? `/api/admin/users` : null, fetcher, { refreshInterval: 5000 });
   
-  // 🛡️ DİZİ (ARRAY) ZIRHI & TİP GÜVENLİĞİ (HATA BURADAYDI)
+  // 🛡️ DİZİ (ARRAY) ZIRHI & TİP GÜVENLİĞİ
   let rawListings: any[] = [];
   if (Array.isArray(allListingsData)) rawListings = allListingsData;
   else if (allListingsData?.data && Array.isArray(allListingsData.data)) rawListings = allListingsData.data;
   else if (allListingsData?.ilanlar && Array.isArray(allListingsData.ilanlar)) rawListings = allListingsData.ilanlar;
 
-  // TypeScript'in hata verdiği yer düzeltildi (item: any eklendi)
   const safeListings = rawListings.filter((item: any) => item !== null && typeof item === 'object');
   const safeUsers = Array.isArray(allUsersData) ? allUsersData : (allUsersData?.data || []);
 
@@ -329,7 +328,8 @@ export default function SiberAdminTerminali() {
                   <tbody className="text-[11px] font-bold">
                      {filtrelenmisKullanicilar.map((k: any, index: number) => {
                         const userEmail = getSafeText(k.email, "Bilinmeyen Email");
-                        const userId = getSafeText(k._id, index);
+                        // 🚀 HATA DÜZELTİLDİ: index string'e çevrildi
+                        const userId = getSafeText(k._id, String(index));
                         return (
                           <tr key={`user-${userId}`} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                              <td className="p-5 text-white text-sm">{userEmail}</td>
