@@ -1,28 +1,25 @@
 "use client";
-
 import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react"; // Yükleme ikonu için
 
 export default function CyberNav() {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   
-  // 🚀 REFERANSLAR
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 🚀 STATE'LER
   const [activeModal, setActiveModal] = useState<string | null>(null); 
   const [showForm, setShowForm] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'loading' | 'success'>('idle');
-  // 🛡️ Yeni: Paylaşılan ilanın ID'sini tutar
+  const [isCloudLoading, setIsCloudLoading] = useState(false); // Bulut yükleme durumu
   const [lastPublishedId, setLastPublishedId] = useState<string | null>(null);
-
   const [images, setImages] = useState<Array<string | null>>(Array(5).fill(null));
   
   const [formData, setFormData] = useState({ 
@@ -30,10 +27,14 @@ export default function CyberNav() {
     baslik: "", 
     fiyat: "", 
     ulke: "Türkiye", 
-    sehir: "", 
+    sehir: "İstanbul", 
     ilce: "", 
     aciklama: "" 
   });
+
+  // ☁️ CLOUDINARY SİBER BİLGİLER
+  const CLOUD_NAME = "dluamcnej";
+  const UPLOAD_PRESET = "atakasa_hizli";
 
   const sectors = [
     { name: "ÜRÜN SATIŞ", icon: "💰", slug: "urun-satis" }, { name: "HİZMET AL", icon: "🛠️", slug: "hizmet" },
@@ -45,6 +46,32 @@ export default function CyberNav() {
     { name: "GİYİM & MODA", icon: "👗", slug: "moda" }, { name: "DOĞAL ÜRÜN", icon: "🌿", slug: "dogal" },
     { name: "ANTİKA", icon: "🏺", slug: "antika" }, { name: "EL SANATLARI", icon: "🎨", slug: "sanat" },
   ];
+
+  // 🚀 BULUTA FIRLATMA MOTORU (8MB+ VİDEO DESTEKLİ)
+  const uploadToCloudinary = async (file: File | string) => {
+    setIsCloudLoading(true);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      data.append("upload_preset", UPLOAD_PRESET);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+        method: "POST",
+        body: data,
+      });
+
+      const json = await res.json();
+      if (json.secure_url) {
+        addImageToState(json.secure_url);
+      } else {
+        alert("Bulut reddetti: " + (json.error?.message || "Hata"));
+      }
+    } catch (err) {
+      alert("Siber bağlantı hatası!");
+    } finally {
+      setIsCloudLoading(false);
+    }
+  };
 
   const startCamera = async () => {
     try {
@@ -75,7 +102,7 @@ export default function CyberNav() {
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const url = canvas.toDataURL('image/png');
-        addImageToState(url);
+        uploadToCloudinary(url); // Doğrudan buluta!
       }
     }
   };
@@ -84,11 +111,8 @@ export default function CyberNav() {
     const files = e.target.files;
     if (!files) return;
     Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) addImageToState(event.target.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (file.size > 100 * 1024 * 1024) return alert("Dosya 100MB sınırını aşıyor!");
+      uploadToCloudinary(file); // Doğrudan buluta!
     });
   };
 
@@ -101,15 +125,11 @@ export default function CyberNav() {
     });
   };
 
-  // 🚀 CANLI İLAN YAYINLAMA (GÜNCELLENDİ)
   const handlePublish = async () => {
-     if(!session) return alert("SİBER ENGEL: İlan vermek için önce giriş yapmalısın!");
-     if(!formData.baslik || !formData.fiyat || !formData.sektor || !formData.sehir) {
-       return alert("Lütfen tüm zorunlu alanları doldurun!");
-     }
+     if(!session) return alert("Giriş yapmalısın!");
+     if(!formData.baslik || !formData.fiyat || !formData.sektor) return alert("Eksik alanları doldur!");
      
      setPublishStatus('loading');
-     
      try {
        const res = await fetch("/api/varlik-ekle", {
          method: "POST",
@@ -128,37 +148,27 @@ export default function CyberNav() {
 
        if (res.ok) {
          const data = await res.json();
-         setLastPublishedId(data.id); // 🛡️ ID'yi yakala
+         setLastPublishedId(data.id);
          setPublishStatus('success');
          stopCamera();
        } else {
          const data = await res.json();
-         alert(data.message || "Siber hata oluştu.");
+         alert(data.message || "Siber hata.");
          setPublishStatus('idle');
        }
      } catch (err) {
-       alert("Sistem bağlantısı koptu.");
+       alert("Bağlantı koptu.");
        setPublishStatus('idle');
      }
   };
 
-  // 🛡️ GÜNCELLENMİŞ PAYLAŞIM: Doğrudan ilana gider
   const handleShare = async () => {
-    const shareUrl = lastPublishedId 
-      ? `https://atakasa.com/varlik/${lastPublishedId}` 
-      : window.location.href;
-
-    const shareData = {
-      title: formData.baslik || 'ATAKASA İlanı',
-      text: `${formData.baslik} - Bu siber varlığı Atakasa'da incele!`,
-      url: shareUrl, 
-    };
-
+    const shareUrl = lastPublishedId ? `https://atakasa.com/varlik/${lastPublishedId}` : window.location.href;
     if (navigator.share) {
-      try { await navigator.share(shareData); } catch (err) {}
+      try { await navigator.share({ title: formData.baslik, url: shareUrl }); } catch (err) {}
     } else {
       navigator.clipboard.writeText(shareUrl);
-      alert("Siber Bağlantı Kopyalandı!");
+      alert("Bağlantı Kopyalandı!");
     }
   };
 
@@ -167,9 +177,7 @@ export default function CyberNav() {
     setShowForm(false); 
     stopCamera();
     setPublishStatus('idle');
-    setLastPublishedId(null);
     setImages(Array(5).fill(null));
-    setFormData({ sektor: "", baslik: "", fiyat: "", ulke: "Türkiye", sehir: "", ilce: "", aciklama: "" });
   };
 
   return (
@@ -178,7 +186,7 @@ export default function CyberNav() {
       {activeModal === 'sectors' && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/95 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in fade-in duration-300">
           <div className="flex justify-between items-center mb-8 border-b border-white/[0.05] pb-4 mt-4">
-            <h2 className="text-white font-black uppercase tracking-tighter text-2xl">Piyasa <span className="text-[#00f260]">Endeksleri.</span></h2>
+            <h2 className="text-white font-black uppercase tracking-tighter text-2xl">At takasa<span className="text-[#00f260]">.com</span></h2>
             <button onClick={closeModal} className="text-slate-500 hover:text-white text-3xl transition-colors">✕</button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
@@ -192,12 +200,12 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* ⚡ AT TAKASA MODALI */}
+      {/* ⚡ AT TAKASA MODALI (VİDEO DESTEKLİ) */}
       {activeModal === 'ilan' && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/98 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in slide-in-from-bottom-8 duration-500">
           <div className="max-w-xl mx-auto mt-4">
               <div className="flex justify-between items-center mb-6 border-b border-white/[0.05] pb-4">
-                <h2 className="text-white font-black uppercase tracking-tighter text-3xl">AT <span className="text-[#00f260] drop-shadow-[0_0_10px_rgba(0,242,96,0.5)]">TAKASA.</span></h2>
+                <h2 className="text-white font-black uppercase tracking-tighter text-3xl italic">At <span className="text-[#00f260] drop-shadow-[0_0_10px_rgba(0,242,96,0.5)]">TAKASA.</span></h2>
                 <button onClick={closeModal} className="text-slate-500 hover:text-white text-3xl transition-colors">✕</button>
               </div>
 
@@ -207,18 +215,20 @@ export default function CyberNav() {
                     <span className="text-5xl text-[#00f260]">✓</span>
                   </div>
                   <h3 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Varlık Mühürlendi!</h3>
-                  <button onClick={handleShare} className="w-full mb-4 py-5 bg-[#00f260] text-black rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] transition-all">
-                    <span className="text-xl">↗️</span> İlanı Paylaş
-                  </button>
-                  <button onClick={() => { setPublishStatus('idle'); setShowForm(false); }} className="w-full py-5 bg-white/[0.05] text-white rounded-[2rem] font-bold uppercase tracking-widest text-xs border border-white/10 hover:bg-white/10 transition-all">
-                    Yeni Varlık Yükle
-                  </button>
+                  <button onClick={handleShare} className="w-full mb-4 py-5 bg-[#00f260] text-black rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] transition-all">İlanı Paylaş</button>
+                  <button onClick={closeModal} className="w-full py-5 bg-white/[0.05] text-white rounded-[2rem] font-bold uppercase tracking-widest text-xs border border-white/10 hover:bg-white/10 transition-all">Kapat</button>
                 </div>
               ) : (
                 <React.Fragment>
                   <div className="aspect-video md:aspect-square bg-[#0a0a0a] border border-white/[0.05] rounded-[2.5rem] mb-6 overflow-hidden relative shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                     {!cameraActive ? (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-4">
+                        {isCloudLoading && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3">
+                            <Loader2 className="w-10 h-10 text-[#00f260] animate-spin" />
+                            <span className="text-[#00f260] font-black text-[10px] tracking-widest uppercase">Buluta Aktarılıyor...</span>
+                          </div>
+                        )}
                         <div className="flex gap-4 w-full px-4">
                           <button onClick={startCamera} className="flex-1 flex flex-col items-center justify-center gap-3 bg-white/[0.02] border border-white/[0.05] p-6 rounded-3xl hover:bg-white/[0.05] transition-all group">
                             <span className="text-4xl group-hover:scale-110 transition-transform">📸</span>
@@ -250,36 +260,37 @@ export default function CyberNav() {
                       <div key={i} className="aspect-square bg-[#0a0a0a] border border-white/[0.04] rounded-2xl flex items-center justify-center overflow-hidden shadow-inner relative group">
                         {img ? (
                           <React.Fragment>
-                            <img src={img} className="w-full h-full object-cover" alt={`Foto ${i+1}`} />
-                            <button onClick={() => { const newImages = [...images]; newImages[i] = null; setImages(newImages); }} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white">✕</button>
+                            {img.includes(".mp4") || img.includes(".mov") ? (
+                              <video src={img} className="w-full h-full object-cover" />
+                            ) : (
+                              <img src={img} className="w-full h-full object-cover" alt={`Medya ${i+1}`} />
+                            )}
+                            <button onClick={() => { const newImages = [...images]; newImages[i] = null; setImages(newImages); }} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white font-black">✕</button>
                           </React.Fragment>
                         ) : (
-                          <span className="text-slate-600 text-[8px] font-black tracking-widest">FOTO {i+1}</span>
+                          <span className="text-slate-600 text-[8px] font-black tracking-widest">MEDYA {i+1}</span>
                         )}
                       </div>
                     ))}
                   </div>
 
                   {!showForm ? (
-                    <button onClick={() => setShowForm(true)} className="w-full py-5 bg-white/[0.02] border border-[#00f260]/20 text-[#00f260] rounded-3xl font-bold uppercase text-xs tracking-widest hover:bg-[#00f260]/10 transition-all shadow-lg">
-                      Detayları Gir ve Mühürle
-                    </button>
+                    <button onClick={() => setShowForm(true)} className="w-full py-5 bg-white/[0.02] border border-[#00f260]/20 text-[#00f260] rounded-3xl font-bold uppercase text-xs tracking-widest hover:bg-[#00f260]/10 transition-all shadow-lg">Detayları Gir ve Mühürle</button>
                   ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 pb-10">
-                      <select className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-slate-300 outline-none focus:border-[#00f260]/50 transition-colors appearance-none text-sm font-bold uppercase tracking-wide" value={formData.sektor} onChange={e => setFormData({...formData, sektor: e.target.value})}>
+                      <select className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-slate-300 outline-none appearance-none text-sm font-bold uppercase tracking-wide" value={formData.sektor} onChange={e => setFormData({...formData, sektor: e.target.value})}>
                         <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
                         {sectors.map(s => <option key={s.slug} value={s.name}>{s.name}</option>)}
                       </select>
-                      <input type="text" placeholder="İlan Başlığı" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none focus:border-[#00f260]/50 font-bold" value={formData.baslik} onChange={e => setFormData({...formData, baslik: e.target.value})} />
-                      <input type="number" placeholder="İlan Fiyatı / Değeri (₺)" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-[#00f260] font-black outline-none focus:border-[#00f260]/50" value={formData.fiyat} onChange={e => setFormData({...formData, fiyat: e.target.value})} />
+                      <input type="text" placeholder="İlan Başlığı" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none font-bold" value={formData.baslik} onChange={e => setFormData({...formData, baslik: e.target.value})} />
+                      <input type="number" placeholder="İlan Fiyatı (₺)" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-[#00f260] font-black outline-none" value={formData.fiyat} onChange={e => setFormData({...formData, fiyat: e.target.value})} />
                       <div className="grid grid-cols-2 gap-3">
-                        <input type="text" placeholder="Ülke" className="col-span-2 w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none focus:border-[#00f260]/50 text-sm" value={formData.ulke} onChange={e => setFormData({...formData, ulke: e.target.value})} />
-                        <input type="text" placeholder="Şehir" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none focus:border-[#00f260]/50 text-sm" value={formData.sehir} onChange={e => setFormData({...formData, sehir: e.target.value})} />
-                        <input type="text" placeholder="İlçe" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none focus:border-[#00f260]/50 text-sm" value={formData.ilce} onChange={e => setFormData({...formData, ilce: e.target.value})} />
+                        <input type="text" placeholder="Şehir" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none text-sm" value={formData.sehir} onChange={e => setFormData({...formData, sehir: e.target.value})} />
+                        <input type="text" placeholder="İlçe" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none text-sm" value={formData.ilce} onChange={e => setFormData({...formData, ilce: e.target.value})} />
                       </div>
-                      <textarea placeholder="Varlık Açıklaması ve Takas Şartları..." rows={4} className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none focus:border-[#00f260]/50 text-sm resize-none" value={formData.aciklama} onChange={e => setFormData({...formData, aciklama: e.target.value})}></textarea>
-                      <button onClick={handlePublish} disabled={publishStatus === 'loading'} className="w-full mt-6 py-6 bg-gradient-to-r from-[#00f260] to-emerald-400 text-black rounded-[2rem] font-black uppercase tracking-widest hover:scale-[1.02] shadow-[0_10px_30px_rgba(0,242,96,0.3)] transition-all flex items-center justify-center">
-                        {publishStatus === 'loading' ? <span className="animate-pulse">SİSTEME AKTARILIYOR...</span> : "AT TAKASA"}
+                      <textarea placeholder="Takas Şartları..." rows={3} className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none text-sm resize-none" value={formData.aciklama} onChange={e => setFormData({...formData, aciklama: e.target.value})}></textarea>
+                      <button onClick={handlePublish} disabled={publishStatus === 'loading' || isCloudLoading} className="w-full mt-6 py-6 bg-[#00f260] text-black rounded-[2rem] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(0,242,96,0.3)] transition-all">
+                        {publishStatus === 'loading' ? "AKTARILIYOR..." : "AT TAKASA"}
                       </button>
                     </div>
                   )}
@@ -289,46 +300,42 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* 📱 SİBER MOBİL ALT MENÜ (ZIRHLANDIRILDI) */}
+      {/* 📱 SİBER MOBİL ALT MENÜ */}
       <nav className="fixed bottom-0 left-0 z-[500] w-full md:hidden">
-        <div className="absolute bottom-0 w-full h-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-t border-white/[0.04] shadow-[0_-20px_40px_rgba(0,0,0,0.8)]"></div>
+        <div className="absolute bottom-0 w-full h-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-t border-white/[0.04]"></div>
         <div className="relative flex justify-between items-end px-4 pb-3 h-24">
-          
-          <Link href="/" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
-            <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname === '/' && !activeModal ? 'grayscale-0' : 'grayscale opacity-50'}`}>🏠</span>
-            <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname === '/' && !activeModal ? 'text-[#00f260]' : 'text-slate-500'}`}>VİTRİN</span>
+          <Link href="/" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1">
+            <span className={`text-2xl mb-1.5 ${pathname === '/' && !activeModal ? '' : 'grayscale opacity-50'}`}>🏠</span>
+            <span className={`text-[9px] font-bold tracking-widest uppercase ${pathname === '/' && !activeModal ? 'text-[#00f260]' : 'text-slate-500'}`}>VİTRİN</span>
           </Link>
 
-          <button onClick={() => setActiveModal('sectors')} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
-            <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${activeModal === 'sectors' ? 'grayscale-0' : 'grayscale opacity-50'}`}>🗂️</span>
-            <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${activeModal === 'sectors' ? 'text-[#00f260]' : 'text-slate-500'}`}>SEKTÖR</span>
+          <button onClick={() => setActiveModal('sectors')} className="flex flex-col items-center justify-end w-full h-full pb-1">
+            <span className={`text-2xl mb-1.5 ${activeModal === 'sectors' ? '' : 'grayscale opacity-50'}`}>🗂️</span>
+            <span className={`text-[9px] font-bold tracking-widest uppercase ${activeModal === 'sectors' ? 'text-[#00f260]' : 'text-slate-500'}`}>SEKTÖR</span>
           </button>
 
           <div className="relative flex justify-center w-full px-2 z-20">
             <button onClick={() => setActiveModal('ilan')} className="group flex flex-col items-center outline-none relative -top-6">
-              <div className="absolute inset-0 bg-[#00f260] rounded-full blur-xl opacity-30 group-hover:opacity-60 transition-opacity duration-500"></div>
-              <div className="relative w-[72px] h-[72px] bg-[#050505] rounded-full flex items-center justify-center border-4 border-[#0a0a0a] shadow-[0_10px_30px_rgba(0,242,96,0.3)] group-hover:border-[#00f260]/50 transition-all duration-300">
-                <span className="text-3xl text-[#00f260] drop-shadow-[0_0_8px_rgba(0,242,96,0.8)] group-hover:scale-110 transition-transform duration-300">⚡</span>
+              <div className="absolute inset-0 bg-[#00f260] rounded-full blur-xl opacity-30 group-hover:opacity-60 transition-opacity"></div>
+              <div className="relative w-[72px] h-[72px] bg-[#050505] rounded-full flex items-center justify-center border-4 border-[#0a0a0a] shadow-[0_10px_30px_rgba(0,242,96,0.3)]">
+                <span className="text-3xl text-[#00f260] drop-shadow-[0_0_8px_rgba(0,242,96,0.8)]">⚡</span>
               </div>
-              <span className="absolute -bottom-5 text-[10px] font-black text-[#00f260] tracking-widest whitespace-nowrap drop-shadow-md">AT TAKASA</span>
+              <span className="absolute -bottom-5 text-[10px] font-black text-[#00f260] tracking-widest">AT TAKASA</span>
             </button>
           </div>
 
-          {/* 🛡️ SİBER ZIRH: Eğer giriş yapılmadıysa MESAJ ikonuna tıklanınca GİRİŞ SAYFASINA (/giris) atar */}
-          <Link href={session ? "/mesajlar" : "/giris"} onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
-            <div className="relative mb-1.5 transition-transform group-hover:scale-110">
-              <span className={`text-2xl ${pathname.startsWith('/mesajlar') ? 'grayscale-0' : 'grayscale opacity-50'}`}>💬</span>
+          <Link href={session ? "/mesajlar" : "/giris"} onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1">
+            <div className="relative mb-1.5">
+              <span className={`text-2xl ${pathname.startsWith('/mesajlar') ? '' : 'grayscale opacity-50'}`}>💬</span>
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00f260] rounded-full border-2 border-[#0a0a0a] animate-pulse"></span>
             </div>
-            <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith('/mesajlar') ? 'text-[#00f260]' : 'text-slate-500'}`}>MESAJ</span>
+            <span className={`text-[9px] font-bold tracking-widest uppercase ${pathname.startsWith('/mesajlar') ? 'text-[#00f260]' : 'text-slate-500'}`}>MESAJ</span>
           </Link>
 
-          {/* 🛡️ SİBER ZIRH: Eğer giriş yapılmadıysa PANEL ikonuna tıklanınca GİRİŞ SAYFASINA (/giris) atar */}
-          <Link href={session ? "/panel" : "/giris"} onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group">
-            <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname.startsWith('/panel') ? 'grayscale-0' : 'grayscale opacity-50'}`}>👤</span>
-            <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith('/panel') ? 'text-[#00f260]' : 'text-slate-500'}`}>PANEL</span>
+          <Link href={session ? "/panel" : "/giris"} onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1">
+            <span className={`text-2xl mb-1.5 ${pathname.startsWith('/panel') ? '' : 'grayscale opacity-50'}`}>👤</span>
+            <span className={`text-[9px] font-bold tracking-widest uppercase ${pathname.startsWith('/panel') ? 'text-[#00f260]' : 'text-slate-500'}`}>PANEL</span>
           </Link>
-          
         </div>
       </nav>
     </React.Fragment>
