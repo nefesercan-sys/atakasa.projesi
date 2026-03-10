@@ -7,7 +7,7 @@ export default function IlanVer() {
     title: "",
     deger: "",
     takasIstegi: "",
-    kategori: "Teknoloji",
+    kategori: "Teknoloji Endeksi",
     images: [] as string[]
   });
   
@@ -16,8 +16,8 @@ export default function IlanVer() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ☁️ CLOUDINARY SİBER BULUT BİLGİLERİ (Tam Otomatik Mod)
-  const CLOUD_NAME = "dluamcnej"; 
+  // ☁️ CLOUDINARY SİBER BULUT BİLGİLERİ (DOĞRULANDI ✅)
+  const CLOUD_NAME = "diuamcnej"; // 'diu' olarak güncellendi!
   const UPLOAD_PRESET = "atakasa_hizli"; 
 
   // 🚀 DOĞRUDAN BULUTA YÜKLEME MOTORU (Vercel ByPass)
@@ -30,12 +30,17 @@ export default function IlanVer() {
 
     try {
       for (const file of files) {
+        // 🚨 100MB Sınır Kontrolü
+        if (file.size > 100 * 1024 * 1024) {
+          alert(`SİBER ENGEL: ${file.name} 100MB'tan büyük!`);
+          continue;
+        }
+
         const uploadData = new FormData();
         uploadData.append("file", file);
         uploadData.append("upload_preset", UPLOAD_PRESET);
-        uploadData.append("cloud_name", CLOUD_NAME);
 
-        // Buluta fırlat! (auto/upload sayesinde 100MB video bile yağ gibi akar)
+        // Buluta fırlat! (Auto modu sayesinde video/resim ayrımı yapmaz)
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
           method: "POST",
           body: uploadData,
@@ -44,8 +49,9 @@ export default function IlanVer() {
         const data = await res.json();
         
         if (data.secure_url) {
-          uploadedUrls.push(data.secure_url); // Linki hafızaya al
+          uploadedUrls.push(data.secure_url); 
         } else {
+          alert("Bulut Reddi: " + (data.error?.message || "Bilinmeyen Hata"));
           console.error("Bulut reddetti:", data);
         }
       }
@@ -53,7 +59,7 @@ export default function IlanVer() {
       setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
     } catch (error) {
       console.error("Bulut yükleme hatası:", error);
-      alert("Medya yüklenirken siber bir kalkanla karşılaştık.");
+      alert("Siber bağlantı koptu.");
     } finally {
       setIsUploading(false);
     }
@@ -68,26 +74,32 @@ export default function IlanVer() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (formData.images.length === 0) return alert("En az bir medya mühürlemelisin!");
     
+    setLoading(true);
     try {
-      // ⚠️ DİKKAT: Veritabanına sadece hafif bir link (URL) gidiyor
-      const res = await fetch('/api/assets', {
+      // ⚠️ API Adresini duruma göre kontrol et: /api/varlik-ekle mi yoksa /api/assets mi?
+      const res = await fetch('/api/varlik-ekle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+           baslik: formData.title,
+           fiyat: formData.deger,
+           kategori: formData.kategori,
+           aciklama: formData.takasIstegi,
+           resimler: formData.images
+        })
       });
       
       if (res.ok) {
         setSuccess(true);
-        setFormData({ title: "", deger: "", takasIstegi: "", kategori: "Teknoloji", images: [] });
+        setFormData({ title: "", deger: "", takasIstegi: "", kategori: "Teknoloji Endeksi", images: [] });
       } else {
          const errorData = await res.json();
-         alert(`Sunucu Hatası: ${errorData.error || errorData.message || "Bilinmeyen hata"}`);
+         alert(`Sunucu Hatası: ${errorData.message || "Bilinmeyen hata"}`);
       }
     } catch (error) {
-      console.error("Yükleme Hatası:", error);
-      alert("Sistem bağlantısı koptu. Lütfen tekrar deneyin.");
+      alert("Sistem bağlantısı koptu.");
     } finally {
       setLoading(false);
     }
@@ -102,18 +114,19 @@ export default function IlanVer() {
 
       <div className="relative z-10 max-w-3xl mx-auto">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4 text-white">
-            Sisteme Varlık <span className="text-[#00f260]">Mühürle.</span>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4 text-white italic">
+            At takasa<span className="text-[#00f260]">.com</span>
           </h1>
+          <p className="text-[#00f260] text-[10px] font-black tracking-[0.2em] uppercase">Varlık Mühürleme Terminali</p>
         </div>
 
         <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           
           {success ? (
-            <div className="text-center py-16">
-              <CheckCircle className="w-24 h-24 text-[#00f260] mx-auto mb-6" />
+            <div className="text-center py-16 animate-in zoom-in-95">
+              <CheckCircle className="w-24 h-24 text-[#00f260] mx-auto mb-6 shadow-[0_0_30px_rgba(0,242,96,0.3)]" />
               <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-4">Varlık Tahtaya Düştü!</h2>
-              <button onClick={() => setSuccess(false)} className="bg-white/[0.05] hover:bg-[#00f260] hover:text-black text-white font-bold tracking-widest uppercase px-8 py-4 rounded-xl transition-all mt-4">
+              <button onClick={() => setSuccess(false)} className="bg-white/[0.05] hover:bg-[#00f260] hover:text-black text-white font-bold tracking-widest uppercase px-8 py-4 rounded-xl transition-all mt-4 border border-white/10">
                 Yeni Varlık Ekle
               </button>
             </div>
@@ -122,17 +135,17 @@ export default function IlanVer() {
               
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Varlık Adı / Modeli</label>
-                <input type="text" required placeholder="Örn: MacBook Pro M3..." className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
+                <input type="text" required placeholder="Örn: MacBook Pro M3..." className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Tahmini Değer (₺)</label>
-                  <input type="number" required placeholder="120000" className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none" value={formData.deger} onChange={(e) => setFormData({...formData, deger: e.target.value})} />
+                  <input type="number" required placeholder="120000" className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-[#00f260] font-black focus:border-[#00f260]/50 outline-none" value={formData.deger} onChange={(e) => setFormData({...formData, deger: e.target.value})} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Kategori</label>
-                  <select className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none" value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})}>
+                  <select className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold appearance-none" value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})}>
                     <option>Teknoloji Endeksi</option>
                     <option>Araç & Mobilite</option>
                     <option>Gayrimenkul</option>
@@ -143,8 +156,8 @@ export default function IlanVer() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-[#00f260] uppercase tracking-widest ml-2">Ne İle Takas Edilecek?</label>
-                <textarea required placeholder="Araba ile takas olur..." className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none min-h-[120px]" value={formData.takasIstegi} onChange={(e) => setFormData({...formData, takasIstegi: e.target.value})}></textarea>
+                <label className="text-xs font-bold text-[#00f260] uppercase tracking-widest ml-2">Açıklama / Takas Şartları</label>
+                <textarea required placeholder="Araba ile takas olur, elden teslim..." className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none min-h-[120px] resize-none font-bold" value={formData.takasIstegi} onChange={(e) => setFormData({...formData, takasIstegi: e.target.value})}></textarea>
               </div>
 
               {/* ☁️ CLOUDINARY MEDYA YÜKLEME ALANI */}
@@ -155,18 +168,18 @@ export default function IlanVer() {
                   <div className="w-16 h-16 bg-white/[0.05] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-[#00f260]/20 transition-colors">
                     {isUploading ? <Loader2 className="animate-spin text-[#00f260]" /> : <UploadCloud className="text-slate-400 group-hover:text-[#00f260]" />}
                   </div>
-                  <p className="text-white font-bold tracking-wide mb-1">
-                    {isUploading ? "Siber Buluta Aktarılıyor..." : "Varlık Medyalarını Yükle"}
+                  <p className="text-white font-black tracking-wide mb-1 uppercase text-xs">
+                    {isUploading ? "Buluta Aktarılıyor..." : "Medya Mühürle"}
                   </p>
-                  <p className="text-slate-500 text-xs uppercase tracking-widest">Sınırsız Boyut - Fotoğraf ve Video Destekli</p>
+                  <p className="text-slate-500 text-[10px] uppercase tracking-widest">Sınırsız Video ve Fotoğraf Desteği</p>
                 </div>
 
                 {/* Yüklenen Medyaların Önizlemesi */}
                 {formData.images.length > 0 && (
                   <div className="flex gap-4 overflow-x-auto py-2 custom-scrollbar">
                     {formData.images.map((url, index) => (
-                      <div key={index} className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-zinc-900">
-                        {url.includes('.mp4') || url.includes('.webm') || url.includes('.mov') ? (
+                      <div key={index} className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-zinc-900 shadow-xl">
+                        {url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') ? (
                           <video src={url} className="w-full h-full object-cover" muted />
                         ) : (
                           <img src={url} alt={`Medya ${index}`} className="w-full h-full object-cover" />
@@ -180,8 +193,8 @@ export default function IlanVer() {
                 )}
               </div>
 
-              <button type="submit" disabled={loading || isUploading || formData.images.length === 0} className="w-full bg-[#00f260] text-black font-black uppercase tracking-widest py-6 rounded-2xl hover:scale-[1.02] transition-all duration-300 mt-4 disabled:opacity-50 shadow-[0_0_20px_rgba(0,242,96,0.3)]">
-                {loading ? "MÜHÜRLENİYOR..." : "VARLIĞI PİYASAYA SÜR"}
+              <button type="submit" disabled={loading || isUploading || formData.images.length === 0} className="w-full bg-[#00f260] text-black font-black uppercase tracking-widest py-6 rounded-2xl hover:scale-[1.02] transition-all duration-300 mt-4 disabled:opacity-30 shadow-[0_0_20px_rgba(0,242,96,0.3)]">
+                {loading ? "SİBER AĞA İŞLENİYOR..." : "VARLIĞI PİYASAYA SÜR"}
               </button>
             </form>
           )}
