@@ -72,7 +72,6 @@ export default function IlanVer() {
     
     try {
       // ⚠️ DİKKAT: Veritabanına sadece hafif bir link (URL) gidiyor
-      // Eğer burada 404 hatası alırsan, "/api/assets" yerine "/api/varliklar" veya "/api/ilanlar" yaz!
       const res = await fetch('/api/assets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -191,4 +190,4 @@ export default function IlanVer() {
       </div>
     </div>
   );
-}}
+}
