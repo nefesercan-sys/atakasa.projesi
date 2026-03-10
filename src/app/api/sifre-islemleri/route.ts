@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "@/lib/mongodb"; // Eğer hata verirse: "../../../lib/mongodb" olarak değiştir
+import { connectMongoDB } from "../../../lib/mongodb";// Eğer hata verirse: "../../../lib/mongodb" olarak değiştir
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 
