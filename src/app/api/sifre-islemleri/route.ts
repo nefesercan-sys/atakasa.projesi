@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../lib/mongodb";
+import { connectMongoDB } from "@/lib/mongodb"; // Eğer hata verirse: "../../../lib/mongodb" olarak değiştir
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 
@@ -8,44 +8,46 @@ export async function POST(req: Request) {
     const { email } = await req.json();
 
     if (!email) {
-      return NextResponse.json({ message: "Geçerli bir e-posta adresi girin." }, { status: 400 });
+      return NextResponse.json({ error: "Lütfen e-posta adresinizi girin." }, { status: 400 });
     }
 
-    // 1. Senin Orijinal Veritabanı Bağlantın
+    // 1. Veritabanına Bağlan
     const db = await connectMongoDB();
     
-    const user = await db.collection("users").findOne({ email });
+    // Kullanıcıyı Bul
+    const user = await db.collection("users").findOne({ email: email.toLowerCase() });
     if (!user) {
-      return NextResponse.json({ message: "Bu e-posta sistemde bulunamadı." }, { status: 404 });
+      return NextResponse.json({ error: "Bu e-posta sistemde bulunamadı." }, { status: 404 });
     }
 
-    // Eski şifre sıfırlama taleplerini temizle
-    await db.collection("password_resets").deleteMany({ email });
+    // Eski talepleri temizle
+    await db.collection("password_resets").deleteMany({ email: email.toLowerCase() });
 
-    // 2. Senin Orijinal Jeton (Token) Motorun
+    // 2. Güvenli Token Üret
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 3600000); // 1 saat
+    const expires = new Date(Date.now() + 3600000); // 1 saat geçerli
 
+    // Veritabanına kaydet
     await db.collection("password_resets").insertOne({
-      email,
+      email: email.toLowerCase(),
       token,
       expires,
     });
 
-    // 🛡️ 3. SİBER KALKAN: "undefined" hatasını tamamen yok eden zırh!
+    // 3. Sıfırlama Linkini Hazırla
     const siteAdresi = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://atakasa.com";
     const resetUrl = `${siteAdresi}/sifre-yenile?token=${token}&email=${encodeURIComponent(email)}`;
 
-    // 4. Senin Orijinal Siber Postacı (SMTP) Ayarların
+    // 4. E-Posta Gönderici (Nodemailer) Ayarları
     const transporter = nodemailer.createTransport({
       service: "gmail", 
       auth: {
-        user: process.env.SMTP_USER, // Senin sistemindeki orijinal isim
-        pass: process.env.SMTP_PASS, // Senin sistemindeki orijinal isim
+        user: process.env.SMTP_USER, 
+        pass: process.env.SMTP_PASS, // DİKKAT: Burası Gmail Uygulama Şifresi olmalı!
       },
     });
 
-    // 5. Şık ve Siber E-Posta Şablonu
+    // 5. Siber E-Posta Şablonu
     const mailOptions = {
       from: `"A-TAKASA" <${process.env.SMTP_USER}>`,
       to: email,
@@ -62,13 +64,13 @@ export async function POST(req: Request) {
       `,
     };
 
-    // Ateşle!
+    // Maili ateşle!
     await transporter.sendMail(mailOptions);
 
-    return NextResponse.json({ message: "Siber sinyal e-posta kutunuza fırlatıldı!" }, { status: 200 });
+    return NextResponse.json({ message: "Kurtarma sinyali mail adresinize fırlatıldı! ⚡" }, { status: 200 });
 
   } catch (error) {
     console.error("Siber Posta Hatası:", error);
-    return NextResponse.json({ message: "Siber ağda bir hata oluştu, lütfen tekrar deneyin." }, { status: 500 });
+    return NextResponse.json({ error: "Siber ağda bir hata oluştu, lütfen e-posta gönderim ayarlarını kontrol edin." }, { status: 500 });
   }
 }
