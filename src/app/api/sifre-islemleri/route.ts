@@ -11,8 +11,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Lütfen e-posta adresinizi girin." }, { status: 400 });
     }
 
-    // 1. Veritabanına Bağlan
-    const db = await connectMongoDB();
+    // 1. AKILLI VERİTABANI BAĞLANTISI (Hatayı Çözen Zırh)
+    const conn = (await connectMongoDB()) as any;
+    let db;
+
+    if (conn && typeof conn.db === 'function') {
+      // Eğer sistem Native MongoDB (MongoClient) kullanıyorsa
+      db = conn.db();
+    } else if (conn && conn.connection) {
+      // Eğer sistem Mongoose kullanıyorsa
+      db = conn.connection;
+    } else {
+      // Eğer doğrudan Db objesi dönüyorsa
+      db = conn;
+    }
     
     // Kullanıcıyı Bul
     const user = await db.collection("users").findOne({ email: email.toLowerCase() });
@@ -38,14 +50,14 @@ export async function POST(req: Request) {
     const siteAdresi = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://atakasa.com";
     const resetUrl = `${siteAdresi}/sifre-yenile?token=${token}&email=${encodeURIComponent(email)}`;
 
-    // 4. ÇELİK ZIRHLI E-POSTA MOTORU (Sorunu çözen kısım burası!)
+    // 4. ÇELİK ZIRHLI E-POSTA MOTORU
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || "smtp.gmail.com",
       port: Number(process.env.SMTP_PORT) || 465,
-      secure: true, // 465 portu için true zorunludur
+      secure: true, 
       auth: {
         user: process.env.SMTP_USER, 
-        pass: process.env.SMTP_PASS, // DİKKAT: Vercel'de bu şifre boşluksuz olmalı! (Örn: qjjvbvcxopsylmzv)
+        pass: process.env.SMTP_PASS, // Vercel'deki boşluksuz uygulama şifren
       },
     });
 
