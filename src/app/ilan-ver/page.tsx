@@ -99,7 +99,7 @@ export default function IlanVer() {
       // 🛡️ API'YE GİDEN KUSURSUZ SİBER PAKET
       const payload = {
         baslik: formData.title,
-        fiyat: Number(formData.deger), // String'i Number'a çevirdik (Hata Çözümü)
+        fiyat: Number(formData.deger), // String'i Number'a çevirdik
         kategori: formData.kategori,
         ulke: formData.ulke,
         sehir: formData.sehir,
@@ -107,7 +107,6 @@ export default function IlanVer() {
         mahalle: formData.mahalle,
         aciklama: formData.takasIstegi,
         resimler: formData.images,
-        // KİMLİK BİLGİLERİ (Hata Çözümü)
         sellerEmail: session.user.email,
         satici: session.user.email,
         saticiEmail: session.user.email
@@ -170,9 +169,29 @@ export default function IlanVer() {
 
               {/* ── 2. FİYAT VE KATEGORİ ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* 🚀 SİBER FİYAT ZIRHI BURADA */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Tahmini Değer (₺)</label>
-                  <input type="number" required placeholder="120000" className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-[#00f260] font-black focus:border-[#00f260]/50 outline-none" value={formData.deger} onChange={(e) => setFormData({...formData, deger: e.target.value})} />
+                  <input 
+                    type="text" 
+                    inputMode="numeric"
+                    required 
+                    placeholder="Örn: 8750000 (Noktasız yazın)" 
+                    className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-[#00f260] font-black focus:border-[#00f260]/50 outline-none" 
+                    value={formData.deger} 
+                    onChange={(e) => {
+                      // Nokta/virgül ve harfleri tamamen sil, sadece rakam bırak
+                      const safRakam = e.target.value.replace(/[^0-9]/g, '');
+                      setFormData({...formData, deger: safRakam});
+                    }} 
+                  />
+                  {/* CANLI ÖNİZLEME (Milyonlarca lirayı rahat okumak için) */}
+                  {formData.deger && (
+                    <p className="text-[10px] text-slate-400 font-bold ml-2 mt-1 uppercase tracking-widest">
+                      Siber Ağda Görünecek: <span className="text-[#00f260]">{Number(formData.deger).toLocaleString('tr-TR')} ₺</span>
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -261,6 +280,7 @@ export default function IlanVer() {
                   <p className="text-slate-500 text-[10px] uppercase tracking-widest">Sınırsız Video ve Fotoğraf Desteği</p>
                 </div>
 
+                {/* Yüklenen Medyaların Önizlemesi */}
                 {formData.images.length > 0 && (
                   <div className="flex gap-4 overflow-x-auto py-2 custom-scrollbar">
                     {formData.images.map((url, index) => (
