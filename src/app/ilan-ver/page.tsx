@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef } from "react";
 import { UploadCloud, X, CheckCircle, Loader2, MapPin } from "lucide-react";
-import { useSession } from "next-auth/react"; // 🚀 SİBER KİMLİK KONTROLÜ EKLENDİ
+import { useSession } from "next-auth/react"; 
 
 // 🌍 TÜRKİYE'NİN 81 İLİ (Açılır Menü İçin)
 const sehirler = [
@@ -16,14 +16,14 @@ const sehirler = [
 ];
 
 export default function IlanVer() {
-  const { data: session } = useSession(); // 🚀 KULLANICI BİLGİSİNİ ÇEK
+  const { data: session } = useSession(); 
 
   const [formData, setFormData] = useState({
     title: "",
     deger: "",
     takasIstegi: "",
     kategori: "", 
-    ulke: "Türkiye", // 🌍 Yeni Konum Alanları
+    ulke: "Türkiye", 
     sehir: "",
     ilce: "",
     mahalle: "",
@@ -96,10 +96,9 @@ export default function IlanVer() {
     
     setLoading(true);
     try {
-      // 🛡️ API'YE GİDEN KUSURSUZ SİBER PAKET
       const payload = {
         baslik: formData.title,
-        fiyat: Number(formData.deger), // String'i Number'a çevirdik
+        fiyat: Number(formData.deger),
         kategori: formData.kategori,
         ulke: formData.ulke,
         sehir: formData.sehir,
@@ -145,7 +144,7 @@ export default function IlanVer() {
           <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4 text-white italic">
             At takasa<span className="text-[#00f260]">.com</span>
           </h1>
-          <p className="text-[#00f260] text-[10px] font-black tracking-[0.2em] uppercase">Varlık Mühürleme Terminali</p>
+          <p className="text-[#00f260] text-[10px] font-black tracking-[0.2em] uppercase">Yeni İlan Ekleme Terminali</p>
         </div>
 
         <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
@@ -153,9 +152,9 @@ export default function IlanVer() {
           {success ? (
             <div className="text-center py-16 animate-in zoom-in-95">
               <CheckCircle className="w-24 h-24 text-[#00f260] mx-auto mb-6 shadow-[0_0_30px_rgba(0,242,96,0.3)]" />
-              <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-4">Varlık Tahtaya Düştü!</h2>
+              <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-4">İlan Başarıyla Yayınlandı!</h2>
               <button onClick={() => setSuccess(false)} className="bg-white/[0.05] hover:bg-[#00f260] hover:text-black text-white font-bold tracking-widest uppercase px-8 py-4 rounded-xl transition-all mt-4 border border-white/10">
-                Yeni Varlık Ekle
+                Yeni İlan Ekle
               </button>
             </div>
           ) : (
@@ -163,8 +162,8 @@ export default function IlanVer() {
               
               {/* ── 1. BAŞLIK ── */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Varlık Adı / Modeli</label>
-                <input type="text" required placeholder="Örn: MacBook Pro M3..." className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Kategori ve Ürün İsmi</label>
+                <input type="text" required placeholder="Örn: Elektronik - MacBook Pro M3..." className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
               </div>
 
               {/* ── 2. FİYAT VE KATEGORİ ── */}
@@ -172,7 +171,7 @@ export default function IlanVer() {
                 
                 {/* 🚀 SİBER FİYAT ZIRHI BURADA */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Tahmini Değer (₺)</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Tahmini Fiyat (₺)</label>
                   <input 
                     type="text" 
                     inputMode="numeric"
@@ -181,12 +180,10 @@ export default function IlanVer() {
                     className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-[#00f260] font-black focus:border-[#00f260]/50 outline-none" 
                     value={formData.deger} 
                     onChange={(e) => {
-                      // Nokta/virgül ve harfleri tamamen sil, sadece rakam bırak
                       const safRakam = e.target.value.replace(/[^0-9]/g, '');
                       setFormData({...formData, deger: safRakam});
                     }} 
                   />
-                  {/* CANLI ÖNİZLEME (Milyonlarca lirayı rahat okumak için) */}
                   {formData.deger && (
                     <p className="text-[10px] text-slate-400 font-bold ml-2 mt-1 uppercase tracking-widest">
                       Siber Ağda Görünecek: <span className="text-[#00f260]">{Number(formData.deger).toLocaleString('tr-TR')} ₺</span>
@@ -195,7 +192,7 @@ export default function IlanVer() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Kategori</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Ürün Kategorisi</label>
                   <select required className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold appearance-none cursor-pointer" value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})}>
                     <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
                     <optgroup label="🏢 EMLAK & GAYRİMENKUL">
@@ -227,17 +224,15 @@ export default function IlanVer() {
               <div className="bg-white/[0.01] p-6 rounded-3xl border border-white/5 shadow-inner">
                 <div className="flex items-center gap-2 mb-6">
                   <MapPin className="text-[#00f260]" size={18} />
-                  <h3 className="text-white font-black uppercase tracking-widest text-xs">Varlık Konumu</h3>
+                  <h3 className="text-white font-black uppercase tracking-widest text-xs">Ürün Konumu</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Ülke */}
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Ülke</label>
                     <input type="text" readOnly value="Türkiye" className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-4 text-slate-400 font-bold outline-none cursor-not-allowed" />
                   </div>
 
-                  {/* Şehir (Select) */}
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-[#00f260] uppercase tracking-widest ml-2">Şehir *</label>
                     <select required className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-4 text-white focus:border-[#00f260]/50 outline-none font-bold appearance-none cursor-pointer" value={formData.sehir} onChange={(e) => setFormData({...formData, sehir: e.target.value})}>
@@ -246,13 +241,11 @@ export default function IlanVer() {
                     </select>
                   </div>
 
-                  {/* İlçe */}
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">İlçe *</label>
                     <input type="text" required placeholder="Örn: Muratpaşa" className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-4 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.ilce} onChange={(e) => setFormData({...formData, ilce: e.target.value})} />
                   </div>
 
-                  {/* Mahalle */}
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Mahalle / Semt</label>
                     <input type="text" placeholder="Örn: Şirinyalı Mah." className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-4 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.mahalle} onChange={(e) => setFormData({...formData, mahalle: e.target.value})} />
@@ -275,7 +268,7 @@ export default function IlanVer() {
                     {isUploading ? <Loader2 className="animate-spin text-[#00f260]" /> : <UploadCloud className="text-slate-400 group-hover:text-[#00f260]" />}
                   </div>
                   <p className="text-white font-black tracking-wide mb-1 uppercase text-xs">
-                    {isUploading ? "Buluta Aktarılıyor..." : "Medya Mühürle"}
+                    {isUploading ? "Buluta Aktarılıyor..." : "Medya Yükle"}
                   </p>
                   <p className="text-slate-500 text-[10px] uppercase tracking-widest">Sınırsız Video ve Fotoğraf Desteği</p>
                 </div>
@@ -300,7 +293,7 @@ export default function IlanVer() {
               </div>
 
               <button type="submit" disabled={loading || isUploading || formData.images.length === 0} className="w-full bg-[#00f260] text-black font-black uppercase tracking-widest py-6 rounded-2xl hover:scale-[1.02] transition-all duration-300 mt-4 disabled:opacity-30 shadow-[0_0_20px_rgba(0,242,96,0.3)]">
-                {loading ? "SİBER AĞA İŞLENİYOR..." : "VARLIĞI PİYASAYA SÜR"}
+                {loading ? "SİSTEME İŞLENİYOR..." : "İLAN VER"}
               </button>
             </form>
           )}
