@@ -39,18 +39,16 @@ export default function Home() {
     { ad: "Oyun/Konsol", degisim: "+8.7" }
   ];
 
+  // 🚀 YENİ SİBER SLOGANLAR BURADA
   const sloganlar = [
-    "Değiştir. Kazan. Özgürleş.",
-    "Elinde Tutma, Takasa Gir.",
-    "Takasa Gir, Değer Yarat.",
-    "Değiştirilmediğin Her Şey Kayıp.",
-    "Özgürce, Güvende Takas Yap.",
-    "Değiştir. Kazan. Özgürleş."
+    "Elinde tutma, At takasa.",
+    "Zararına satma, At takasa.",
+    "Değersiz sanma ne varsa, At takasa."
   ];
   const [aktifSlogan, setAktifSlogan] = useState(sloganlar[0]);
 
   useEffect(() => {
-    const sId = setInterval(() => setAktifSlogan(sloganlar[Math.floor(Math.random() * sloganlar.length)]), 4000);
+    const sId = setInterval(() => setAktifSlogan(sloganlar[Math.floor(Math.random() * sloganlar.length)]), 3500);
     return () => clearInterval(sId);
   }, []);
 
@@ -86,7 +84,7 @@ export default function Home() {
     }
   }, [session, ilanlar]);
 
-  const getResim = (ilan: any) => ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/600x400/030712/00f260?text=A-TAKASA";
+  const getResim = (ilan: any) => ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/600x400/030712/00f260?text=AT+TAKASA";
 
   const filtrelenmisIlanlar = () => {
     let liste = [...ilanlar];
@@ -123,7 +121,7 @@ export default function Home() {
         id: urunId,
         baslik: ilan.baslik,
         fiyat: Number(ilan.fiyat),
-        resim: ilan.resimler?.[0] || "https://placehold.co/150x150/030712/00f260?text=A-TAKASA",
+        resim: ilan.resimler?.[0] || "https://placehold.co/150x150/030712/00f260?text=AT+TAKASA",
         saticiMail: ilan.satici?.email || ilan.sellerEmail || ""
       };
       mevcutSepet.push(eklenecekUrun);
@@ -218,55 +216,60 @@ export default function Home() {
       <div className="sticky top-0 z-[100] bg-[#050505]/95 backdrop-blur-3xl border-b border-white/5 pt-6 pb-4 px-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="max-w-7xl mx-auto">
 
-          {/* ── Üست BAR: Logo + Arama + Butonlar ── */}
-          <div className="flex items-center gap-3 mb-5">
+          {/* ── Üst BAR: Logo + TEK ARAMA + Butonlar ── */}
+          <div className="flex flex-col md:flex-row items-center gap-4 mb-5">
 
-            {/* Logo */}
-            <div className="flex items-center gap-3 cursor-pointer shrink-0" onClick={() => { setAktifKategori("Hepsi"); setSearchTerm(""); }}>
-              <div className="w-11 h-11 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,242,96,0.4)] relative overflow-hidden group shrink-0">
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
-                <span className="text-xl font-black text-black relative z-10 italic">A<span className="text-white">⇄</span></span>
-              </div>
-              <div className="hidden md:flex flex-col">
-                <h1 className="text-2xl font-black tracking-tighter uppercase italic leading-none hover:text-[#00f260] transition-colors">A-TAKASA<span className="text-[#00f260]">.</span></h1>
-                <p className="text-[#00f260] text-[8px] font-black tracking-[0.15em] uppercase animate-pulse">{aktifSlogan}</p>
+            {/* 🚀 YENİ LOGO: At takasa.com */}
+            <div className="flex items-center gap-3 cursor-pointer shrink-0 w-full md:w-auto justify-between md:justify-start" onClick={() => { setAktifKategori("Hepsi"); setSearchTerm(""); }}>
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,242,96,0.4)] relative overflow-hidden group shrink-0">
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
+                  <span className="text-xl font-black text-black relative z-10 italic">At<span className="text-white">⇄</span></span>
+                </div>
+                <div className="flex flex-col">
+                  <h1 className="text-2xl font-black tracking-tighter italic leading-none hover:text-[#00f260] transition-colors">
+                    At takasa<span className="text-[#00f260]">.com</span>
+                  </h1>
+                  <p className="text-[#00f260] text-[8px] font-black tracking-[0.15em] uppercase animate-pulse mt-0.5">{aktifSlogan}</p>
+                </div>
               </div>
             </div>
 
-            {/* ── TEK ARAMA ÇUBUĞU ── */}
-            <div className="relative flex-1">
+            {/* ── KESİNLİKLE TEK ARAMA ÇUBUĞU ── */}
+            <div className="relative w-full md:flex-1">
               <input
                 type="text"
                 placeholder="Varlık veya kelime ara..."
                 value={searchTerm}
-                className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] pl-5 pr-12 py-3.5 outline-none focus:border-[#00f260] text-sm transition-all"
+                className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] pl-5 pr-12 py-3.5 outline-none focus:border-[#00f260] text-sm transition-all shadow-inner"
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black">🔍</span>
             </div>
 
             {/* Butonlar */}
-            <button
-              onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
-              className={`px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border shrink-0 ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}
-            >
-              🛠️ <span className="hidden sm:inline">RADAR</span>
-            </button>
+            <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2 md:pb-0">
+              <button
+                onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
+                className={`flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border shrink-0 text-center ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}
+              >
+                🛠️ <span className="hidden sm:inline">RADAR</span>
+              </button>
 
-            <button
-              onClick={() => router.push('/sepet')}
-              className="px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shrink-0"
-            >
-              🛒 <span className="hidden sm:inline">SEPET</span>
-            </button>
+              <button
+                onClick={() => router.push('/sepet')}
+                className="flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shrink-0 text-center"
+              >
+                🛒 <span className="hidden sm:inline">SEPET</span>
+              </button>
 
-            {/* ✅ YENİ: İLAN VER BUTONU */}
-            <button
-              onClick={() => session ? router.push('/varlik-ekle') : router.push('/giris')}
-              className="px-5 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all bg-[#00f260] text-black hover:scale-105 shadow-[0_0_15px_rgba(0,242,96,0.3)] shrink-0 whitespace-nowrap"
-            >
-              ⚡ <span className="hidden sm:inline">İLAN VER</span>
-            </button>
+              <button
+                onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')}
+                className="flex-1 md:flex-none px-5 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all bg-[#00f260] text-black hover:scale-105 shadow-[0_0_15px_rgba(0,242,96,0.3)] shrink-0 whitespace-nowrap text-center"
+              >
+                ⚡ <span className="hidden sm:inline">İLAN VER</span>
+              </button>
+            </div>
           </div>
 
           {/* RADAR FİLTRE MENÜSÜ */}
@@ -408,7 +411,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MOBİL ALT BAR — İLAN VER butonu kaldırıldı (üstte var) */}
+      {/* MOBİL ALT BAR */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[400px] z-[200] bg-[#050505] border border-white/10 px-6 py-3 rounded-full flex justify-between items-center md:hidden">
         <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
           <span className="text-xl">🏠</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">VİTRİN</span>
@@ -416,9 +419,8 @@ export default function Home() {
         <button onClick={() => { setAktifKategori("Hepsi"); window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#00f260] transition-colors w-12">
           <span className="text-xl">📂</span><span className="text-[7px] font-black uppercase tracking-widest text-center leading-none">SEKTÖR</span>
         </button>
-        {/* ✅ Orta buton: İLAN VER */}
         <div className="relative -top-6">
-          <button onClick={() => session ? router.push('/varlik-ekle') : router.push('/giris')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
+          <button onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')} className="bg-gradient-to-tr from-[#00f260] to-cyan-500 text-black w-14 h-14 rounded-full font-black text-2xl flex items-center justify-center shadow-[0_0_15px_#00f260] border-4 border-[#050505]">
             ⚡
           </button>
         </div>
