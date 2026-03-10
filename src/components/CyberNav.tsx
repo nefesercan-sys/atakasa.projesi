@@ -37,9 +37,10 @@ export default function CyberNav() {
   });
 
   // ☁️ CLOUDINARY SİBER BİLGİLER (DOĞRULANDI ✅)
-  const CLOUD_NAME = "diuamcnej"; // 'diu' olarak düzeltildi
+  const CLOUD_NAME = "diuamcnej"; 
   const UPLOAD_PRESET = "atakasa_hizli";
 
+  // Bu dizi "🗂️ SEKTÖR" butonundaki görsel menü için kullanılıyor (Bozmuyoruz)
   const sectors = [
     { name: "ÜRÜN SATIŞ", icon: "💰", slug: "urun-satis" }, { name: "HİZMET AL", icon: "🛠️", slug: "hizmet" },
     { name: "TAKAS YAP", icon: "🔄", slug: "takas" }, { name: "KİRALAMA", icon: "🏢", slug: "kiralama" },
@@ -200,7 +201,7 @@ export default function CyberNav() {
 
   return (
     <React.Fragment>
-      {/* 📂 SEKTÖRLER MODALI */}
+      {/* 📂 SEKTÖRLER MODALI (Navigasyon Menüsü) */}
       {activeModal === 'sectors' && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/95 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in fade-in duration-300">
           <div className="flex justify-between items-center mb-8 border-b border-white/[0.05] pb-4 mt-4">
@@ -218,7 +219,7 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* ⚡ AT TAKASA MODALI */}
+      {/* ⚡ AT TAKASA MODALI (İlan Verme Formu) */}
       {activeModal === 'ilan' && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/98 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in slide-in-from-bottom-8 duration-500">
           <div className="max-w-xl mx-auto mt-4">
@@ -302,17 +303,64 @@ export default function CyberNav() {
                     </button>
                   ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 pb-10">
-                      <select className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-slate-300 outline-none appearance-none text-sm font-bold uppercase tracking-wide" value={formData.sektor} onChange={e => setFormData({...formData, sektor: e.target.value})}>
+                      
+                      {/* 🚀 GÜNCELLENMİŞ SİBER KATEGORİ SEÇİCİ */}
+                      <select 
+                        className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-slate-300 outline-none appearance-none text-sm font-bold uppercase tracking-wide" 
+                        value={formData.sektor} 
+                        onChange={e => setFormData({...formData, sektor: e.target.value})}
+                      >
                         <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
-                        {sectors.map(s => <option key={s.slug} value={s.name}>{s.name}</option>)}
+                        <optgroup label="🏢 EMLAK & GAYRİMENKUL">
+                          <option value="Emlak - Konut">Konut / Ev</option>
+                          <option value="Emlak - İşyeri & Mağaza">İşyeri / Dükkan / Mağaza / Fabrika</option>
+                          <option value="Emlak - Arsa & Tarla">Arsa / Tarla</option>
+                        </optgroup>
+                        <optgroup label="🚗 VASITA & MOBİLİTE">
+                          <option value="Vasıta - Otomobil">Otomobil (Araç)</option>
+                          <option value="Vasıta - Motosiklet & Bisiklet">Motosiklet / Bisiklet / Scooter</option>
+                          <option value="Vasıta - Deniz & Diğer">Deniz Araçları / Akülü Araçlar</option>
+                          <option value="Vasıta - Yedek Parça">Yedek Parça & Donanım</option>
+                        </optgroup>
+                        <optgroup label="💻 ELEKTRONİK & TEKNOLOJİ">
+                          <option value="Elektronik - Telefon">Cep Telefonu</option>
+                          <option value="Elektronik - Bilgisayar">Bilgisayar / Donanım</option>
+                          <option value="Elektronik - TV & Görüntü">Televizyon / Ses / Görüntü</option>
+                          <option value="Elektronik - Oyun Konsolu">PlayStation / Oyun Konsolu</option>
+                        </optgroup>
+                        <optgroup label="🛋️ EV, YAŞAM & BEYAZ EŞYA">
+                          <option value="Ev - Mobilya & Tekstil">Mobilya / Halı / Ev Tekstili</option>
+                          <option value="Ev - Beyaz Eşya & Isıtıcı">Beyaz Eşya / Isıtıcı</option>
+                          <option value="Ev - Dekorasyon & Banyo">Duş Eşyaları / Dekorasyon</option>
+                        </optgroup>
+                        <optgroup label="⌚ MODA, SAAT & KOZMETİK">
+                          <option value="Moda - Giyim & Ayakkabı">Elbise / Giyim</option>
+                          <option value="Moda - Saat & Takı">Saat / Takı / Özel Eşya</option>
+                          <option value="Kozmetik & Kişisel Bakım">Kozmetik / Kişisel Bakım</option>
+                        </optgroup>
+                        <optgroup label="🎨 ANTİKA, SANAT & HOBİ">
+                          <option value="Sanat - Antika & El Sanatı">Antika Eserler / El Sanatları</option>
+                          <option value="Sanat - Özel Tasarım">Özel Tasarımlar</option>
+                          <option value="Hobi - Oyuncak & Kitap">Oyuncak / Kitap / Kırtasiye</option>
+                        </optgroup>
+                        <optgroup label="⚙️ SANAYİ & DİĞER">
+                          <option value="Sanayi - Makine & Nalbur">Makine / Nalbur Ürünleri</option>
+                          <option value="Evcil Hayvan & Petshop">Canlı Hayvan / Petshop</option>
+                          <option value="Gıda & İçecek">Gıda / Yiyecek / İçecek</option>
+                          <option value="Diğer">Diğer İlanlar</option>
+                        </optgroup>
                       </select>
+
                       <input type="text" placeholder="İlan Başlığı" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none font-bold" value={formData.baslik} onChange={e => setFormData({...formData, baslik: e.target.value})} />
                       <input type="number" placeholder="İlan Fiyatı / Değeri (₺)" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-[#00f260] font-black outline-none focus:border-[#00f260]/50" value={formData.fiyat} onChange={e => setFormData({...formData, fiyat: e.target.value})} />
+                      
                       <div className="grid grid-cols-2 gap-3">
                         <input type="text" placeholder="Şehir" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none text-sm" value={formData.sehir} onChange={e => setFormData({...formData, sehir: e.target.value})} />
                         <input type="text" placeholder="İlçe" className="w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none text-sm" value={formData.ilce} onChange={e => setFormData({...formData, ilce: e.target.value})} />
                       </div>
+                      
                       <textarea placeholder="Varlık Açıklaması ve Takas Şartları..." rows={3} className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none text-sm resize-none" value={formData.aciklama} onChange={e => setFormData({...formData, aciklama: e.target.value})}></textarea>
+                      
                       <button onClick={handlePublish} disabled={publishStatus === 'loading' || isCloudLoading} className="w-full mt-6 py-6 bg-[#00f260] text-black rounded-[2rem] font-black uppercase tracking-widest hover:scale-[1.02] shadow-[0_10px_30px_rgba(0,242,96,0.3)] transition-all flex items-center justify-center">
                         {publishStatus === 'loading' ? <span className="animate-pulse">AKTARILIYOR...</span> : "AT TAKASA"}
                       </button>
