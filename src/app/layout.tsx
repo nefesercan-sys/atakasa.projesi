@@ -10,72 +10,111 @@ import HeaderSearch from "../components/HeaderSearch";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// 🚀 SİBER SEO ZIRHI: Google CEO'larının Aşık Olduğu Veri Yapısı
 export const metadata = {
-  title: "A-TAKASA | Türkiye'nin Takas ve İkinci El Platformu",
-  description: "A-TAKASA ile ikinci el eşyalarını ücretsiz ilanla sat, takas yap veya satın al. Güvenli ödeme, anında ilan, yasal zırh güvencesiyle Türkiye'nin en yenilikçi takas borsası.",
-  keywords: "takas, ikinci el, ikinci el eşya, takas sitesi, ücretsiz ilan, eşya takas, takas platformu, ikinci el alım satım, takas borsası, atakasa, a-takasa, güvenli takas, online takas, takas yap, eşya sat, takas et",
-  authors: [{ name: "A-TAKASA", url: "https://atakasa.com" }],
-  creator: "A-TAKASA",
-  publisher: "A-TAKASA",
+  title: {
+    default: "At takasa.com | Türkiye'nin Siber Takas ve İkinci El Terminali",
+    template: "%s | At takasa.com",
+  },
+  description: "Elinde tutma, At takasa! Zararına satmak yerine değerinde takas yapın. Elektronik, araç, emlak ve binlerce varlığı güvenle değiştirin. Nakitsiz ticaretin siber ağı.",
+  keywords: [
+    "takas yap", "ücretsiz ilan ver", "ikinci el takas", "eşya takas sitesi", 
+    "at takasa", "güvenli ticaret", "barter", "online takas", "takas borsası", 
+    "ikinci el alım satım", "araç takas", "telefon takas", "siber ticaret"
+  ],
+  authors: [{ name: "At takasa.com", url: "https://atakasa.com" }],
+  creator: "At takasa",
+  publisher: "At takasa",
   metadataBase: new URL("https://atakasa.com"),
   alternates: { canonical: "https://atakasa.com" },
+  
+  // 📸 SOSYAL MEDYA (WhatsApp, Facebook vb.) GÖRÜNÜMÜ
   openGraph: {
-    title: "A-TAKASA | Değiştir. Kazan. Özgürleş.",
-    description: "Elindeki eşyayı takasa ver, ihtiyacın olanı al. Ücretsiz ilan, güvenli ödeme, anında takas. Türkiye'nin yeni nesil takas platformu.",
+    title: "At takasa.com | Değiştir. Kazan. Özgürleş.",
+    description: "Değersiz sanma ne varsa, At takasa! Siber ağda varlığını mühürle, ihtiyacın olanla güvenle takasla.",
     url: "https://atakasa.com",
-    siteName: "A-TAKASA",
-    images: [{ url: "https://atakasa.com/og-image.jpg", width: 1200, height: 630, alt: "A-TAKASA Takas Platformu" }],
+    siteName: "At takasa",
+    images: [
+      { 
+        url: "https://atakasa.com/og-image.jpg", // Gerçek bir banner resmi yüklediğinde burası çok şık duracak
+        width: 1200, 
+        height: 630, 
+        alt: "At takasa.com Siber Pazar Yeri" 
+      }
+    ],
     locale: "tr_TR",
     type: "website",
   },
+  
+  // 🐦 TWITTER (X) GÖRÜNÜMÜ
   twitter: {
     card: "summary_large_image",
-    title: "A-TAKASA | Değiştir. Kazan. Özgürleş.",
-    description: "Elindeki eşyayı takasa ver, ihtiyacın olanı al. Türkiye'nin en güvenli takas platformu.",
+    title: "At takasa.com | Siber Takas Terminali",
+    description: "Zararına satma, At takasa! Türkiye'nin en güvenli takas platformu.",
     images: ["https://atakasa.com/og-image.jpg"],
-    creator: "@atakasa",
+    creator: "@attakasa",
   },
+  
+  // 🤖 ARAMA MOTORU BOTLARI KURALLARI
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large" as const,
-      "max-snippet": -1,
+      "max-video-preview": -1, // Google videoları özgürce indexlesin
+      "max-image-preview": "large", // Görselleri büyük boyutta çeksin
+      "max-snippet": -1, // Açıklamaları kesmesin
     },
   },
+  
+  // 📱 APPLE VE MOBİL UYGULAMA GÖRÜNÜMÜ
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: '/site.webmanifest', // Eğer PWA (uygulama) yaparsan diye hazır
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" className="scroll-smooth">
       <head>
-        {/* ✅ JSON-LD ayrı Server Component'te — hata yok */}
+        {/* ✅ JSON-LD ayrı Server Component'te — Google'ın yapılandırılmış veri şeması */}
         <JsonLd />
       </head>
-      <body className={`${inter.className} bg-[#050505] text-white antialiased min-h-screen overflow-x-hidden pb-24`}>
+      <body className={`${inter.className} bg-[#050505] text-white antialiased min-h-screen overflow-x-hidden pb-24 selection:bg-[#00f260] selection:text-black`}>
 
         <AuthProvider>
 
-          {/* 🌌 HEADER */}
+          {/* 🌌 SİBER HEADER */}
           <header className="fixed top-0 left-0 w-full z-[100] bg-[#050505]/80 backdrop-blur-xl border-b border-white/[0.05] px-4 py-4 md:px-8 shadow-sm">
             <div className="max-w-[1500px] mx-auto flex justify-between items-center">
 
+              {/* LOGO */}
               <Link href="/" className="flex items-center gap-2 group">
-                <span className="text-xl md:text-3xl font-black italic tracking-tighter uppercase drop-shadow-md">
-                  A-<span className="text-[#00f260] drop-shadow-[0_0_15px_rgba(0,242,96,0.5)]">TAKASA.</span>
-                </span>
+                <div className="w-10 h-10 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,242,96,0.3)] relative overflow-hidden shrink-0">
+                  <span className="text-lg font-black text-black relative z-10 italic">At<span className="text-white">⇄</span></span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">
+                    At takasa<span className="text-[#00f260]">.com</span>
+                  </span>
+                </div>
               </Link>
 
               {/* ✅ onKeyDown Client Component'e taşındı */}
-              <HeaderSearch />
+              <div className="hidden md:block flex-1 max-w-xl mx-8">
+                <HeaderSearch />
+              </div>
 
+              {/* PANEL GİRİŞİ */}
               <div className="flex items-center gap-4">
                 <Link
                   href="/panel"
-                  className="w-11 h-11 bg-white/[0.03] border border-white/[0.05] rounded-full flex items-center justify-center text-slate-300 hover:bg-[#00f260] hover:text-black hover:border-transparent transition-all shadow-lg"
+                  className="w-10 h-10 bg-white/[0.03] border border-white/[0.05] rounded-full flex items-center justify-center text-slate-300 hover:bg-[#00f260] hover:text-black hover:border-transparent transition-all shadow-[0_0_10px_rgba(0,242,96,0)] hover:shadow-[0_0_15px_rgba(0,242,96,0.4)]"
                 >
                   👤
                 </Link>
