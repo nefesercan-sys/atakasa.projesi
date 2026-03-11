@@ -8,6 +8,9 @@ import { Analytics } from "@vercel/analytics/react";
 import JsonLd from "../components/JsonLd";
 import HeaderSearch from "../components/HeaderSearch";
 
+// 🚀 VERCEL 60 SANİYE ÇÖKME HATASINI BİTİREN SİBER KİLİT 
+export const dynamic = "force-dynamic";
+
 const inter = Inter({ subsets: ["latin"] });
 
 // 🚀 SİBER SEO ZIRHI: Google CEO'larının Aşık Olduğu Veri Yapısı
@@ -36,7 +39,7 @@ export const metadata = {
     siteName: "At takasa",
     images: [
       { 
-        url: "https://atakasa.com/og-image.jpg", // Gerçek bir banner resmi yüklediğinde burası çok şık duracak
+        url: "https://atakasa.com/og-image.jpg",
         width: 1200, 
         height: 630, 
         alt: "At takasa.com Siber Pazar Yeri" 
@@ -63,9 +66,9 @@ export const metadata = {
     googleBot: {
       index: true,
       follow: true,
-      "max-video-preview": -1, // Google videoları özgürce indexlesin
-      "max-image-preview": "large", // Görselleri büyük boyutta çeksin
-      "max-snippet": -1, // Açıklamaları kesmesin
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   
@@ -75,14 +78,13 @@ export const metadata = {
     shortcut: '/favicon-16x16.png',
     apple: '/apple-touch-icon.png',
   },
-  manifest: '/site.webmanifest', // Eğer PWA (uygulama) yaparsan diye hazır
+  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" className="scroll-smooth">
       <head>
-        {/* ✅ JSON-LD ayrı Server Component'te — Google'ın yapılandırılmış veri şeması */}
         <JsonLd />
       </head>
       <body className={`${inter.className} bg-[#050505] text-white antialiased min-h-screen overflow-x-hidden pb-24 selection:bg-[#00f260] selection:text-black`}>
@@ -105,7 +107,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </Link>
 
-              {/* ✅ onKeyDown Client Component'e taşındı */}
               <div className="hidden md:block flex-1 max-w-xl mx-8">
                 <HeaderSearch />
               </div>
