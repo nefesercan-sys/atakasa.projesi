@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
     const data = await res.json();
     if (data.secure_url) return data.secure_url as string;
-    throw new Error(data.error?.message || "Cloudinary error");
+    throw new Error(data.error?.message || "Cloudinary hatası");
   }
 
   try {
@@ -43,6 +43,7 @@ export async function GET(req: Request) {
     const db = mongoose.connection.useDb("nexus_db");
     const collection = db.collection("varliks");
 
+    // Sadece sayım yap
     if (onlyCount) {
       const total = await collection.countDocuments();
       const withBase64 = await collection.countDocuments({
@@ -51,12 +52,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ total, withBase64 });
     }
 
+    // Sadece 1 ilan işle (timeout olmasın)
     const varlik = await collection.findOne({
       resimler: { $elemMatch: { $regex: "data:image" } }
     });
 
     if (!varlik) {
-      return NextResponse.json({ success: true, message: "All images migrated!" });
+      return NextResponse.json({ success: true, message: "🎉 Tüm resimler taşındı!" });
     }
 
     const log: string[] = [];
@@ -71,9 +73,9 @@ export async function GET(req: Request) {
           const publicId = `atakasa/${varlik._id}_${i}`;
           const url = await uploadToCloudinary(base64Data, publicId);
           yeniResimler.push(url);
-          log.push(`OK: Image ${i + 1} uploaded`);
+          log.push(`✅ Resim ${i + 1} yüklendi`);
         } catch (err: any) {
-          log.push(`ERROR: Image ${i + 1}: ${err.message}`);
+          log.push(`❌ Resim ${i + 1} hata: ${err.message}`);
           yeniResimler.push(resim);
         }
       } else {
@@ -86,10 +88,21 @@ export async function GET(req: Request) {
       { $set: { resimler: yeniResimler } }
     );
 
-    log.push(`Saved: ${varlik.baslik}`);
+    log.push(`💾 Kaydedildi: ${varlik.baslik}`);
+    log.push(`🔄 Devam etmek için sayfayı tekrar aç`);
 
     return NextResponse.json({ success: true, ilan: varlik.baslik, log });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+```
+
+Deploy olunca önce şunu aç — kaç ilan var görelim:
+```
+atakasa.com/api/migrate?count=1
+```
+
+Sonra her seferinde şunu aç, her açışta 1 ilan işlenecek:
+```
+atakasa.com/api/migrate
