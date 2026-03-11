@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ShieldCheck, Zap, MessageCircle, Play } from "lucide-react";
 
+// 🚀 İŞTE SİBER KİLİT! Vercel'in önbelleğini iptal eder, veriyi her seferinde canlı çeker.
+export const dynamic = "force-dynamic";
+
 export default function SiberVarlikTerminali({ params }: { params: any }) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -17,9 +20,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   const [aktifMedyaIndex, setAktifMedyaIndex] = useState(0);
   const [videoAcik, setVideoAcik] = useState(false);
 
-  // ✅ YENİ: Benzer ilanlar state'i
   const [benzerIlanlar, setBenzerIlanlar] = useState<any[]>([]);
-
   const [benimIlanlarim, setBenimIlanlarim] = useState<any[]>([]);
   const [secilenBenimIlanim, setSecilenBenimIlanim] = useState("");
   const [eklenecekNakit, setEklenecekNakit] = useState("");
@@ -48,7 +49,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     }
   }, [resolvedParams, session]);
 
-  // ✅ YENİ: Benzer ilanları çeken fonksiyon
   const fetchBenzerIlanlar = async (kategori: string, suankiId: string) => {
     try {
       const res = await fetch(`/api/varliklar?kategori=${encodeURIComponent(kategori)}`);
@@ -61,7 +61,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     } catch (err) { console.error("Öneri motoru koptu."); }
   };
 
-  // ✅ GÜNCELLENDİ: fetchBenzerIlanlar çağrısı eklendi
   const fetchIlanDetay = async () => {
     try {
       const res = await fetch(`/api/varliklar/${resolvedParams.id}`);
@@ -241,7 +240,8 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
           >
             {aktifMedyaVideo ? (
               <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-                <video src={aktifMedya} className="w-full h-full object-cover opacity-60" muted playsInline preload="metadata" />
+                {/* 🚀 SİBER HİLE: URL sonuna #t=0.001 ekleyerek tarayıcıyı ilk kareyi indirmeye zorluyoruz */}
+                <video src={`${aktifMedya}#t=0.001`} className="w-full h-full object-cover opacity-60" muted playsInline preload="metadata" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-20 h-20 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(0,242,96,0.6)] group-hover:scale-110 transition-transform duration-300">
                     <Play size={32} className="text-black ml-1" fill="black" />
