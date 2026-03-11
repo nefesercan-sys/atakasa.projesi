@@ -1,14 +1,14 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Play, Share2 } from "lucide-react"; 
+import { Play, Share2 } from "lucide-react";
 
 export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
-  
-  const [ilanlar, setIlanlar] = useState<any[]>([]); 
+
+  const [ilanlar, setIlanlar] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [aktifKategori, setAktifKategori] = useState("Hepsi");
@@ -17,7 +17,7 @@ export default function Home() {
   const [minFiyat, setMinFiyat] = useState("");
   const [maxFiyat, setMaxFiyat] = useState("");
   const [sadeceTakaslik, setSadeceTakaslik] = useState(false);
-  const [filtreMenusuAcik, setFiltreMenusuAcik] = useState(false); 
+  const [filtreMenusuAcik, setFiltreMenusuAcik] = useState(false);
   const sehirler = ["Tüm Şehirler", "İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana", "Konya"];
   const [seciliIlan, setSeciliIlan] = useState<any>(null);
   const [modalTuru, setModalTuru] = useState<"takas" | "satinal" | null>(null);
@@ -54,12 +54,23 @@ export default function Home() {
   useEffect(() => {
     const veriCek = async () => {
       try {
-        const res = await fetch("/api/varliklar");
+        const res = await fetch("/api/varliklar?limit=20", {
+          next: { revalidate: 30 },
+        } as any);
         const data = await res.json();
         const liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
         setIlanlar(liste);
-      } catch (err) { console.error("Sinyal koptu:", err); } 
-      finally { setLoading(false); }
+        setLoading(false);
+        if (liste.length === 20) {
+          const res2 = await fetch("/api/varliklar?limit=200&skip=20");
+          const data2 = await res2.json();
+          const liste2 = Array.isArray(data2) ? data2 : [];
+          if (liste2.length > 0) setIlanlar(prev => [...prev, ...liste2]);
+        }
+      } catch (err) {
+        console.error("Sinyal koptu:", err);
+        setLoading(false);
+      }
     };
     veriCek();
   }, []);
@@ -74,14 +85,14 @@ export default function Home() {
     }
   }, [session, ilanlar]);
 
-  const isVideo = (url: string) =>
-    !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video'));
+  const isVideo = useCallback((url: string) =>
+    !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video')), []);
 
-  const getIlkMedya = (ilan: any) =>
+  const getIlkMedya = useCallback((ilan: any) =>
     ilan.resimler?.[0] || ilan.images?.[0] ||
-    "https://placehold.co/600x400/030712/00f260?text=AT+TAKASA";
+    "https://placehold.co/600x400/030712/00f260?text=AT+TAKASA", []);
 
-  const filtrelenmisIlanlar = () => {
+  const filtrelenmisIlanlar = useMemo(() => {
     let liste = [...ilanlar];
     if (searchTerm) liste = liste.filter(i =>
       (i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,19 +110,21 @@ export default function Home() {
       default: liste.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return liste;
-  };
+  }, [ilanlar, searchTerm, aktifKategori, aktifSehir, minFiyat, maxFiyat, sadeceTakaslik, aktifAltFiltre]);
 
-  const openModal = (ilan: any, tur: "takas" | "satinal") => {
+  const openModal = useCallback((ilan: any, tur: "takas" | "satinal") => {
     if (!session) return router.push("/giris");
     const saticiEmail = (ilan.satici?.email || ilan.sellerEmail || "").toLowerCase();
     if (saticiEmail === session.user?.email?.toLowerCase()) return alert("SİBER ENGEL: Kendi varlığınızla işlem yapamazsınız!");
     setSeciliIlan(ilan); setModalTuru(tur);
     setKabulSozlesme(false); setKabulYasalZirh(false);
-  };
-  
-  const closeModal = () => { setSeciliIlan(null); setModalTuru(null); setSecilenBenimIlanim(""); setEklenecekNakit(""); };
+  }, [session, router]);
 
-  const handleSepeteEkle = (ilan: any) => {
+  const closeModal = useCallback(() => {
+    setSeciliIlan(null); setModalTuru(null); setSecilenBenimIlanim(""); setEklenecekNakit("");
+  }, []);
+
+  const handleSepeteEkle = useCallback((ilan: any) => {
     try {
       const mevcutSepet = JSON.parse(localStorage.getItem('atakasa_sepet') || '[]');
       const urunId = ilan._id || ilan.id;
@@ -127,7 +140,7 @@ export default function Home() {
       localStorage.removeItem('atakasa_sepet');
       alert("Önbellek temizlendi, tekrar deneyin.");
     }
-  };
+  }, []);
 
   const handleTakasGonder = async () => {
     if (!secilenBenimIlanim) return alert("Lütfen takas edeceğiniz kendi varlığınızı seçin!");
@@ -135,11 +148,11 @@ export default function Home() {
     try {
       const res = await fetch("/api/takas", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          aliciEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail, 
-          hedefIlanId: seciliIlan._id, hedefIlanBaslik: seciliIlan.baslik, 
-          hedefIlanFiyat: seciliIlan.fiyat, teklifEdilenIlanId: id, 
-          teklifEdilenIlanBaslik: baslik, eklenenNakit: eklenecekNakit || 0, durum: "bekliyor" 
+        body: JSON.stringify({
+          aliciEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail,
+          hedefIlanId: seciliIlan._id, hedefIlanBaslik: seciliIlan.baslik,
+          hedefIlanFiyat: seciliIlan.fiyat, teklifEdilenIlanId: id,
+          teklifEdilenIlanBaslik: baslik, eklenenNakit: eklenecekNakit || 0, durum: "bekliyor"
         })
       });
       if (res.ok) { alert("⚡ TAKAS TEKLİFİ BAŞARIYLA İLETİLDİ!"); closeModal(); }
@@ -153,8 +166,8 @@ export default function Home() {
     try {
       const res = await fetch("/api/orders", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          listingId: seciliIlan._id, sellerEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail, 
+        body: JSON.stringify({
+          listingId: seciliIlan._id, sellerEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail,
           adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon,
           adres: siparisForm.adres, not: siparisForm.not,
           odemeYontemi: siparisForm.odemeYontemi, fiyat: seciliIlan.fiyat, durum: "bekliyor"
@@ -165,25 +178,16 @@ export default function Home() {
     } catch { alert("Bağlantı hatası."); }
   };
 
-  const BorsaKarti = ({ ilan }: { ilan: any }) => {
+  const BorsaKarti = React.memo(({ ilan }: { ilan: any }) => {
     const ilkMedya = getIlkMedya(ilan);
     const videoVar = isVideo(ilkMedya);
 
     const handleShare = async (e: React.MouseEvent) => {
-      e.stopPropagation(); 
+      e.stopPropagation();
       const shareUrl = `${window.location.origin}/varlik/${ilan._id}`;
-      const shareData = {
-        title: `${ilan.baslik} | At takasa.com`,
-        text: `Şu ilana bak! Tam senlik bir siber varlık. Zararına satma, At takasa! ⚡`,
-        url: shareUrl,
-      };
-
+      const shareData = { title: `${ilan.baslik} | At takasa.com`, text: `Şu ilana bak! Tam senlik bir siber varlık. Zararına satma, At takasa! ⚡`, url: shareUrl };
       if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) {
-          console.log("Paylaşım iptal edildi.");
-        }
+        try { await navigator.share(shareData); } catch { }
       } else {
         navigator.clipboard.writeText(shareUrl);
         alert("🔗 İlan Linki Kopyalandı!");
@@ -194,7 +198,6 @@ export default function Home() {
       <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#00f260]/40 transition-all group shadow-2xl flex flex-col h-full relative" itemScope itemType="https://schema.org/Product">
         <meta itemProp="name" content={`${ilan.baslik} | At takasa.com`} />
         <meta itemProp="description" content={ilan.aciklama || "Varlık"} />
-
         <div className={`absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl font-black text-[11px] backdrop-blur-md border shadow-lg ${
           (ilan.degisimYuzdesi || 0) >= 0
             ? 'bg-[#00f260]/20 text-[#00f260] border-[#00f260]/30'
@@ -202,32 +205,22 @@ export default function Home() {
         }`}>
           {(ilan.degisimYuzdesi || 0) >= 0 ? '▲' : '▼'} %{Math.abs(ilan.degisimYuzdesi || 0)}
         </div>
-
         {videoVar && (
           <div className="absolute top-4 right-4 z-20 bg-black/70 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/20 flex items-center gap-1.5 pointer-events-none">
             <Play size={9} className="text-[#00f260]" fill="#00f260" />
             <span className="text-white text-[9px] font-black uppercase tracking-widest">VİDEO</span>
           </div>
         )}
-
         <div
           className="relative h-80 overflow-hidden cursor-pointer"
           onClick={() => {
-            if (videoVar) {
-              setVideoModalUrl(ilkMedya);
-              setVideoModalBaslik(ilan.baslik || "");
-            } else {
-              router.push(`/varlik/${ilan._id}`);
-            }
+            if (videoVar) { setVideoModalUrl(ilkMedya); setVideoModalBaslik(ilan.baslik || ""); }
+            else { router.push(`/varlik/${ilan._id}`); }
           }}
         >
           {videoVar ? (
             <div className="w-full h-full bg-black flex items-center justify-center relative">
-              <video
-                src={ilkMedya}
-                className="w-full h-full object-cover opacity-60"
-                muted playsInline preload="metadata"
-              />
+              <video src={ilkMedya} className="w-full h-full object-cover opacity-60" muted playsInline preload="none" />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-16 h-16 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.6)] group-hover:scale-110 transition-transform duration-300">
                   <Play size={26} className="text-black ml-1" fill="black" />
@@ -239,19 +232,22 @@ export default function Home() {
             <>
               <img
                 src={ilkMedya}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 alt={ilan.baslik || "Varlık"}
                 itemProp="image"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://placehold.co/600x400/030712/00f260?text=AT+TAKASA";
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-90" />
             </>
           )}
-
           <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg text-[9px] font-black uppercase text-slate-300 border border-white/10">
             📍 {ilan.sehir || "TÜRKİYE"}
           </div>
         </div>
-
         <div className="p-6 flex flex-col flex-1">
           <p className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-1">{ilan.kategori || "PİYASA"}</p>
           <h3
@@ -268,7 +264,6 @@ export default function Home() {
             </span>
             <span className="text-slate-500 text-[10px] font-bold">{new Date(ilan.createdAt).toLocaleDateString()}</span>
           </div>
-          
           <div className="mt-auto grid grid-cols-2 gap-2">
             <div className="flex gap-1 w-full">
               <button onClick={handleShare} className="bg-white/5 text-slate-300 p-3 rounded-xl hover:bg-cyan-500 hover:text-black transition-all border border-white/10 flex items-center justify-center shrink-0" title="İlanı Paylaş">
@@ -283,7 +278,8 @@ export default function Home() {
         </div>
       </div>
     );
-  };
+  });
+  BorsaKarti.displayName = "BorsaKarti";
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans italic pb-24 selection:bg-[#00f260] selection:text-black">
@@ -291,47 +287,32 @@ export default function Home() {
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] blur-[150px] rounded-full"></div>
       </div>
 
-      {/* ── FİLTRE VE KONTROL PANELİ ── */}
       <div className="px-4 pb-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-4 mb-5">
 
-            {/* LOKAL ARAMA */}
-            <div className="relative w-full md:flex-1">
-              <input
-                type="text"
-                placeholder="Varlıklarda detaylı arama yap..."
-                value={searchTerm}
-                className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] pl-5 pr-12 py-3.5 outline-none focus:border-[#00f260] text-sm transition-all shadow-inner"
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black">🔍</span>
-            </div>
-
-            {/* BUTONLAR */}
-            <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2 md:pb-0">
-              <button
-                onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
-                className={`flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border shrink-0 text-center ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}
-              >
-                🛠️ <span className="hidden sm:inline">RADAR</span>
-              </button>
-              <button
-                onClick={() => router.push('/sepet')}
-                className="flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shrink-0 text-center"
-              >
-                🛒 <span className="hidden sm:inline">SEPET</span>
-              </button>
-              <button
-                onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')}
-                className="flex-1 md:flex-none px-5 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all bg-[#00f260] text-black hover:scale-105 shadow-[0_0_15px_rgba(0,242,96,0.3)] shrink-0 whitespace-nowrap text-center"
-              >
-                ⚡ <span className="hidden sm:inline">İLAN VER</span>
-              </button>
-            </div>
+          {/* ── BUTONLAR SATIRI (arama kaldırıldı) ── */}
+          <div className="flex gap-2 w-full overflow-x-auto no-scrollbar pb-2 mb-5">
+            <button
+              onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
+              className={`flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border shrink-0 text-center ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}
+            >
+              🛠️ RADAR
+            </button>
+            <button
+              onClick={() => router.push('/sepet')}
+              className="flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shrink-0 text-center"
+            >
+              🛒 SEPET
+            </button>
+            <button
+              onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')}
+              className="flex-1 md:flex-none px-5 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all bg-[#00f260] text-black hover:scale-105 shadow-[0_0_15px_rgba(0,242,96,0.3)] shrink-0 whitespace-nowrap text-center"
+            >
+              ⚡ İLAN VER
+            </button>
           </div>
 
-          {/* RADAR FİLTRE */}
+          {/* ── RADAR FİLTRE ── */}
           {filtreMenusuAcik && (
             <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-5 shadow-[0_0_30px_rgba(0,242,96,0.1)] animate-in fade-in slide-in-from-top-4 duration-300">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -362,7 +343,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* KATEGORİ */}
+          {/* ── KATEGORİ ── */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mt-2">
             <button onClick={() => { setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar"); }} className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${aktifKategori === "Hepsi" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
               🌐 KARIŞIK AKIŞ
@@ -397,11 +378,15 @@ export default function Home() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[1,2,3,4,5,6,7,8].map(n => <div key={n} className="h-[450px] bg-white/5 rounded-[2.5rem] animate-pulse border border-white/5"></div>)}
+            {[1,2,3,4,5,6,7,8].map(n => (
+              <div key={n} className="h-[450px] bg-white/5 rounded-[2.5rem] border border-white/5 relative overflow-hidden">
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent" style={{ animation: 'shimmer 1.5s infinite' }} />
+              </div>
+            ))}
           </div>
-        ) : filtrelenmisIlanlar().length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-1000">
-            {filtrelenmisIlanlar().map((ilan) => <BorsaKarti key={ilan._id} ilan={ilan} />)}
+        ) : filtrelenmisIlanlar.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-500">
+            {filtrelenmisIlanlar.map((ilan) => <BorsaKarti key={ilan._id} ilan={ilan} />)}
           </div>
         ) : (
           <div className="py-32 text-center bg-[#0a0a0a] rounded-[3rem] border border-white/5 shadow-2xl">
@@ -417,7 +402,7 @@ export default function Home() {
           <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-lg w-full shadow-[0_0_50px_rgba(0,242,96,0.2)] relative flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 no-scrollbar">
             <button onClick={closeModal} className="absolute top-6 right-6 w-10 h-10 bg-white/5 hover:bg-red-500 hover:text-white text-slate-400 rounded-full flex items-center justify-center transition-colors font-black">✕</button>
             <div className="flex items-center gap-4 border-b border-white/10 pb-6 mb-6">
-              <img src={getIlkMedya(seciliIlan)} className="w-24 h-24 rounded-2xl object-cover border border-white/5" alt="Varlık" />
+              <img src={getIlkMedya(seciliIlan)} className="w-24 h-24 rounded-2xl object-cover border border-white/5" alt="Varlık" loading="lazy" />
               <div>
                 <p className="text-[#00f260] text-[10px] font-black uppercase tracking-widest mb-1">{modalTuru === 'takas' ? 'SİBER TAKAS TEKLİFİ' : 'GÜVENLİ SATIN ALMA'}</p>
                 <h3 className="text-white font-bold text-lg leading-tight mb-2 pr-8">{seciliIlan.baslik}</h3>
@@ -467,22 +452,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* ✅ VİDEO MODAL */}
+      {/* ── VİDEO MODAL ── */}
       {videoModalUrl && (
-        <div
-          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
-          onClick={() => setVideoModalUrl(null)}
-        >
+        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setVideoModalUrl(null)}>
           <div className="relative w-full max-w-3xl" onClick={e => e.stopPropagation()}>
-            <button
-              onClick={() => setVideoModalUrl(null)}
-              className="absolute -top-14 right-0 w-10 h-10 bg-white/10 hover:bg-red-500 text-white rounded-full flex items-center justify-center font-black text-lg transition-all z-10"
-            >✕</button>
-            <video
-              src={videoModalUrl}
-              controls autoPlay
-              className="w-full rounded-3xl border border-[#00f260]/30 shadow-[0_0_50px_rgba(0,242,96,0.2)]"
-            />
+            <button onClick={() => setVideoModalUrl(null)} className="absolute -top-14 right-0 w-10 h-10 bg-white/10 hover:bg-red-500 text-white rounded-full flex items-center justify-center font-black text-lg transition-all z-10">✕</button>
+            <video src={videoModalUrl} controls autoPlay className="w-full rounded-3xl border border-[#00f260]/30 shadow-[0_0_50px_rgba(0,242,96,0.2)]" />
             <p className="text-white font-bold text-center mt-4 text-sm italic">{videoModalBaslik}</p>
             <button
               onClick={() => {
@@ -496,6 +471,13 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 }
