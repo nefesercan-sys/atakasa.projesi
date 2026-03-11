@@ -17,7 +17,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let ilanSayfalar: MetadataRoute.Sitemap = [];
   try {
-    // ✅ fetch yerine direkt MongoDB — build sırasında çalışır
     await connectMongoDB();
     const ilanlar = await Varlik.find({}, { _id: 1, updatedAt: 1, createdAt: 1 })
       .sort({ createdAt: -1 })
@@ -31,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     }));
   } catch (error) {
-    console.error("Sitemap DB hatası, sadece statik sayfalar derleniyor.", error);
+    console.error("Sitemap DB hatası:", error);
   }
 
   return [...staticPages, ...ilanSayfalar];
