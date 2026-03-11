@@ -3,7 +3,9 @@ import { connectMongoDB } from "../../../lib/mongodb";
 import Varlik from "../../../models/Varlik";
 import User from "../../../models/User";
 
-export const revalidate = 5;
+// 🚀 VERCEL ÇÖKME HATASINI BİTİREN SİBER KİLİT!
+// (Eski revalidate = 5 kodunu sildik, çünkü sistemi kilitliyordu)
+export const dynamic = "force-dynamic";
 
 const requestCounts = new Map<string, number[]>();
 
