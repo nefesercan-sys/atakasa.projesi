@@ -1,12 +1,11 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
+const MONGODB_URI = (process.env.ATAKASA_MONGODB_URI || process.env.MONGODB_URI) as string;
 
 if (!MONGODB_URI) {
   throw new Error("MONGODB_URI tanımlı değil!");
 }
 
-// Global cache - hot reload'da bağlantı kopmasın
 const globalWithMongoose = global as typeof globalThis & {
   mongoose: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
 };
@@ -16,17 +15,14 @@ if (!globalWithMongoose.mongoose) {
 }
 
 export async function connectMongoDB() {
-  // Zaten bağlıysa direkt dön
   if (globalWithMongoose.mongoose.conn) {
     return globalWithMongoose.mongoose.conn;
   }
 
-  // Bağlantı devam ediyorsa bekle
   if (!globalWithMongoose.mongoose.promise) {
     globalWithMongoose.mongoose.promise = mongoose.connect(MONGODB_URI, {
-      dbName: "atakasa_db", // ← atakasa'ya özel ayrı database
-      bufferCommands: true, // ← true yapıldı, false yavaşlatıyordu
-      maxPoolSize: 10,       // ← bağlantı havuzu
+      bufferCommands: true,
+      maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 10000,
     });
@@ -34,10 +30,10 @@ export async function connectMongoDB() {
 
   try {
     globalWithMongoose.mongoose.conn = await globalWithMongoose.mongoose.promise;
-    console.log("MongoDB Bağlantısı Aktif.");
+    console.log("MongoDB Atakasa Bağlantısı Aktif.");
     return globalWithMongoose.mongoose.conn;
   } catch (error) {
-    globalWithMongoose.mongoose.promise = null; // hata olursa sıfırla
+    globalWithMongoose.mongoose.promise = null;
     console.error("MongoDB Bağlantı Hatası:", error);
     throw new Error("Veritabanına bağlanılamadı.");
   }
