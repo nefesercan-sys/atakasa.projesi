@@ -3,63 +3,101 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Search, MapPin, Tag } from "lucide-react";
 
-// 🤖 YAPAY ZEKA SEO MOTORU: Google'a özel dinamik başlıklar üretir
+// 🚀 VERCEL'İN "0/39" ÇÖKME KRİZİNİ BİTİREN SİBER MÜHÜR!
+export const dynamic = "force-dynamic";
+
+// 🚀 SİBER SEO OPTİMİZASYONU: Google'a dinamik başlıklar üretir
 export async function generateMetadata({ params }: { params: { sehir: string, kategori: string } }): Promise<Metadata> {
-  // Gelen verileri düzelt (örn: "izmir" -> "İzmir")
-  const sehir = params.sehir.charAt(0).toUpperCase() + params.sehir.slice(1).toLowerCase();
-  const kategori = params.kategori.charAt(0).toUpperCase() + params.kategori.slice(1).toLowerCase();
+  const sehirFormatli = params.sehir.charAt(0).toUpperCase() + params.sehir.slice(1);
+  const kategoriFormatli = params.kategori.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
   return {
-    title: `${sehir} ${kategori} Takas İlanları ve Fırsatları | Atakasa`,
-    description: `${sehir} bölgesinde takaslık ${kategori} mi arıyorsun? Paran cebinde kalsın! En güncel ${sehir} ${kategori} takas ilanlarını incele veya kendi eşyanı hemen takasa koy.`,
-    keywords: `${sehir} takas, ${sehir} ${kategori} takasla, 2.el ${kategori} takas, atakasa ${sehir}`,
+    title: `${sehirFormatli} ${kategoriFormatli} Takas İlanları | At takasa`,
+    description: `${sehirFormatli} şehrinde ${kategoriFormatli} kategorisindeki en güncel takas ilanları. Zararına satma, At takasa!`,
+    alternates: {
+      canonical: `https://atakasa.com/${params.sehir}/${params.kategori}`
+    }
   };
 }
 
-// 🌐 DİNAMİK İNİŞ SAYFASI (LANDING PAGE)
-export default function DinamikTakasSayfasi({ params }: { params: { sehir: string, kategori: string } }) {
-  const sehir = params.sehir.charAt(0).toUpperCase() + params.sehir.slice(1).toLowerCase();
-  const kategori = params.kategori.charAt(0).toUpperCase() + params.kategori.slice(1).toLowerCase();
+export default async function KategoriSehirPage({ params }: { params: { sehir: string, kategori: string } }) {
+  const sehirFormatli = params.sehir.charAt(0).toUpperCase() + params.sehir.slice(1);
+  const kategoriFormatli = params.kategori.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+  // API'den veri çekme (SSR)
+  let ilanlar = [];
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://atakasa.com";
+    const res = await fetch(`${apiUrl}/api/varliklar?sehir=${params.sehir}&kategori=${params.kategori}`, { 
+      cache: 'no-store' 
+    });
+    
+    if (res.ok) {
+      ilanlar = await res.json();
+    }
+  } catch (error) {
+    console.error("İlanlar çekilirken hata oluştu:", error);
+  }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-24 px-6 relative overflow-hidden selection:bg-[#00f260] selection:text-black">
-      {/* Siber Arka Plan Efekti */}
-      <div className="absolute top-[-10%] right-[-5%] w-[50vw] h-[50vw] bg-[#00f260] opacity-[0.03] blur-[150px] rounded-full pointer-events-none"></div>
-
-      <div className="max-w-6xl mx-auto z-10 relative">
-        {/* SEO Uyumlu Dev Başlık (H1 Kancası) */}
-        <div className="mb-12 border-b border-white/10 pb-8 text-center md:text-left">
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4 text-[#00f260] text-sm font-black uppercase tracking-widest">
-            <span className="flex items-center gap-1 bg-[#00f260]/10 px-3 py-1 rounded-full"><MapPin size={14}/> {sehir}</span>
-            <span className="flex items-center gap-1 bg-white/10 text-white px-3 py-1 rounded-full"><Tag size={14}/> {kategori}</span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter">
-            {sehir} <span className="text-white">Bölgesinde</span> <br/> 
-            <span className="text-[#00f260]">{kategori}</span> Takasla.
-          </h1>
-          <p className="text-slate-400 mt-4 max-w-2xl text-sm leading-relaxed">
-            Nakit harcamaya son! {sehir} çevresindeki kullanıcılarla iletişime geç, kullanmadığın eşyalarını verip ihtiyacın olan {kategori} ile anında takas et.
-          </p>
-        </div>
-
-        {/* Aksiyon Çağrısı (Call To Action) */}
-        <div className="bg-[#0a0a0a] border border-white/5 p-8 md:p-12 rounded-[2rem] shadow-2xl text-center flex flex-col items-center">
-          <Search className="w-16 h-16 text-slate-500 mb-6 opacity-50" />
-          <h2 className="text-2xl font-black uppercase mb-4">Bu Bölgedeki İlanları Keşfet</h2>
-          <p className="text-slate-400 text-sm mb-8 max-w-xl">
-            Sistemimiz şu anda <strong>{sehir}</strong> lokasyonundaki <strong>{kategori}</strong> ilanlarını ana vitrinde listeliyor. Hemen vitrine gidip en güncel takas fırsatlarını yakala!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-            <Link href="/" className="px-8 py-4 bg-[#00f260] text-black rounded-full font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,242,96,0.2)]">
-              Ana Vitrine Git
-            </Link>
-            <Link href="/ilan-ver" className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-full font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-              Kendin İlan Ver
-            </Link>
-          </div>
-        </div>
-
+    <div className="max-w-[1500px] mx-auto px-4 py-8 md:py-12">
+      {/* 🌌 SİBER BAŞLIK */}
+      <div className="mb-8 border-b border-white/[0.05] pb-6">
+        <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase mb-2">
+          <span className="text-white">{sehirFormatli}</span> <span className="text-[#00f260]">{kategoriFormatli}</span> TAKASLARI
+        </h1>
+        <p className="text-gray-400">Zararına satma, değerinde takasla. {sehirFormatli} şehrindeki fırsatları keşfet.</p>
       </div>
+
+      {/* 📋 İLAN LİSTESİ */}
+      {ilanlar.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {ilanlar.map((ilan: any) => (
+            <Link href={`/ilan/${ilan._id}`} key={ilan._id} className="group bg-[#0a0a0a] border border-white/[0.05] rounded-2xl overflow-hidden hover:border-[#00f260]/50 transition-all duration-300 flex flex-col shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(0,242,96,0.15)]">
+              {/* RESİM ALANI */}
+              <div className="aspect-[4/3] relative w-full bg-[#111] overflow-hidden">
+                <img 
+                  src={ilan.resimler?.[0] || ilan.image || "/placeholder.jpg"} 
+                  alt={ilan.baslik}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                {ilan.borsaDurumu && (
+                  <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md ${ilan.borsaDurumu === 'YÜKSELİŞ' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : ilan.borsaDurumu === 'DÜŞÜŞ' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'}`}>
+                    {ilan.borsaDurumu}
+                  </div>
+                )}
+              </div>
+              
+              {/* İÇERİK ALANI */}
+              <div className="p-4 flex flex-col flex-grow">
+                <div className="text-[#00f260] text-xs font-bold mb-2 flex items-center gap-1 uppercase tracking-wider">
+                  <Tag size={12} /> {ilan.kategori || kategoriFormatli}
+                </div>
+                <h3 className="text-white font-medium line-clamp-2 mb-2 group-hover:text-[#00f260] transition-colors leading-tight">{ilan.baslik}</h3>
+                
+                <div className="mt-auto pt-4 flex items-center justify-between border-t border-white/[0.05]">
+                  <span className="text-xl font-black text-white">{ilan.fiyat} ₺</span>
+                  <div className="flex items-center text-gray-400 text-xs gap-1">
+                    <MapPin size={12} /> {ilan.sehir || sehirFormatli}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        /* 🚫 BOŞ DURUM EKRANI */
+        <div className="py-24 text-center border border-white/[0.05] rounded-3xl bg-[#050505] shadow-[inset_0_0_50px_rgba(0,0,0,0.5)]">
+          <div className="w-20 h-20 bg-white/[0.03] rounded-full flex items-center justify-center mx-auto mb-6">
+            <Search className="w-10 h-10 text-gray-500" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tighter">Henüz İlan Yok</h2>
+          <p className="text-gray-400 mb-8 max-w-md mx-auto">{sehirFormatli} şehrinde <span className="text-[#00f260]">{kategoriFormatli}</span> kategorisi için henüz takas ilanı girilmemiş. İlk fırsatı sen yarat!</p>
+          <Link href="/ilan-ver" className="inline-flex items-center justify-center px-8 py-4 bg-[#00f260] text-black font-black uppercase italic tracking-tight rounded-xl hover:bg-[#00d250] hover:shadow-[0_0_20px_rgba(0,242,96,0.4)] transition-all">
+            Hemen İlan Ver
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
