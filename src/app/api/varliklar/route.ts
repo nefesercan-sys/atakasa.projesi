@@ -2,18 +2,17 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "../../../lib/mongodb";
 import Varlik from "../../../models/Varlik";
 
-// 🚀 VERCEL'İN EN SEVDİĞİ HIZ AYARI
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    // 🛡️ VERİTABANINA DİREKT BAĞLANTI
     await connectMongoDB();
-    
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     const kategori = searchParams.get("kategori") || searchParams.get("sektor");
-    const limitParam = parseInt(searchParams.get("limit") || "50");
+    const limit = parseInt(searchParams.get("limit") || "20"); // ← default 20
+    const skip = parseInt(searchParams.get("skip") || "0");   // ← skip desteği
 
     let query: any = {};
     if (id) {
@@ -22,14 +21,13 @@ export async function GET(req: Request) {
       query.kategori = kategori;
     }
 
-    // ⚡ SİBER HIZLI ÇEKİM (Lean & Select)
     const ilanlar = await Varlik.find(query)
       .sort({ createdAt: -1 })
-      .limit(id ? 1 : limitParam)
-      .select("baslik fiyat eskiFiyat kategori sehir resimler images image aciklama takasIstegi satici createdAt")
+      .skip(skip)                // ← progressive loading için
+      .limit(id ? 1 : limit)
+      .select("baslik fiyat eskiFiyat kategori sehir resimler aciklama takasIstegi satici createdAt")
       .lean();
 
-    // 📊 BORSA HESAPLAMASI (En sade haliyle)
     const borsaVeriliIlanlar = ilanlar.map((ilan: any) => {
       let degisimYuzdesi = 0;
       if (ilan.eskiFiyat > 0 && ilan.fiyat !== ilan.eskiFiyat) {
@@ -43,21 +41,22 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json(borsaVeriliIlanlar, { status: 200 });
-
+    return NextResponse.json(borsaVeriliIlanlar, {
+      status: 200,
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+      },
+    });
   } catch (error) {
     console.error("API Sinyal Hatası:", error);
-    // 📡 BOŞ LİSTE DÖN Kİ YÜKLEME EKRANI DONMASIN!
     return NextResponse.json([], { status: 200 });
   }
 }
 
-// 🛠️ GÜNCELLEME MOTORU (PUT)
 export async function PUT(req: Request) {
   try {
     await connectMongoDB();
     const data = await req.json();
-
     if (!data.id) return NextResponse.json({ error: "ID Eksik" }, { status: 400 });
 
     const mevcutVarlik = await Varlik.findById(data.id);
