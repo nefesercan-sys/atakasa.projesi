@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { connectMongoDB } from "../../../../lib/mongodb";
-import Varlik from "../../../../models/Varlik";
+// 🚨 İŞTE DÜZELTİLEN YOLLAR (4 tane değil, 3 tane ../ olacak!)
+import { connectMongoDB } from "../../../lib/mongodb";
+import Varlik from "../../../models/Varlik";
 
 // 🚀 VERCEL'in önbelleğini iptal eder, WhatsApp'a hep güncel veriyi verir
 export const dynamic = "force-dynamic";
