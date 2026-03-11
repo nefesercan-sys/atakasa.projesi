@@ -212,15 +212,20 @@ export default function Home() {
           </div>
         )}
         <div
-          className="relative h-80 overflow-hidden cursor-pointer"
+          className="relative h-80 overflow-hidden cursor-pointer bg-[#050505]"
           onClick={() => {
             if (videoVar) { setVideoModalUrl(ilkMedya); setVideoModalBaslik(ilan.baslik || ""); }
             else { router.push(`/varlik/${ilan._id}`); }
           }}
         >
           {videoVar ? (
-            <div className="w-full h-full bg-black flex items-center justify-center relative">
-              <video src={ilkMedya} className="w-full h-full object-cover opacity-60" muted playsInline preload="none" />
+            <div className="w-full h-full bg-zinc-900 flex items-center justify-center relative">
+              {/* 🚀 SİBER HİLE: "preload=metadata" ve "#t=0.1" eklendi! Simsiyah ekran tarihe karışıyor */}
+              {ilkMedya.includes("res.cloudinary.com") ? (
+                <img src={ilkMedya.replace(/\.(mp4|webm|mov)$/i, ".jpg")} className="w-full h-full object-cover opacity-60" alt="Video Kapak" />
+              ) : (
+                <video src={`${ilkMedya}#t=0.1`} className="w-full h-full object-cover opacity-60" muted playsInline preload="metadata" />
+              )}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-16 h-16 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.6)] group-hover:scale-110 transition-transform duration-300">
                   <Play size={26} className="text-black ml-1" fill="black" />
@@ -457,7 +462,7 @@ export default function Home() {
         <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setVideoModalUrl(null)}>
           <div className="relative w-full max-w-3xl" onClick={e => e.stopPropagation()}>
             <button onClick={() => setVideoModalUrl(null)} className="absolute -top-14 right-0 w-10 h-10 bg-white/10 hover:bg-red-500 text-white rounded-full flex items-center justify-center font-black text-lg transition-all z-10">✕</button>
-            <video src={videoModalUrl} controls autoPlay className="w-full rounded-3xl border border-[#00f260]/30 shadow-[0_0_50px_rgba(0,242,96,0.2)]" />
+            <video src={`${videoModalUrl}#t=0.1`} controls autoPlay className="w-full rounded-3xl border border-[#00f260]/30 shadow-[0_0_50px_rgba(0,242,96,0.2)]" />
             <p className="text-white font-bold text-center mt-4 text-sm italic">{videoModalBaslik}</p>
             <button
               onClick={() => {
