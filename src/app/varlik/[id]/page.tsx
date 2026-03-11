@@ -61,16 +61,22 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     } catch (err) { console.error("Öneri motoru koptu."); }
   };
 
+  // 🚀 SİBER HAMLE: Bozuk detay API'sini çöpe attık! %100 çalışan Ana API'ye bağlıyoruz!
   const fetchIlanDetay = async () => {
     try {
-      const res = await fetch(`/api/varliklar/${resolvedParams.id}`);
+      const res = await fetch(`/api/varliklar?id=${resolvedParams.id}&t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       if (res.ok) {
         const data = await res.json();
-        setIlan(data);
-        if (data) {
-          const saticiMail = data.satici?.email || data.sellerEmail || data.userId;
+        const ilanVerisi = Array.isArray(data) ? data[0] : data;
+        if (ilanVerisi) {
+          setIlan(ilanVerisi);
+          const saticiMail = ilanVerisi.satici?.email || ilanVerisi.sellerEmail || ilanVerisi.userId;
           fetchSaticiYorumlari(saticiMail);
-          if (data.kategori) fetchBenzerIlanlar(data.kategori, data._id);
+          if (ilanVerisi.kategori) fetchBenzerIlanlar(ilanVerisi.kategori, ilanVerisi._id);
+        } else {
+          setIlan(null);
         }
       } else { setIlan(null); }
     } catch (error) { console.error("Varlık çekilemedi:", error); setIlan(null); }
@@ -240,7 +246,6 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
           >
             {aktifMedyaVideo ? (
               <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-                {/* 🚀 SİBER HİLE: URL sonuna #t=0.001 ekleyerek tarayıcıyı ilk kareyi indirmeye zorluyoruz */}
                 <video src={`${aktifMedya}#t=0.001`} className="w-full h-full object-cover opacity-60" muted playsInline preload="metadata" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-20 h-20 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(0,242,96,0.6)] group-hover:scale-110 transition-transform duration-300">
@@ -474,7 +479,7 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
         <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setVideoAcik(false)}>
           <div className="relative w-full max-w-3xl" onClick={e => e.stopPropagation()}>
             <button onClick={() => setVideoAcik(false)} className="absolute -top-14 right-0 text-white bg-white/10 hover:bg-red-500 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg transition-all z-10">✕</button>
-            <video src={aktifMedya} controls autoPlay className="w-full rounded-3xl border border-[#00f260]/30 shadow-[0_0_50px_rgba(0,242,96,0.2)]" />
+            <video src={`${aktifMedya}#t=0.001`} controls autoPlay className="w-full rounded-3xl border border-[#00f260]/30 shadow-[0_0_50px_rgba(0,242,96,0.2)]" />
             <p className="text-white font-bold text-center mt-4 text-sm">{ilan.baslik}</p>
           </div>
         </div>
