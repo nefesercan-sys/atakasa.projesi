@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "../../../../lib/mongodb";
 import Varlik from "../../../../models/Varlik";
+import User from "../../../../models/User"; // 🚨 İŞTE EKSİK OLAN SİBER ANAHTAR!
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     await connectMongoDB();
-    const { id } = params;
+    
+    // 🚨 Next.js güvenlik kilidi: params'ı her ihtimale karşı çözümlüyoruz
+    const resolvedParams = await params; 
+    const id = resolvedParams.id;
 
+    // User modelini yukarıda import ettiğimiz için populate artık asla çökmeyecek!
     const varlik = await Varlik.findById(id).populate("satici", "email name");
 
     if (!varlik) {
@@ -22,10 +27,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     await connectMongoDB();
-    const { id } = params;
+    
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
 
     const silinenVarlik = await Varlik.findByIdAndDelete(id);
 
