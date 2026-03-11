@@ -1,8 +1,8 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../../lib/mongodb";
+import { connectMongoDB } from "../../../lib/mongodb";
 import crypto from "crypto";
+import mongoose from "mongoose";
 
 export const maxDuration = 300;
 
@@ -37,9 +37,7 @@ export async function GET() {
 
   try {
     await connectMongoDB();
-
-    const mongoose = await import("mongoose");
-    const db = mongoose.default.connection.db;
+    const db = mongoose.connection.db;
 
     if (!db) {
       return NextResponse.json({ success: false, error: "DB bağlantısı yok" }, { status: 500 });
