@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Play, Share2, ShoppingCart, ArrowRightLeft, Search, Filter, MapPin, Tag, ShieldCheck, TrendingUp } from "lucide-react";
+import { Play, Share2, Search, SlidersHorizontal, ShoppingCart, Zap, ChevronDown, Star, Shield, TrendingUp, TrendingDown } from "lucide-react";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -12,10 +12,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [aktifKategori, setAktifKategori] = useState("Hepsi");
+  const [aktifAltFiltre, setAktifAltFiltre] = useState("Yeni İlanlar");
   const [aktifSehir, setAktifSehir] = useState("Tüm Şehirler");
+  const [minFiyat, setMinFiyat] = useState("");
+  const [maxFiyat, setMaxFiyat] = useState("");
+  const [sadeceTakaslik, setSadeceTakaslik] = useState(false);
   const [filtreMenusuAcik, setFiltreMenusuAcik] = useState(false);
   const sehirler = ["Tüm Şehirler", "İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana", "Konya"];
-  
   const [seciliIlan, setSeciliIlan] = useState<any>(null);
   const [modalTuru, setModalTuru] = useState<"takas" | "satinal" | null>(null);
   const [benimIlanlarim, setBenimIlanlarim] = useState<any[]>([]);
@@ -24,27 +27,48 @@ export default function Home() {
   const [siparisForm, setSiparisForm] = useState({ adSoyad: "", telefon: "", adres: "", not: "", odemeYontemi: "kredi_karti" });
   const [kabulSozlesme, setKabulSozlesme] = useState(false);
   const [kabulYasalZirh, setKabulYasalZirh] = useState(false);
-  
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null);
   const [videoModalBaslik, setVideoModalBaslik] = useState("");
 
   const sektorler = [
-    { ad: "Elektronik", icon: "📱" }, { ad: "Emlak", icon: "🏠" },
-    { ad: "Araç", icon: "🚗" }, { ad: "Moda", icon: "👕" },
-    { ad: "Mobilya", icon: "🛋️" }, { ad: "Hobi", icon: "🎸" },
-    { ad: "Makine", icon: "⚙️" }, { ad: "Antika", icon: "🏺" },
-    { ad: "Petshop", icon: "🐾" }, { ad: "Oyun", icon: "🎮" }
+    { ad: "Elektronik", degisim: "+4.2", emoji: "💻" }, { ad: "Emlak", degisim: "+1.8", emoji: "🏠" },
+    { ad: "Araç", degisim: "-2.4", emoji: "🚗" }, { ad: "2. El", degisim: "+0.5", emoji: "♻️" },
+    { ad: "Sıfır Ürünler", degisim: "+6.1", emoji: "✨" }, { ad: "Mobilya", degisim: "-1.1", emoji: "🪑" },
+    { ad: "Makine", degisim: "+3.3", emoji: "⚙️" }, { ad: "Tekstil", degisim: "-0.9", emoji: "👕" },
+    { ad: "Oyuncak", degisim: "+1.2", emoji: "🧸" }, { ad: "El Sanatları", degisim: "+12.4", emoji: "🎨" },
+    { ad: "Kitap", degisim: "-0.4", emoji: "📚" }, { ad: "Antika Eserler", degisim: "+15.8", emoji: "🏺" },
+    { ad: "Kırtasiye", degisim: "+0.2", emoji: "📎" }, { ad: "Doğal Ürünler", degisim: "+2.5", emoji: "🌿" },
+    { ad: "Kozmetik", degisim: "-3.2", emoji: "💄" }, { ad: "Petshop", degisim: "+1.1", emoji: "🐾" },
+    { ad: "Oyun/Konsol", degisim: "+8.7", emoji: "🎮" }
   ];
+
+  useEffect(() => {
+    try {
+      const bozukVeri = localStorage.getItem('atakasa_sepet');
+      if (bozukVeri) JSON.parse(bozukVeri);
+    } catch {
+      localStorage.removeItem('atakasa_sepet');
+    }
+  }, []);
 
   useEffect(() => {
     const veriCek = async () => {
       try {
-        const res = await fetch("/api/varliklar?limit=50");
+        const res = await fetch("/api/varliklar?limit=20", { next: { revalidate: 30 } } as any);
         const data = await res.json();
-        const liste = Array.isArray(data) ? data : data.data || [];
+        const liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
         setIlanlar(liste);
-      } catch (err) { console.error(err); } 
-      finally { setLoading(false); }
+        setLoading(false);
+        if (liste.length === 20) {
+          const res2 = await fetch("/api/varliklar?limit=200&skip=20");
+          const data2 = await res2.json();
+          const liste2 = Array.isArray(data2) ? data2 : [];
+          if (liste2.length > 0) setIlanlar(prev => [...prev, ...liste2]);
+        }
+      } catch (err) {
+        console.error("Veri çekme hatası:", err);
+        setLoading(false);
+      }
     };
     veriCek();
   }, []);
@@ -53,300 +77,790 @@ export default function Home() {
     if (session?.user?.email && ilanlar.length > 0) {
       const kEmail = session.user.email.toLowerCase();
       setBenimIlanlarim(ilanlar.filter((i: any) => {
-        const sEmail = (i.satici?.email || i.satici || "").toString().toLowerCase();
+        const sEmail = (i.satici?.email || i.sellerEmail || i.satici || "").toString().toLowerCase();
         return sEmail === kEmail;
       }));
     }
   }, [session, ilanlar]);
 
-  const isVideo = useCallback((url: string) => !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm')), []);
-  
-  const getGorsel = useCallback((ilan: any) => {
-    const url = ilan.resimler?.[0] || ilan.images?.[0] || ilan.image || "";
-    if (isVideo(url) && url.includes("cloudinary.com")) {
-      return url.replace(/\.(mp4|webm|mov)$/i, ".jpg");
-    }
-    return url || "https://placehold.co/600x400/eeeeee/999999?text=Gorsel+Yok";
-  }, [isVideo]);
+  const isVideo = useCallback((url: string) =>
+    !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video')), []);
+
+  const getIlkMedya = useCallback((ilan: any) =>
+    ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/600x400/1e3a5f/c9a84c?text=At+Takasa", []);
 
   const filtrelenmisIlanlar = useMemo(() => {
     let liste = [...ilanlar];
-    if (searchTerm) liste = liste.filter(i => i.baslik?.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (searchTerm) liste = liste.filter(i =>
+      (i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (i.aciklama || "").toLowerCase().includes(searchTerm.toLowerCase())
+    );
     if (aktifKategori !== "Hepsi") liste = liste.filter(i => i.kategori === aktifKategori);
-    if (aktifSehir !== "Tüm Şehirler") liste = liste.filter(i => i.sehir === aktifSehir);
+    if (aktifSehir !== "Tüm Şehirler") liste = liste.filter(i => (i.sehir || "").toUpperCase() === aktifSehir.toUpperCase());
+    if (minFiyat) liste = liste.filter(i => Number(i.fiyat) >= Number(minFiyat));
+    if (maxFiyat) liste = liste.filter(i => Number(i.fiyat) <= Number(maxFiyat));
+    if (sadeceTakaslik) liste = liste.filter(i => i.takasIstegi);
+    switch (aktifAltFiltre) {
+      case "En Çok Fiyatı Düşenler": liste.sort((a, b) => (a.degisimYuzdesi || 0) - (b.degisimYuzdesi || 0)); break;
+      case "En Çok Yükselenler": liste.sort((a, b) => (b.degisimYuzdesi || 0) - (a.degisimYuzdesi || 0)); break;
+      case "En Çok Takas Edilenler": liste.sort((a, b) => (b.takasTeklifiSayisi || 0) - (a.takasTeklifiSayisi || 0)); break;
+      default: liste.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
     return liste;
-  }, [ilanlar, searchTerm, aktifKategori, aktifSehir]);
+  }, [ilanlar, searchTerm, aktifKategori, aktifSehir, minFiyat, maxFiyat, sadeceTakaslik, aktifAltFiltre]);
 
-  const openModal = (ilan: any, tur: "takas" | "satinal") => {
+  const openModal = useCallback((ilan: any, tur: "takas" | "satinal") => {
     if (!session) return router.push("/giris");
+    const saticiEmail = (ilan.satici?.email || ilan.sellerEmail || "").toLowerCase();
+    if (saticiEmail === session.user?.email?.toLowerCase()) return alert("Kendi ilanınızla işlem yapamazsınız.");
     setSeciliIlan(ilan); setModalTuru(tur);
+    setKabulSozlesme(false); setKabulYasalZirh(false);
+  }, [session, router]);
+
+  const closeModal = useCallback(() => {
+    setSeciliIlan(null); setModalTuru(null); setSecilenBenimIlanim(""); setEklenecekNakit("");
+  }, []);
+
+  const handleSepeteEkle = useCallback((ilan: any) => {
+    try {
+      const mevcutSepet = JSON.parse(localStorage.getItem('atakasa_sepet') || '[]');
+      const urunId = ilan._id || ilan.id;
+      if (mevcutSepet.find((item: any) => item.id === urunId)) return alert("Bu ürün zaten sepetinizde.");
+      mevcutSepet.push({
+        id: urunId, baslik: ilan.baslik, fiyat: Number(ilan.fiyat),
+        resim: ilan.resimler?.[0] || "https://placehold.co/150x150/1e3a5f/c9a84c?text=At+Takasa",
+        saticiMail: ilan.satici?.email || ilan.sellerEmail || ""
+      });
+      localStorage.setItem('atakasa_sepet', JSON.stringify(mevcutSepet));
+      alert("Ürün sepete eklendi!");
+    } catch {
+      localStorage.removeItem('atakasa_sepet');
+      alert("Önbellek temizlendi, tekrar deneyin.");
+    }
+  }, []);
+
+  const handleTakasGonder = async () => {
+    if (!secilenBenimIlanim) return alert("Lütfen takas edeceğiniz ürününüzü seçin.");
+    const [id, baslik] = secilenBenimIlanim.split("|");
+    try {
+      const res = await fetch("/api/takas", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aliciEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail,
+          hedefIlanId: seciliIlan._id, hedefIlanBaslik: seciliIlan.baslik,
+          hedefIlanFiyat: seciliIlan.fiyat, teklifEdilenIlanId: id,
+          teklifEdilenIlanBaslik: baslik, eklenenNakit: eklenecekNakit || 0, durum: "bekliyor"
+        })
+      });
+      if (res.ok) { alert("Takas teklifiniz iletildi!"); closeModal(); }
+      else { const err = await res.json(); alert(`Hata: ${err.error}`); }
+    } catch { alert("Bağlantı hatası."); }
   };
 
-  const handleSepeteEkle = (e: any, ilan: any) => {
-    e.stopPropagation();
-    alert("Ürün sepetinize eklendi! 🛒");
+  const handleSiparisTamamla = async () => {
+    if (!siparisForm.adSoyad || !siparisForm.adres || !siparisForm.telefon) return alert("Lütfen teslimat bilgilerini eksiksiz doldurun.");
+    if (!kabulSozlesme || !kabulYasalZirh) return alert("Devam etmek için sözleşmeleri onaylamalısınız.");
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId: seciliIlan._id, sellerEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail,
+          adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon,
+          adres: siparisForm.adres, not: siparisForm.not,
+          odemeYontemi: siparisForm.odemeYontemi, fiyat: seciliIlan.fiyat, durum: "bekliyor"
+        })
+      });
+      if (res.ok) { alert("Siparişiniz alındı! Panelinizden takip edebilirsiniz."); closeModal(); }
+      else { alert("Sipariş alınamadı, tekrar deneyin."); }
+    } catch { alert("Bağlantı hatası."); }
   };
 
-  return (
-    <div className="min-h-screen bg-[#F9FAFB] text-[#111827] font-sans selection:bg-blue-600 selection:text-white">
-      
-      {/* ── ÜST NAVİGASYON (GÜVEN VEREN BAR) ── */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between gap-4">
-          <div className="text-2xl font-black text-blue-600 tracking-tighter flex items-center gap-1 cursor-pointer shrink-0" onClick={() => router.push('/')}>
-            AT<span className="text-gray-900">TAKASA</span>
-          </div>
-          
-          <div className="flex-1 relative max-w-2xl hidden md:block">
-            <input 
-              type="text" 
-              placeholder="Marka, ürün veya kategori ara..." 
-              className="w-full bg-gray-100 border-transparent rounded-2xl py-3 pl-12 pr-4 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm font-medium"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          </div>
+  const BorsaKarti = React.memo(({ ilan }: { ilan: any }) => {
+    const ilkMedya = getIlkMedya(ilan);
+    const videoVar = isVideo(ilkMedya);
+    const pozitif = (ilan.degisimYuzdesi || 0) >= 0;
 
-          <div className="flex items-center gap-2 md:gap-4">
-            <button onClick={() => router.push('/sepet')} className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors relative group">
-              <ShoppingCart size={22} className="text-gray-700 group-hover:text-blue-600" />
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold border-2 border-white">0</span>
-            </button>
-            <button 
-              onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')}
-              className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 whitespace-nowrap"
-            >
-              + İlan Ver
-            </button>
-          </div>
-        </div>
-      </header>
+    const handleShare = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const shareUrl = `${window.location.origin}/varlik/${ilan._id}`;
+      const shareData = { title: `${ilan.baslik} | At Takasa`, text: `Bu ilana bakmalısın!`, url: shareUrl };
+      if (navigator.share) {
+        try { await navigator.share(shareData); } catch { }
+      } else {
+        navigator.clipboard.writeText(shareUrl);
+        alert("İlan linki kopyalandı!");
+      }
+    };
 
-      {/* ── KATEGORİ REHBERİ ── */}
-      <nav className="bg-white border-b border-gray-100 overflow-x-auto no-scrollbar scroll-smooth">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex gap-3">
-          <button 
-            onClick={() => setAktifKategori("Hepsi")}
-            className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all uppercase tracking-wider ${aktifKategori === "Hepsi" ? 'bg-gray-900 text-white shadow-md' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-          >
-            🔥 Tüm Fırsatlar
-          </button>
-          {sektorler.map(s => (
-            <button 
-              key={s.ad} 
-              onClick={() => setAktifKategori(s.ad)}
-              className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 uppercase tracking-wider ${aktifKategori === s.ad ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-            >
-              <span>{s.icon}</span> {s.ad}
-            </button>
-          ))}
-        </div>
-      </nav>
+    return (
+      <div className="product-card" itemScope itemType="https://schema.org/Product">
+        <meta itemProp="name" content={`${ilan.baslik} | At Takasa`} />
+        <meta itemProp="description" content={ilan.aciklama || "Ürün"} />
 
-      {/* ── ANA VİTRİN ── */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        
-        {/* 🚀 ÖZEL BANNER (İştah Açıcı) */}
-        <div className="mb-12 relative rounded-[2.5rem] overflow-hidden bg-[#0F172A] text-white min-h-[350px] flex items-center shadow-2xl">
-          <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-          <div className="relative z-10 p-8 md:p-16 max-w-2xl">
-            <div className="inline-flex items-center gap-2 bg-blue-600/20 text-blue-400 px-4 py-2 rounded-full text-xs font-black mb-6 border border-blue-500/30 uppercase tracking-widest">
-              <TrendingUp size={14} /> Türkiye'nin En Büyük Takas Ağı
-            </div>
-            <h1 className="text-4xl md:text-6xl font-black leading-[1.1] mb-6 italic tracking-tighter">
-              ZARARINA SATMA, <br/> <span className="text-blue-500">DEĞERİNDE TAKASLA!</span>
-            </h1>
-            <p className="text-gray-400 mb-8 text-lg font-medium leading-relaxed">Ürününü nakit paraya hapsetme. İhtiyacın olanla hemen takasla, güvenli ticaretin keyfini sür.</p>
-            <div className="flex flex-wrap gap-4">
-              <button className="bg-white text-gray-900 px-8 py-4 rounded-2xl font-black text-sm hover:scale-105 transition-transform">Hemen Keşfet</button>
-              <button className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-white/20 transition-all">Sistem Nasıl Çalışır?</button>
-            </div>
-          </div>
-          <div className="absolute right-[-5%] bottom-[-10%] opacity-10 text-[25rem] font-black italic select-none">AT</div>
+        <div className={`change-badge ${pozitif ? 'change-up' : 'change-down'}`}>
+          {pozitif ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+          %{Math.abs(ilan.degisimYuzdesi || 0)}
         </div>
 
-        {/* BAŞLIK VE FİLTRE PANELİ */}
-        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
-          <div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-              {aktifKategori === "Hepsi" ? "Bugünün Fırsatları" : aktifKategori}
-              <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></div>
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-              </div>
-            </h2>
-            <p className="text-gray-500 font-medium mt-1">İlgini çekebilecek {filtrelenmisIlanlar.length} ilan bulundu.</p>
-          </div>
-          
-          <div className="flex items-center gap-3 w-full md:w-auto">
-             <div className="relative flex-1 md:flex-none">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600" size={16} />
-                <select 
-                  value={aktifSehir} 
-                  onChange={(e) => setAktifSehir(e.target.value)}
-                  className="bg-white border border-gray-200 text-sm font-bold pl-11 pr-8 py-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer shadow-sm w-full"
-                >
-                  {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-             </div>
-            <button onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)} className="bg-white border border-gray-200 p-3.5 rounded-2xl hover:bg-gray-50 transition-colors shadow-sm text-gray-700">
-              <Filter size={20} />
-            </button>
-          </div>
-        </div>
-
-        {/* ÜRÜN KARTLARI (PREMIUM GRID) */}
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[1,2,3,4,5,6,7,8].map(n => (
-              <div key={n} className="h-[450px] bg-white rounded-[2.5rem] border border-gray-100 animate-pulse shadow-sm" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-            {filtrelenmisIlanlar.map((ilan) => (
-              <div 
-                key={ilan._id}
-                onClick={() => router.push(`/varlik/${ilan._id}`)}
-                className="group bg-white rounded-[2.5rem] overflow-hidden hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 cursor-pointer flex flex-col relative border border-gray-100"
-              >
-                {/* Ürün Görseli */}
-                <div className="relative h-72 overflow-hidden bg-gray-50">
-                  <img 
-                    src={getGorsel(ilan)} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                    alt={ilan.baslik}
-                  />
-                  
-                  {/* Etiketler */}
-                  <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    <span className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black text-gray-800 shadow-xl flex items-center gap-1 uppercase tracking-tighter">
-                      <ShieldCheck size={12} className="text-green-500" /> Onaylı Ürün
-                    </span>
-                  </div>
-
-                  {isVideo(ilan.resimler?.[0]) && (
-                    <div className="absolute top-4 right-4 bg-blue-600 text-white p-2.5 rounded-full shadow-lg">
-                      <Play size={14} fill="currentColor" />
-                    </div>
-                  )}
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                </div>
-
-                {/* Ürün Detayı */}
-                <div className="p-7 flex flex-col flex-1">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-blue-600 text-[10px] font-black uppercase tracking-[0.15em] bg-blue-50 px-3 py-1 rounded-lg">
-                      {ilan.kategori || "Genel"}
-                    </span>
-                    <span className="text-gray-400 text-[10px] font-bold flex items-center gap-1">
-                      <MapPin size={10} /> {ilan.sehir || "Türkiye"}
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-gray-900 font-bold text-xl mb-4 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors italic">
-                    {ilan.baslik}
-                  </h3>
-
-                  <div className="mt-auto">
-                    <div className="flex items-baseline gap-1 mb-6">
-                      <span className="text-3xl font-black text-gray-900 tracking-tighter">
-                        {Number(ilan.fiyat).toLocaleString()}
-                      </span>
-                      <span className="text-lg font-black text-blue-600 italic">₺</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); openModal(ilan, "takas") }}
-                        className="bg-gray-50 text-gray-900 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2 border border-gray-100"
-                      >
-                        <ArrowRightLeft size={14} /> Takasla
-                      </button>
-                      <button 
-                        onClick={(e) => handleSepeteEkle(e, ilan)}
-                        className="bg-gray-900 text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-gray-200"
-                      >
-                        <ShoppingCart size={14} /> Satın Al
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hızlı Aksiyonlar */}
-                <button 
-                  onClick={(e) => { e.stopPropagation(); alert("İlan bağlantısı kopyalandı!"); }}
-                  className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-600 hover:text-white transform translate-y-2 group-hover:translate-y-0"
-                >
-                  <Share2 size={16} />
-                </button>
-              </div>
-            ))}
+        {videoVar && (
+          <div className="video-badge">
+            <Play size={8} fill="currentColor" /> VİDEO
           </div>
         )}
 
-        {/* BOŞ DURUM MESAJI */}
-        {!loading && filtrelenmisIlanlar.length === 0 && (
-          <div className="py-32 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
-            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">🔍</div>
-            <h3 className="text-2xl font-black text-gray-900 uppercase">Aradığın Ürünü Bulamadık</h3>
-            <p className="text-gray-500 font-medium max-w-sm mx-auto mt-2">Farklı bir anahtar kelime deneyebilir veya kategorileri gezebilirsin.</p>
-            <button onClick={() => {setAktifKategori("Hepsi"); setSearchTerm("");}} className="mt-8 bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:scale-105 transition-all">Tüm İlanlara Dön</button>
+        <div
+          className="card-media"
+          onClick={() => {
+            if (videoVar) { setVideoModalUrl(ilkMedya); setVideoModalBaslik(ilan.baslik || ""); }
+            else { router.push(`/varlik/${ilan._id}`); }
+          }}
+        >
+          {videoVar ? (
+            <div className="video-thumb">
+              {ilkMedya.includes("res.cloudinary.com") ? (
+                <img src={ilkMedya.replace(/\.(mp4|webm|mov)$/i, ".jpg")} className="thumb-img" alt="Video Kapak" />
+              ) : (
+                <video src={`${ilkMedya}#t=0.1`} className="thumb-img" muted playsInline preload="metadata" />
+              )}
+              <div className="play-overlay">
+                <div className="play-btn">
+                  <Play size={22} fill="white" className="ml-0.5" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <img
+              src={ilkMedya}
+              loading="lazy"
+              decoding="async"
+              className="card-img"
+              alt={ilan.baslik || "Ürün"}
+              itemProp="image"
+              onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/600x400/1e3a5f/c9a84c?text=At+Takasa"; }}
+            />
+          )}
+          <div className="city-tag">📍 {ilan.sehir || "TÜRKİYE"}</div>
+        </div>
+
+        <div className="card-body">
+          <span className="category-label">{ilan.kategori || "Genel"}</span>
+          <h3 className="card-title" onClick={() => router.push(`/varlik/${ilan._id}`)}>
+            {ilan.baslik}
+          </h3>
+
+          <div className="price-row" itemProp="offers" itemScope itemType="https://schema.org/Offer">
+            <span className="price-main">
+              <span itemProp="price">{Number(ilan.fiyat).toLocaleString()}</span>
+              <meta itemProp="priceCurrency" content="TRY" />
+              <span className="price-currency"> ₺</span>
+            </span>
+            <span className="card-date">{new Date(ilan.createdAt).toLocaleDateString('tr-TR')}</span>
+          </div>
+
+          <div className="card-actions">
+            <div className="action-row-top">
+              <button onClick={handleShare} className="btn-icon" title="Paylaş">
+                <Share2 size={15} />
+              </button>
+              <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="btn-outline flex-1">
+                İncele
+              </button>
+              <button onClick={() => handleSepeteEkle(ilan)} className="btn-cart">
+                <ShoppingCart size={15} />
+              </button>
+            </div>
+            <div className="action-row-bottom">
+              <button onClick={() => openModal(ilan, "takas")} className="btn-swap">
+                🔄 Takas Teklifi
+              </button>
+              <button onClick={() => openModal(ilan, "satinal")} className="btn-buy">
+                Satın Al
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  });
+  BorsaKarti.displayName = "BorsaKarti";
+
+  return (
+    <div className="at-root">
+      <div className="bg-texture" aria-hidden />
+
+      {/* Trust banner */}
+      <div className="trust-bar">
+        <div className="trust-bar-inner">
+          <span className="trust-item"><Shield size={13} /> Güvenli Ödeme</span>
+          <span className="trust-divider" />
+          <span className="trust-item"><Star size={13} /> 50.000+ Başarılı İşlem</span>
+          <span className="trust-divider" />
+          <span className="trust-item">🛡️ Alıcı & Satıcı Koruması</span>
+          <span className="trust-divider" />
+          <span className="trust-item">📦 Hızlı Teslimat</span>
+        </div>
+      </div>
+
+      {/* Search & Nav */}
+      <div className="top-nav">
+        <div className="nav-inner">
+          <div className="search-wrap">
+            <Search size={17} className="search-icon" />
+            <input
+              className="search-input"
+              placeholder="Ne arıyorsunuz? Ürün, marka, kategori..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="nav-actions">
+            <button
+              onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
+              className={`btn-filter ${filtreMenusuAcik ? 'active' : ''}`}
+            >
+              <SlidersHorizontal size={15} />
+              Filtrele
+              <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? 'open' : ''}`} />
+            </button>
+            <button onClick={() => router.push('/sepet')} className="btn-sepet">
+              <ShoppingCart size={15} />
+              Sepet
+            </button>
+            <button
+              onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')}
+              className="btn-primary"
+            >
+              <Zap size={15} />
+              İlan Ver
+            </button>
+          </div>
+        </div>
+
+        {filtreMenusuAcik && (
+          <div className="filter-panel">
+            <div className="filter-grid">
+              <div className="filter-field">
+                <label className="filter-label">Şehir / Bölge</label>
+                <select value={aktifSehir} onChange={(e) => setAktifSehir(e.target.value)} className="filter-select">
+                  {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="filter-field">
+                <label className="filter-label">Min Fiyat (₺)</label>
+                <input type="number" placeholder="Örn: 1.000" value={minFiyat} onChange={(e) => setMinFiyat(e.target.value)} className="filter-input" />
+              </div>
+              <div className="filter-field">
+                <label className="filter-label">Max Fiyat (₺)</label>
+                <input type="number" placeholder="Örn: 50.000" value={maxFiyat} onChange={(e) => setMaxFiyat(e.target.value)} className="filter-input" />
+              </div>
+              <div className="filter-field flex items-end">
+                <button onClick={() => setSadeceTakaslik(!sadeceTakaslik)} className={`swap-toggle ${sadeceTakaslik ? 'active' : ''}`}>
+                  🔄 {sadeceTakaslik ? 'Sadece Takaslıklar' : 'Takas Durumu'}
+                </button>
+              </div>
+            </div>
+            <div className="filter-footer">
+              <button onClick={() => { setAktifSehir("Tüm Şehirler"); setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false); }} className="btn-reset">Sıfırla</button>
+              <button onClick={() => setFiltreMenusuAcik(false)} className="btn-apply">Filtrele</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Kategoriler */}
+      <div className="cat-strip">
+        <div className="cat-inner">
+          <button
+            onClick={() => { setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar"); }}
+            className={`cat-btn ${aktifKategori === "Hepsi" ? 'active' : ''}`}
+          >
+            🌐 Tümü
+          </button>
+          {sektorler.map(s => (
+            <button
+              key={s.ad}
+              onClick={() => { setAktifKategori(s.ad); setAktifAltFiltre("Yeni İlanlar"); }}
+              className={`cat-btn ${aktifKategori === s.ad ? 'active' : ''}`}
+            >
+              {s.emoji} {s.ad}
+              <span className={`cat-pct ${Number(s.degisim) >= 0 ? 'up' : 'down'}`}>{s.degisim}%</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Alt filtreler */}
+      {aktifKategori !== "Hepsi" && (
+        <div className="sub-filter-bar">
+          {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map(f => (
+            <button
+              key={f}
+              onClick={() => setAktifAltFiltre(f)}
+              className={`sub-filter-btn ${aktifAltFiltre === f ? 'active' : ''}`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Ana içerik */}
+      <main className="main-content">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">
+              {aktifKategori === "Hepsi" ? "Tüm İlanlar" : aktifKategori}
+            </h2>
+            <p className="section-sub">
+              {filtrelenmisIlanlar.length} ilan listeleniyor
+              {aktifKategori !== "Hepsi" && ` · ${aktifAltFiltre}`}
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="product-grid">
+            {[1,2,3,4,5,6,7,8].map(n => (
+              <div key={n} className="skeleton-card">
+                <div className="skeleton-img" />
+                <div className="skeleton-body">
+                  <div className="skeleton-line short" />
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line medium" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtrelenmisIlanlar.length > 0 ? (
+          <div className="product-grid">
+            {filtrelenmisIlanlar.map((ilan) => <BorsaKarti key={ilan._id} ilan={ilan} />)}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <span className="empty-icon">🔍</span>
+            <p className="empty-title">Bu kriterlerde ilan bulunamadı.</p>
+            <p className="empty-sub">Farklı filtreler deneyin veya arama terimini değiştirin.</p>
           </div>
         )}
       </main>
 
-      {/* ── FOOTER (PROFESYONEL BİTİŞ) ── */}
-      <footer className="bg-white border-t border-gray-200 mt-24 pt-20 pb-10">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="text-3xl font-black text-blue-600 mb-10 tracking-tighter">AT<span className="text-gray-900">TAKASA</span></div>
-          <div className="flex flex-wrap justify-center gap-x-12 gap-y-6 mb-16 text-sm font-black text-gray-500 uppercase tracking-widest">
-            <a href="#" className="hover:text-blue-600 transition-colors">Kurumsal</a>
-            <a href="#" className="hover:text-blue-600 transition-colors">Güvenli Ticaret</a>
-            <a href="#" className="hover:text-blue-600 transition-colors">Sözleşmeler</a>
-            <a href="#" className="hover:text-blue-600 transition-colors">Yardım Merkezi</a>
-            <a href="#" className="hover:text-blue-600 transition-colors">İletişim</a>
-          </div>
-          <div className="flex justify-center gap-4 mb-10">
-            <div className="w-12 h-8 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center font-bold text-[8px] text-gray-400">VISA</div>
-            <div className="w-12 h-8 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center font-bold text-[8px] text-gray-400">MASTER</div>
-            <div className="w-12 h-8 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center font-bold text-[8px] text-gray-400">TROY</div>
-          </div>
-          <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.3em]">© 2026 ATTAKASA.COM - Değerinde Takasın Adresi</p>
-        </div>
-      </footer>
-
-      {/* VİDEO MODAL (SİBER ŞIKLIK) */}
-      {videoModalUrl && (
-        <div className="fixed inset-0 z-[9999] bg-gray-900/95 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setVideoModalUrl(null)}>
-          <div className="relative w-full max-w-4xl bg-black rounded-[2.5rem] overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setVideoModalUrl(null)} className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-10 bg-white/10 p-2 rounded-full backdrop-blur-md">✕</button>
-            <video src={`${videoModalUrl}#t=0.1`} controls autoPlay className="w-full aspect-video" />
-            <div className="p-8 bg-black">
-              <p className="text-white font-black text-xl italic uppercase tracking-tight">{videoModalBaslik}</p>
-              <button
-                onClick={() => {
-                  const ilan = ilanlar.find(i => getGorsel(i).includes(videoModalUrl!.split('.').slice(0, -1).join('.')));
-                  if (ilan) { setVideoModalUrl(null); router.push(`/varlik/${ilan._id}`); }
-                }}
-                className="mt-4 bg-blue-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest w-full"
-              >
-                Ürünü İncele
-              </button>
+      {/* TAKAS / SATIN AL MODALLARI */}
+      {seciliIlan && modalTuru && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <button onClick={closeModal} className="modal-close">✕</button>
+            <div className="modal-header">
+              <img src={getIlkMedya(seciliIlan)} className="modal-img" alt="Ürün" loading="lazy" />
+              <div className="modal-info">
+                <span className="modal-type-label">{modalTuru === 'takas' ? 'Takas Teklifi' : 'Güvenli Satın Alma'}</span>
+                <h3 className="modal-title">{seciliIlan.baslik}</h3>
+                <p className="modal-price">{Number(seciliIlan.fiyat).toLocaleString()} ₺</p>
+              </div>
             </div>
+
+            {modalTuru === "takas" ? (
+              <div className="modal-form">
+                <label className="form-label">Vereceğiniz Ürünü Seçin</label>
+                <select value={secilenBenimIlanim} onChange={(e) => setSecilenBenimIlanim(e.target.value)} className="form-select">
+                  <option value="">-- İlanlarınızdan seçin --</option>
+                  {benimIlanlarim.map(b => <option key={b._id} value={`${b._id}|${b.baslik}`}>{b.baslik}</option>)}
+                </select>
+                <label className="form-label mt-4">Üste Nakit Ekle (₺) — İsteğe Bağlı</label>
+                <input type="number" placeholder="Örn: 5.000" value={eklenecekNakit} onChange={(e) => setEklenecekNakit(e.target.value)} className="form-input" />
+                <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim} className="btn-modal-primary mt-6 disabled:opacity-40">
+                  Takas Teklifini Gönder →
+                </button>
+              </div>
+            ) : (
+              <div className="modal-form">
+                <div className="price-summary">
+                  <span>Ödenecek Tutar</span>
+                  <span className="price-big">{Number(seciliIlan.fiyat).toLocaleString()} ₺</span>
+                </div>
+                <input type="text" placeholder="Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="form-input" />
+                <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e) => setSiparisForm({...siparisForm, telefon: e.target.value})} className="form-input" />
+                <textarea placeholder="Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="form-textarea" />
+                <textarea placeholder="Sipariş Notu (İsteğe Bağlı)" value={siparisForm.not} onChange={(e) => setSiparisForm({...siparisForm, not: e.target.value})} className="form-textarea short" />
+                <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="form-select">
+                  <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
+                  <option value="havale">🏦 Havale / EFT</option>
+                  <option value="kapida_odeme">📦 Kapıda Ödeme</option>
+                </select>
+                <div className="legal-box">
+                  <label className="legal-check">
+                    <input type="checkbox" checked={kabulSozlesme} onChange={(e) => setKabulSozlesme(e.target.checked)} />
+                    <span>Mesafeli Satış Sözleşmesi'ni okudum ve kabul ediyorum.</span>
+                  </label>
+                  <label className="legal-check">
+                    <input type="checkbox" checked={kabulYasalZirh} onChange={(e) => setKabulYasalZirh(e.target.checked)} />
+                    <span><strong>🛡️ Alıcı Güvencesi:</strong> Teslimat tamamlanana kadar ödeme havuzda bekler. Onaylıyorum.</span>
+                  </label>
+                </div>
+                <button onClick={handleSiparisTamamla} className="btn-modal-primary">
+                  ✓ Güvenli Ödemeyi Tamamla
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* VİDEO MODAL */}
+      {videoModalUrl && (
+        <div className="modal-overlay" onClick={() => setVideoModalUrl(null)}>
+          <div className="video-modal-box" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setVideoModalUrl(null)} className="modal-close top-video">✕</button>
+            <video src={`${videoModalUrl}#t=0.1`} controls autoPlay className="video-player" />
+            <p className="video-title">{videoModalBaslik}</p>
+            <button
+              onClick={() => {
+                const ilan = ilanlar.find(i => getIlkMedya(i) === videoModalUrl);
+                if (ilan) { setVideoModalUrl(null); router.push(`/varlik/${ilan._id}`); }
+              }}
+              className="btn-modal-primary mt-3"
+            >
+              İlana Git →
+            </button>
           </div>
         </div>
       )}
 
       <style jsx global>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+        :root {
+          --navy: #0f2540;
+          --navy-mid: #1a3a5c;
+          --navy-light: #234875;
+          --gold: #c9a84c;
+          --gold-light: #e2c97e;
+          --gold-pale: #f5edd6;
+          --cream: #faf8f4;
+          --white: #ffffff;
+          --text: #1a2740;
+          --text-mid: #4a5e78;
+          --text-soft: #8097b1;
+          --border: #dce6f0;
+          --border-light: #eef3f8;
+          --success: #1a7a4a;
+          --success-bg: #eaf5ee;
+          --danger: #c0392b;
+          --danger-bg: #fdecea;
+          --shadow-sm: 0 1px 4px rgba(15,37,64,0.06);
+          --shadow-md: 0 4px 16px rgba(15,37,64,0.1);
+          --shadow-lg: 0 8px 32px rgba(15,37,64,0.14);
+          --radius: 14px;
+          --radius-lg: 20px;
+          --radius-xl: 28px;
         }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: 'DM Sans', sans-serif;
+          background: var(--cream);
+          color: var(--text);
+          -webkit-font-smoothing: antialiased;
+        }
+
+        .at-root { min-height: 100vh; background: var(--cream); position: relative; }
+
+        .bg-texture {
+          position: fixed; inset: 0; pointer-events: none; z-index: 0;
+          background-image:
+            radial-gradient(ellipse 80% 50% at 10% 0%, rgba(201,168,76,0.07) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 90% 100%, rgba(15,37,64,0.05) 0%, transparent 60%);
+        }
+
+        /* TRUST BAR */
+        .trust-bar { background: var(--navy); padding: 8px 0; position: relative; z-index: 10; }
+        .trust-bar-inner {
+          max-width: 1280px; margin: 0 auto; padding: 0 24px;
+          display: flex; align-items: center; gap: 16px;
+          overflow-x: auto; scrollbar-width: none;
+        }
+        .trust-bar-inner::-webkit-scrollbar { display: none; }
+        .trust-item {
+          display: flex; align-items: center; gap: 5px;
+          color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 500;
+          white-space: nowrap; letter-spacing: 0.02em;
+        }
+        .trust-item svg { color: var(--gold-light); flex-shrink: 0; }
+        .trust-divider { width: 1px; height: 14px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+
+        /* TOP NAV */
+        .top-nav {
+          background: var(--white); border-bottom: 1px solid var(--border);
+          padding: 12px 24px; position: sticky; top: 0; z-index: 100;
+          box-shadow: var(--shadow-sm);
+        }
+        .nav-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+        .search-wrap { flex: 1; position: relative; display: flex; align-items: center; }
+        .search-icon { position: absolute; left: 14px; color: var(--text-soft); pointer-events: none; }
+        .search-input {
+          width: 100%; padding: 10px 14px 10px 42px;
+          background: var(--cream); border: 1.5px solid var(--border);
+          border-radius: var(--radius); font-family: inherit; font-size: 13px;
+          color: var(--text); outline: none; transition: border-color 0.2s;
+        }
+        .search-input:focus { border-color: var(--navy-mid); background: var(--white); }
+        .search-input::placeholder { color: var(--text-soft); }
+        .nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        .btn-filter {
+          display: flex; align-items: center; gap: 6px; padding: 9px 16px;
+          border-radius: var(--radius); background: var(--cream); border: 1.5px solid var(--border);
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          color: var(--text-mid); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .btn-filter:hover { border-color: var(--navy-mid); color: var(--navy); }
+        .btn-filter.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+        .chevron { transition: transform 0.2s; }
+        .chevron.open { transform: rotate(180deg); }
+
+        .btn-sepet {
+          display: flex; align-items: center; gap: 6px; padding: 9px 16px;
+          border-radius: var(--radius); background: var(--cream); border: 1.5px solid var(--border);
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          color: var(--text-mid); cursor: pointer; transition: all 0.2s;
+        }
+        .btn-sepet:hover { border-color: var(--navy-mid); color: var(--navy); }
+
+        .btn-primary {
+          display: flex; align-items: center; gap: 6px; padding: 9px 20px;
+          border-radius: var(--radius); background: var(--gold); border: none;
+          font-family: inherit; font-size: 12px; font-weight: 700;
+          color: var(--navy); cursor: pointer; transition: all 0.2s;
+          white-space: nowrap; box-shadow: 0 2px 8px rgba(201,168,76,0.35);
+        }
+        .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(201,168,76,0.45); }
+
+        /* FILTER PANEL */
+        .filter-panel {
+          max-width: 1280px; margin: 12px auto 0;
+          background: var(--cream); border: 1.5px solid var(--border);
+          border-radius: var(--radius-lg); padding: 20px 24px;
+          animation: slideDown 0.2s ease;
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+        .filter-field { display: flex; flex-direction: column; gap: 6px; }
+        .filter-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-soft); }
+        .filter-select, .filter-input {
+          padding: 9px 12px; border-radius: var(--radius);
+          border: 1.5px solid var(--border); background: var(--white);
+          font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s;
+        }
+        .filter-select:focus, .filter-input:focus { border-color: var(--navy-mid); }
+        .swap-toggle {
+          width: 100%; padding: 9px 12px; border-radius: var(--radius);
+          border: 1.5px solid var(--border); background: var(--white);
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          color: var(--text-mid); cursor: pointer; transition: all 0.2s;
+        }
+        .swap-toggle.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+        .filter-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .btn-reset {
+          padding: 8px 20px; background: transparent; border: 1.5px solid var(--border);
+          border-radius: var(--radius); font-family: inherit; font-size: 12px; font-weight: 600;
+          color: var(--text-soft); cursor: pointer; transition: all 0.2s;
+        }
+        .btn-reset:hover { color: var(--text); border-color: var(--text-mid); }
+        .btn-apply {
+          padding: 8px 24px; background: var(--navy); border: none;
+          border-radius: var(--radius); font-family: inherit; font-size: 12px; font-weight: 700;
+          color: var(--white); cursor: pointer; transition: all 0.2s;
+        }
+        .btn-apply:hover { background: var(--navy-mid); }
+
+        /* CATEGORY STRIP */
+        .cat-strip { background: var(--white); border-bottom: 1px solid var(--border); position: relative; z-index: 50; }
+        .cat-inner {
+          max-width: 1280px; margin: 0 auto; padding: 10px 24px;
+          display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+        }
+        .cat-inner::-webkit-scrollbar { display: none; }
+        .cat-btn {
+          display: flex; align-items: center; gap: 5px; white-space: nowrap;
+          padding: 7px 14px; border-radius: 999px; border: 1.5px solid transparent;
+          background: transparent; font-family: inherit; font-size: 12px; font-weight: 500;
+          color: var(--text-mid); cursor: pointer; transition: all 0.15s;
+        }
+        .cat-btn:hover { background: var(--cream); border-color: var(--border); color: var(--text); }
+        .cat-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); font-weight: 600; box-shadow: 0 2px 8px rgba(15,37,64,0.2); }
+        .cat-pct { font-size: 10px; opacity: 0.6; }
+        .cat-pct.up { color: var(--success); opacity: 1; }
+        .cat-pct.down { color: var(--danger); opacity: 1; }
+
+        /* SUB FILTERS */
+        .sub-filter-bar {
+          background: var(--white); border-bottom: 1px solid var(--border-light);
+          display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+          padding: 8px 24px;
+        }
+        .sub-filter-bar::-webkit-scrollbar { display: none; }
+        .sub-filter-btn {
+          padding: 5px 14px; border-radius: 999px; background: transparent;
+          border: 1.5px solid transparent; font-family: inherit; font-size: 11px; font-weight: 500;
+          color: var(--text-soft); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+        }
+        .sub-filter-btn:hover { color: var(--text); }
+        .sub-filter-btn.active { background: rgba(15,37,64,0.07); border-color: var(--navy-mid); color: var(--navy); font-weight: 600; }
+
+        /* MAIN */
+        .main-content { max-width: 1280px; margin: 0 auto; padding: 32px 24px 64px; position: relative; z-index: 1; }
+        .section-header { margin-bottom: 24px; }
+        .section-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--navy); letter-spacing: -0.02em; margin-bottom: 4px; }
+        .section-sub { font-size: 13px; color: var(--text-soft); }
+
+        /* GRID */
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* PRODUCT CARD */
+        .product-card {
+          background: var(--white); border: 1.5px solid var(--border-light);
+          border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm);
+          display: flex; flex-direction: column; transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+          position: relative;
+        }
+        .product-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); border-color: rgba(201,168,76,0.4); }
+
+        .change-badge {
+          position: absolute; top: 12px; left: 12px; z-index: 10;
+          display: flex; align-items: center; gap: 3px; padding: 4px 9px; border-radius: 999px;
+          font-size: 10px; font-weight: 700; letter-spacing: 0.02em; backdrop-filter: blur(8px);
+        }
+        .change-up { background: rgba(26,122,74,0.12); color: #1a7a4a; border: 1px solid rgba(26,122,74,0.2); }
+        .change-down { background: rgba(192,57,43,0.1); color: #c0392b; border: 1px solid rgba(192,57,43,0.2); }
+
+        .video-badge {
+          position: absolute; top: 12px; right: 12px; z-index: 10;
+          display: flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px;
+          background: rgba(0,0,0,0.65); color: white; font-size: 9px; font-weight: 700;
+          letter-spacing: 0.06em; backdrop-filter: blur(6px);
+        }
+
+        .card-media { height: 220px; overflow: hidden; cursor: pointer; background: var(--border-light); position: relative; flex-shrink: 0; }
+        .card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+        .product-card:hover .card-img { transform: scale(1.04); }
+        .video-thumb { width: 100%; height: 100%; position: relative; }
+        .thumb-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.75; }
+        .play-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(15,37,64,0.15); }
+        .play-btn { width: 52px; height: 52px; border-radius: 50%; background: var(--navy); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(15,37,64,0.35); transition: transform 0.2s; }
+        .product-card:hover .play-btn { transform: scale(1.1); }
+
+        .city-tag {
+          position: absolute; bottom: 10px; right: 10px;
+          background: rgba(255,255,255,0.92); backdrop-filter: blur(6px);
+          color: var(--text-mid); font-size: 10px; font-weight: 600;
+          padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border);
+        }
+
+        .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
+        .category-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); display: block; margin-bottom: 5px; }
+        .card-title {
+          font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: var(--text);
+          line-height: 1.35; cursor: pointer; margin-bottom: 12px;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+          overflow: hidden; transition: color 0.15s;
+        }
+        .card-title:hover { color: var(--navy-mid); }
+
+        .price-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light); }
+        .price-main { font-size: 20px; font-weight: 700; color: var(--navy); letter-spacing: -0.03em; }
+        .price-currency { font-size: 14px; color: var(--gold); font-weight: 700; }
+        .card-date { font-size: 11px; color: var(--text-soft); }
+
+        .card-actions { display: flex; flex-direction: column; gap: 7px; margin-top: auto; }
+        .action-row-top, .action-row-bottom { display: flex; gap: 6px; }
+
+        .btn-icon { width: 36px; height: 36px; border-radius: var(--radius); flex-shrink: 0; background: var(--cream); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-soft); cursor: pointer; transition: all 0.15s; }
+        .btn-icon:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+        .btn-outline { padding: 8px 12px; border-radius: var(--radius); background: var(--cream); border: 1.5px solid var(--border); font-family: inherit; font-size: 11px; font-weight: 600; color: var(--text-mid); cursor: pointer; transition: all 0.15s; }
+        .btn-outline:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+        .btn-cart { width: 36px; height: 36px; border-radius: var(--radius); flex-shrink: 0; background: var(--cream); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-soft); cursor: pointer; transition: all 0.15s; }
+        .btn-cart:hover { background: var(--navy-light); color: var(--white); border-color: var(--navy-light); }
+
+        .btn-swap { flex: 1; padding: 9px 10px; border-radius: var(--radius); background: rgba(15,37,64,0.05); border: 1.5px solid rgba(15,37,64,0.12); font-family: inherit; font-size: 11px; font-weight: 600; color: var(--navy-mid); cursor: pointer; transition: all 0.15s; }
+        .btn-swap:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+        .btn-buy { flex: 1; padding: 9px 10px; border-radius: var(--radius); background: var(--gold); border: none; font-family: inherit; font-size: 11px; font-weight: 700; color: var(--navy); cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 6px rgba(201,168,76,0.3); }
+        .btn-buy:hover { background: var(--gold-light); box-shadow: 0 4px 12px rgba(201,168,76,0.45); }
+
+        .flex-1 { flex: 1; }
+
+        /* EMPTY STATE */
+        .empty-state { text-align: center; padding: 80px 24px; background: var(--white); border-radius: var(--radius-xl); border: 1.5px dashed var(--border); }
+        .empty-icon { font-size: 48px; display: block; margin-bottom: 16px; opacity: 0.5; }
+        .empty-title { font-size: 16px; font-weight: 600; color: var(--text-mid); margin-bottom: 6px; }
+        .empty-sub { font-size: 13px; color: var(--text-soft); }
+
+        /* SKELETON */
+        .skeleton-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: var(--radius-xl); overflow: hidden; }
+        .skeleton-img { height: 220px; background: linear-gradient(90deg, var(--border-light) 0%, var(--cream) 50%, var(--border-light) 100%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        .skeleton-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+        .skeleton-line { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--border-light) 0%, var(--cream) 50%, var(--border-light) 100%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        .skeleton-line.short { width: 40%; }
+        .skeleton-line.medium { width: 65%; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* MODALS */
+        .modal-overlay { position: fixed; inset: 0; z-index: 999; background: rgba(15,37,64,0.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.2s ease; }
+        .modal-box { background: var(--white); border-radius: var(--radius-xl); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; scrollbar-width: none; padding: 28px; position: relative; box-shadow: 0 24px 64px rgba(15,37,64,0.25); animation: slideUp 0.25s ease; }
+        .modal-box::-webkit-scrollbar { display: none; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-close { position: absolute; top: 18px; right: 18px; width: 32px; height: 32px; border-radius: 50%; background: var(--cream); border: 1.5px solid var(--border); color: var(--text-soft); cursor: pointer; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .modal-close:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+
+        .modal-header { display: flex; gap: 16px; padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1.5px solid var(--border-light); align-items: center; }
+        .modal-img { width: 80px; height: 80px; border-radius: var(--radius); object-fit: cover; border: 1.5px solid var(--border); flex-shrink: 0; }
+        .modal-type-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); display: block; margin-bottom: 4px; }
+        .modal-title { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 6px; padding-right: 40px; }
+        .modal-price { font-size: 18px; font-weight: 700; color: var(--navy); letter-spacing: -0.02em; }
+
+        .modal-form { display: flex; flex-direction: column; gap: 10px; }
+        .form-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-soft); }
+        .form-select, .form-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--cream); font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s; }
+        .form-select:focus, .form-input:focus { border-color: var(--navy-mid); background: var(--white); }
+        .form-textarea { width: 100%; padding: 11px 14px; height: 80px; resize: none; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--cream); font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s; }
+        .form-textarea.short { height: 56px; }
+        .form-textarea:focus { border-color: var(--navy-mid); background: var(--white); }
+
+        .price-summary { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--cream); border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 12px; font-weight: 600; color: var(--text-soft); }
+        .price-big { font-size: 20px; font-weight: 700; color: var(--navy); letter-spacing: -0.02em; }
+
+        .legal-box { background: var(--cream); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+        .legal-check { display: flex; gap: 10px; cursor: pointer; align-items: flex-start; }
+        .legal-check input[type="checkbox"] { accent-color: var(--navy); width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
+        .legal-check span { font-size: 11px; color: var(--text-mid); line-height: 1.5; }
+        .legal-check span strong { color: var(--navy); }
+
+        .btn-modal-primary { width: 100%; padding: 13px; background: var(--navy); border: none; border-radius: var(--radius); font-family: inherit; font-size: 13px; font-weight: 700; color: var(--white); cursor: pointer; transition: all 0.2s; letter-spacing: 0.01em; }
+        .btn-modal-primary:hover { background: var(--navy-mid); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(15,37,64,0.25); }
+
+        .mt-4 { margin-top: 16px; }
+        .mt-6 { margin-top: 24px; }
+        .mt-3 { margin-top: 12px; }
+
+        /* VIDEO MODAL */
+        .video-modal-box { background: var(--navy); border-radius: var(--radius-xl); width: 100%; max-width: 720px; padding: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.5); position: relative; animation: slideUp 0.25s ease; }
+        .modal-close.top-video { top: -44px; right: 0; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; }
+        .video-player { width: 100%; border-radius: var(--radius-lg); display: block; }
+        .video-title { color: rgba(255,255,255,0.85); font-size: 14px; font-weight: 500; text-align: center; margin-top: 14px; }
+
+        /* RESPONSIVE */
+        @media (max-width: 640px) {
+          .nav-inner { flex-wrap: wrap; }
+          .nav-actions { width: 100%; }
+          .btn-filter, .btn-sepet, .btn-primary { flex: 1; justify-content: center; }
+          .product-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
     </div>
   );
