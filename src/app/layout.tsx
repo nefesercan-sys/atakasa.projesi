@@ -13,6 +13,15 @@ export const dynamic = "force-dynamic";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// 📱 MOBİL GÖRÜNÜMÜ KUSURSUZLAŞTIRAN SİBER VİTRİN AYARI (YENİ EKLENDİ)
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#050505",
+};
+
 // 🚀 SİBER SEO ZIRHI: Google CEO'larının Aşık Olduğu Veri Yapısı
 export const metadata = {
   title: {
