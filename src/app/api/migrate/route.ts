@@ -37,20 +37,23 @@ export async function GET() {
 
   try {
     await connectMongoDB();
-    const db = mongoose.connection.db;
-
-    if (!db) {
-      return NextResponse.json({ success: false, error: "DB bağlantısı yok" }, { status: 500 });
-    }
+    const db = mongoose.connection.useDb("nexus_db");
 
     const collection = db.collection("varliks");
+
+    // Önce kaç tane var kontrol et
+    const total = await collection.countDocuments();
+    const withBase64 = await collection.countDocuments({
+      resimler: { $elemMatch: { $regex: "data:image" } }
+    });
+
+    const log: string[] = [];
+    log.push(`🔍 Toplam ilan: ${total}`);
+    log.push(`📦 Base64 resimli ilan: ${withBase64}`);
 
     const varliks = await collection.find({
       resimler: { $elemMatch: { $regex: "data:image" } }
     }).toArray();
-
-    const log: string[] = [];
-    log.push(`📦 ${varliks.length} adet base64 resimli ilan bulundu`);
 
     let basarili = 0;
     let hatali = 0;
