@@ -46,7 +46,7 @@ export async function GET() {
     const collection = db.collection("varliks");
 
     const varliks = await collection.find({
-      resimler: { $elemMatch: { $regex: "^data:image" } }
+      resimler: { $elemMatch: { $regex: "data:image" } }
     }).toArray();
 
     const log: string[] = [];
@@ -63,7 +63,7 @@ export async function GET() {
       for (let i = 0; i < resimler.length; i++) {
         const resim = resimler[i];
 
-        if (typeof resim === "string" && resim.startsWith("data:image")) {
+        if (typeof resim === "string" && resim.includes("data:image")) {
           try {
             const base64Data = resim.replace(/^data:image\/\w+;base64,/, "");
             const publicId = `atakasa/${varlik._id}_${i}`;
