@@ -64,28 +64,25 @@ export default function Home() {
     }
   }, []);
 
-  // 🚀 1. SİBER NEŞTER: ÖN BELLEK (CACHE) İLE ANINDA YÜKLEME
+  // 🚀 SİBER ÖN BELLEK: Sayfa anında açılsın diye veriyi hafızadan çeker
   useEffect(() => {
     const veriCek = async () => {
       try {
-        // Önce hafızadaki eski veriyi ekrana bas (Kullanıcı bekletilmez)
-        const onBellek = sessionStorage.getItem('siber_ilanlar');
+        const onBellek = sessionStorage.getItem('atakasa_ilanlar_cache');
         if (onBellek) {
           setIlanlar(JSON.parse(onBellek));
-          setLoading(false); // İskeleti anında kapat
+          setLoading(false); 
         }
 
-        // Arka planda sessizce yeni güncel veriyi çek
         const res = await fetch("/api/varliklar");
         const data = await res.json();
         const liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
         
-        setIlanlar(liste); // Ekranı yeni veriyle sessizce güncelle
-        sessionStorage.setItem('siber_ilanlar', JSON.stringify(liste)); // Hafızayı yenile
+        setIlanlar(liste);
+        sessionStorage.setItem('atakasa_ilanlar_cache', JSON.stringify(liste));
       } catch (err) { 
         console.error("Sinyal koptu:", err); 
-      } 
-      finally { 
+      } finally { 
         setLoading(false); 
       }
     };
@@ -109,14 +106,16 @@ export default function Home() {
     ilan.resimler?.[0] || ilan.images?.[0] ||
     "https://placehold.co/600x400/030712/00f260?text=AT+TAKASA";
 
-  // 🧠 2. SİBER NEŞTER: useMemo İLE İŞLEMCİ OPTİMİZASYONU
-  // Bu sayede liste sadece filtre değiştiğinde baştan hesaplanır, sayfa donmaz.
+  // 🧠 YAPAY ZEKA BELLEĞİ (useMemo): Filtreleme işlemciyi yormaz
   const filtrelenmisListe = useMemo(() => {
     let liste = [...ilanlar];
-    if (searchTerm) liste = liste.filter(i =>
-      (i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (i.aciklama || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      liste = liste.filter(i =>
+        (i.baslik || "").toLowerCase().includes(lowerTerm) ||
+        (i.aciklama || "").toLowerCase().includes(lowerTerm)
+      );
+    }
     if (aktifKategori !== "Hepsi") liste = liste.filter(i => i.kategori === aktifKategori);
     if (aktifSehir !== "Tüm Şehirler") liste = liste.filter(i => (i.sehir || "").toUpperCase() === aktifSehir.toUpperCase());
     if (minFiyat) liste = liste.filter(i => Number(i.fiyat) >= Number(minFiyat));
@@ -210,11 +209,7 @@ export default function Home() {
       };
 
       if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) {
-          console.log("Paylaşım iptal edildi.");
-        }
+        try { await navigator.share(shareData); } catch (err) { console.log("Paylaşım iptal."); }
       } else {
         navigator.clipboard.writeText(shareUrl);
         alert("🔗 İlan Linki Kopyalandı!");
@@ -227,9 +222,7 @@ export default function Home() {
         <meta itemProp="description" content={ilan.aciklama || aktifSlogan} />
 
         <div className={`absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl font-black text-[11px] backdrop-blur-md border shadow-lg ${
-          (ilan.degisimYuzdesi || 0) >= 0
-            ? 'bg-[#00f260]/20 text-[#00f260] border-[#00f260]/30'
-            : 'bg-red-500/20 text-red-500 border-red-500/30'
+          (ilan.degisimYuzdesi || 0) >= 0 ? 'bg-[#00f260]/20 text-[#00f260] border-[#00f260]/30' : 'bg-red-500/20 text-red-500 border-red-500/30'
         }`}>
           {(ilan.degisimYuzdesi || 0) >= 0 ? '▲' : '▼'} %{Math.abs(ilan.degisimYuzdesi || 0)}
         </div>
@@ -254,11 +247,7 @@ export default function Home() {
         >
           {videoVar ? (
             <div className="w-full h-full bg-black flex items-center justify-center relative">
-              <video
-                src={ilkMedya}
-                className="w-full h-full object-cover opacity-60"
-                muted playsInline preload="metadata"
-              />
+              <video src={ilkMedya} className="w-full h-full object-cover opacity-60" muted playsInline preload="metadata" />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-16 h-16 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.6)] group-hover:scale-110 transition-transform duration-300">
                   <Play size={26} className="text-black ml-1" fill="black" />
@@ -268,10 +257,9 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* 🚀 3. SİBER NEŞTER: TEMBEL YÜKLEME (LAZY LOAD) */}
               <img
                 src={ilkMedya}
-                loading="lazy" 
+                loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 alt={ilan.baslik || "Varlık"}
@@ -288,10 +276,7 @@ export default function Home() {
 
         <div className="p-6 flex flex-col flex-1">
           <p className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-1">{ilan.kategori || "PİYASA"}</p>
-          <h3
-            className="text-white font-bold text-xl mb-4 truncate italic leading-tight group-hover:text-[#00f260] transition-colors cursor-pointer"
-            onClick={() => router.push(`/varlik/${ilan._id}`)}
-          >
+          <h3 className="text-white font-bold text-xl mb-4 truncate italic leading-tight group-hover:text-[#00f260] transition-colors cursor-pointer" onClick={() => router.push(`/varlik/${ilan._id}`)}>
             {ilan.baslik}
           </h3>
           <div className="flex items-end justify-between mb-6" itemProp="offers" itemScope itemType="https://schema.org/Offer">
@@ -305,9 +290,7 @@ export default function Home() {
           
           <div className="mt-auto grid grid-cols-2 gap-2">
             <div className="flex gap-1 w-full">
-              <button onClick={handleShare} className="bg-white/5 text-slate-300 p-3 rounded-xl hover:bg-cyan-500 hover:text-black transition-all border border-white/10 flex items-center justify-center shrink-0" title="İlanı Paylaş">
-                <Share2 size={16} />
-              </button>
+              <button onClick={handleShare} className="bg-white/5 text-slate-300 p-3 rounded-xl hover:bg-cyan-500 hover:text-black transition-all border border-white/10 flex items-center justify-center shrink-0" title="İlanı Paylaş"><Share2 size={16} /></button>
               <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="w-full bg-white/5 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all border border-white/10">🔍 İNCELE</button>
             </div>
             <button onClick={() => handleSepeteEkle(ilan)} className="bg-cyan-500/10 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all border border-cyan-500/20">🛒 SEPETE</button>
@@ -325,9 +308,12 @@ export default function Home() {
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] blur-[150px] rounded-full"></div>
       </div>
 
+      {/* ── HEADER (TEK ARAMA MOTORU BURADA) ── */}
       <div className="sticky top-0 z-[100] bg-[#050505]/95 backdrop-blur-3xl border-b border-white/5 pt-6 pb-4 px-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center gap-4 mb-5">
+
+            {/* LOGO */}
             <div className="flex items-center gap-3 cursor-pointer shrink-0 w-full md:w-auto justify-between md:justify-start" onClick={() => { setAktifKategori("Hepsi"); setSearchTerm(""); }}>
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,242,96,0.4)] relative overflow-hidden group shrink-0">
@@ -343,6 +329,7 @@ export default function Home() {
               </div>
             </div>
 
+            {/* 🎯 ANA ARAMA MOTORU (SADECE BU KALDI) */}
             <div className="relative w-full md:flex-1">
               <input
                 type="text"
@@ -354,28 +341,21 @@ export default function Home() {
               <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black">🔍</span>
             </div>
 
+            {/* BUTONLAR */}
             <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2 md:pb-0">
-              <button
-                onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
-                className={`flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border shrink-0 text-center ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}
-              >
+              <button onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)} className={`flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border shrink-0 text-center ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}>
                 🛠️ <span className="hidden sm:inline">RADAR</span>
               </button>
-              <button
-                onClick={() => router.push('/sepet')}
-                className="flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shrink-0 text-center"
-              >
+              <button onClick={() => router.push('/sepet')} className="flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border bg-[#0a0a0a] text-white border-cyan-500/20 hover:border-cyan-500 shrink-0 text-center">
                 🛒 <span className="hidden sm:inline">SEPET</span>
               </button>
-              <button
-                onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')}
-                className="flex-1 md:flex-none px-5 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all bg-[#00f260] text-black hover:scale-105 shadow-[0_0_15px_rgba(0,242,96,0.3)] shrink-0 whitespace-nowrap text-center"
-              >
+              <button onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')} className="flex-1 md:flex-none px-5 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all bg-[#00f260] text-black hover:scale-105 shadow-[0_0_15px_rgba(0,242,96,0.3)] shrink-0 whitespace-nowrap text-center">
                 ⚡ <span className="hidden sm:inline">İLAN VER</span>
               </button>
             </div>
           </div>
 
+          {/* RADAR FİLTRE */}
           {filtreMenusuAcik && (
             <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-5 shadow-[0_0_30px_rgba(0,242,96,0.1)]">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -406,6 +386,7 @@ export default function Home() {
             </div>
           )}
 
+          {/* KATEGORİ */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
             <button onClick={() => { setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar"); }} className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${aktifKategori === "Hepsi" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
               🌐 KARIŞIK AKIŞ
@@ -427,6 +408,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── MAIN ── */}
       <main className="max-w-7xl mx-auto px-4 mt-8 relative z-10">
         <div className="mb-10">
           <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-2">
@@ -437,7 +419,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 🧠 4. SİBER NEŞTER: ARTIK useMemo İLE HESAPLANAN DİZİYİ KULLANIYORUZ */}
+        {/* 🚀 SİBER LİSTELEME: filtrelenmisListe kullanıldı */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1,2,3,4,5,6,7,8].map(n => <div key={n} className="h-[450px] bg-white/5 rounded-[2.5rem] animate-pulse border border-white/5"></div>)}
@@ -454,7 +436,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* ── MODALLAR AYNI ŞEKİLDE DURUYOR ── */}
+      {/* ── TAKAS / SATIN AL MODALLARI ── */}
       {seciliIlan && modalTuru && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-lg w-full shadow-[0_0_50px_rgba(0,242,96,0.2)] relative flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 no-scrollbar">
@@ -510,6 +492,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* ✅ VİDEO MODAL */}
       {videoModalUrl && (
         <div
           className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
