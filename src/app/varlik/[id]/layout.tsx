@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 
 // 🎯 DİNAMİK META ETİKET ÜRETİCİSİ (FULL SEO & SOSYAL MEDYA MOTORU)
 export async function generateMetadata({ params }: { params: any }): Promise<Metadata> {
+  const varsayilanResim = "https://atakasa.com/og-image.jpg"; // Sitenin ana logosu
+
   try {
     await connectMongoDB();
     const resolvedParams = await params;
@@ -17,43 +19,53 @@ export async function generateMetadata({ params }: { params: any }): Promise<Met
 
     if (!ilan) {
       return {
-        title: "Varlık Bulunamadı | At takasa",
-        description: "Aradığınız siber varlık borsadan kaldırılmış veya satılmış olabilir.",
+        title: "Ürün Bulunamadı | At takasa.com",
+        description: "Aradığınız ürün borsadan kaldırılmış veya satılmış olabilir.",
         robots: { index: false, follow: false } // Boş sayfayı Google'a dizinletme!
       };
     }
 
-    const baslik = ilan.baslik || ilan.title || "İsimsiz Varlık";
-    const aciklama = ilan.aciklama || ilan.description || "Zararına satma, At takasa! Siber terminaldeki bu eşsiz varlığı hemen incele.";
+    const baslik = ilan.baslik || ilan.title || "İsimsiz Ürün";
+    const aciklama = ilan.aciklama || ilan.description || "Zararına satma, At takasa! Bu eşsiz ürünü hemen incele.";
     const kategori = ilan.kategori || "Takas Fırsatı";
     
-    // 🚨 RESİM SİBER FİLTRESİ
-    let resimUrl = ilan.resimler?.[0] || ilan.images?.[0] || ilan.image || "https://atakasa.com/og-image.jpg";
+    // 🚨 1. ADIM: İLK RESMİ AL
+    let resimUrl = ilan.resimler?.[0] || ilan.images?.[0] || ilan.image || varsayilanResim;
     
-    // Eğer resim VİDEO ise veya BASE64 formatındaysa (Sosyal medya okuyamaz), varsayılan resmi bas!
+    // 🚨 2. ADIM: VİDEO VE BOZUK LİNK KONTROLÜ
     if (
       typeof resimUrl === "string" && 
       (resimUrl.includes(".mp4") || resimUrl.includes(".webm") || resimUrl.includes(".mov") || resimUrl.startsWith("data:image"))
     ) {
-        resimUrl = "https://atakasa.com/og-image.jpg"; 
+        resimUrl = varsayilanResim; 
+    } else if (typeof resimUrl === "string" && resimUrl.startsWith("http:")) {
+        // WhatsApp sadece HTTPS kabul eder!
+        resimUrl = resimUrl.replace("http:", "https:");
+    }
+
+    // 🚨 3. ADIM: CLOUDINARY SIKIŞTIRMA HİLESİ (WhatsApp için 300KB altına düşürür)
+    if (typeof resimUrl === "string" && resimUrl.includes("res.cloudinary.com") && resimUrl.includes("/upload/")) {
+        // Resmi 800x800'e kırpar, kalitesini %70 yapar, formatını JPG'ye zorlar
+        resimUrl = resimUrl.replace("/upload/", "/upload/c_fill,w_800,h_800,f_jpg,q_70/");
     }
 
     // Ek güvenlik: Link http ile başlamıyorsa çöktürmemek için ana logoyu bas
-    if (!resimUrl.startsWith("http")) {
-        resimUrl = "https://atakasa.com/og-image.jpg";
+    if (typeof resimUrl === "string" && !resimUrl.startsWith("http")) {
+        resimUrl = varsayilanResim;
     }
 
-    // 🚀 DİNAMİK SEO ANAHTAR KELİMELERİ (Google için)
+    // 🚀 DİNAMİK SEO ANAHTAR KELİMELERİ (Google için "ürün", "ilan" eklendi)
     const dinamikKeywords = [
-      baslik, kategori, "takas", "ikinci el", "at takasa", "güvenli ticaret", "barter", "ücretsiz ilan", "takasla"
+      baslik, kategori, "takas", "ikinci el", "at takasa", "güvenli ticaret", "barter", "ürün", "ilan", "takasla"
     ].join(", ");
 
     return {
+      metadataBase: new URL("https://atakasa.com"), // 🚨 İŞTE WHATSAPP'IN ZORUNLU İSTEDİĞİ KÖK URL
       title: `${baslik} | At takasa.com`,
       description: aciklama,
       keywords: dinamikKeywords, // 🎯 GOOGLE ANAHTAR KELİMELERİ
       alternates: {
-        canonical: `https://atakasa.com/varlik/${id}`, // 🎯 GOOGLE KOPYA İÇERİK KORUMASI
+        canonical: `/varlik/${id}`, // 🎯 GOOGLE KOPYA İÇERİK KORUMASI
       },
       robots: {
         index: true,
@@ -63,13 +75,13 @@ export async function generateMetadata({ params }: { params: any }): Promise<Met
       openGraph: {
         title: `${baslik} | At takasa.com`,
         description: aciklama,
-        url: `https://atakasa.com/varlik/${id}`,
+        url: `/varlik/${id}`,
         siteName: "At takasa",
         images: [
           {
             url: resimUrl,
-            width: 1200,
-            height: 630,
+            width: 800,
+            height: 800,
             alt: baslik,
           }
         ],
@@ -85,7 +97,8 @@ export async function generateMetadata({ params }: { params: any }): Promise<Met
     };
   } catch (error) {
     return { 
-      title: "At takasa.com | Siber Takas Ağı",
+      metadataBase: new URL("https://atakasa.com"),
+      title: "At takasa.com | Türkiye'nin Takas Platformu",
       description: "Zararına satma, At takasa!",
       robots: { index: true, follow: true }
     };
