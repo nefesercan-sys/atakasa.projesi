@@ -1,21 +1,44 @@
 import mongoose from "mongoose";
 
-export const connectMongoDB = async () => {
-  try {
-    // 1. Eğer sistem zaten sağlıklı bir şekilde bağlıysa doğrudan geç
-    if (mongoose.connection.readyState === 1) {
-      return;
-    }
+const MONGODB_URI = process.env.MONGODB_URI as string;
 
-    // 2. Bağlantı yoksa veya Vercel uyku modundan uyanıyorsa zorla bağlan
-    await mongoose.connect(process.env.MONGODB_URI as string, {
-      serverSelectionTimeoutMS: 5000, // 5 saniyeden fazla bekleme
-      bufferCommands: false, // 🚀 İŞTE SİBER KİLİT: Cevap yoksa sonsuza kadar beklemesini engeller!
-    });
-    
-    console.log("MongoDB Siber Tüneli Aktif.");
-  } catch (error) {
-    console.error("MongoDB Tünel Hatası:", error);
-    throw new Error("Veritabanı bağlantısı koptu."); // Donup kalmak yerine hatayı bildir
-  }
+if (!MONGODB_URI) {
+  throw new Error("MONGODB_URI tanımlı değil!");
+}
+
+// Global cache - hot reload'da bağlantı kopmasın
+const globalWithMongoose = global as typeof globalThis & {
+  mongoose: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
 };
+
+if (!globalWithMongoose.mongoose) {
+  globalWithMongoose.mongoose = { conn: null, promise: null };
+}
+
+export async function connectMongoDB() {
+  // Zaten bağlıysa direkt dön
+  if (globalWithMongoose.mongoose.conn) {
+    return globalWithMongoose.mongoose.conn;
+  }
+
+  // Bağlantı devam ediyorsa bekle
+  if (!globalWithMongoose.mongoose.promise) {
+    globalWithMongoose.mongoose.promise = mongoose.connect(MONGODB_URI, {
+      dbName: "atakasa_db", // ← atakasa'ya özel ayrı database
+      bufferCommands: true, // ← true yapıldı, false yavaşlatıyordu
+      maxPoolSize: 10,       // ← bağlantı havuzu
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 10000,
+    });
+  }
+
+  try {
+    globalWithMongoose.mongoose.conn = await globalWithMongoose.mongoose.promise;
+    console.log("MongoDB Bağlantısı Aktif.");
+    return globalWithMongoose.mongoose.conn;
+  } catch (error) {
+    globalWithMongoose.mongoose.promise = null; // hata olursa sıfırla
+    console.error("MongoDB Bağlantı Hatası:", error);
+    throw new Error("Veritabanına bağlanılamadı.");
+  }
+}
