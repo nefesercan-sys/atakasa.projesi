@@ -4,6 +4,7 @@ import { connectMongoDB } from "../../../lib/mongodb";
 import crypto from "crypto";
 import mongoose from "mongoose";
 
+export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET() {
@@ -41,7 +42,6 @@ export async function GET() {
 
     const collection = db.collection("varliks");
 
-    // Önce kaç tane var kontrol et
     const total = await collection.countDocuments();
     const withBase64 = await collection.countDocuments({
       resimler: { $elemMatch: { $regex: "data:image" } }
