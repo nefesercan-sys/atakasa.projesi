@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Play, Share2 } from "lucide-react";
 
-// ✅ BorsaKarti dışarı alındı + memo ile sarıldı
+// ✅ BorsaKarti dışarı alındı + memo
 const BorsaKarti = memo(({ ilan, aktifSlogan, onTakasClick, onSatinAlClick, onSepetClick }: {
   ilan: any;
   aktifSlogan: string;
@@ -60,7 +60,7 @@ const BorsaKarti = memo(({ ilan, aktifSlogan, onTakasClick, onSatinAlClick, onSe
           onClick={() => videoVar ? setVideoModalAcik(true) : router.push(`/varlik/${ilan._id}`)}
         >
           {videoVar ? (
-            // ✅ video tag kaldırıldı — otomatik yüklenmiyor artık
+            // ✅ video tag kaldırıldı — otomatik yüklenmiyor
             <div className="w-full h-full bg-zinc-900 flex items-center justify-center relative">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-16 h-16 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,242,96,0.6)] group-hover:scale-110 transition-transform duration-300">
@@ -104,7 +104,6 @@ const BorsaKarti = memo(({ ilan, aktifSlogan, onTakasClick, onSatinAlClick, onSe
             </span>
             <span className="text-slate-500 text-[10px] font-bold">{new Date(ilan.createdAt).toLocaleDateString()}</span>
           </div>
-
           <div className="mt-auto grid grid-cols-2 gap-2">
             <div className="flex gap-1 w-full">
               <button onClick={handleShare} className="bg-white/5 text-slate-300 p-3 rounded-xl hover:bg-cyan-500 hover:text-black transition-all border border-white/10 flex items-center justify-center shrink-0" title="İlanı Paylaş">
@@ -137,7 +136,7 @@ const BorsaKarti = memo(({ ilan, aktifSlogan, onTakasClick, onSatinAlClick, onSe
 });
 BorsaKarti.displayName = "BorsaKarti";
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const { data: session } = useSession();
@@ -193,8 +192,7 @@ export default function Home() {
   useEffect(() => {
     const veriCek = async () => {
       try {
-        // ✅ limit=50 ile daha az veri
-        const res = await fetch("/api/varliklar?limit=50");
+        const res = await fetch("/api/varliklar?limit=50"); // ✅ limit eklendi
         const data = await res.json();
         const liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
         setIlanlar(liste);
@@ -214,7 +212,7 @@ export default function Home() {
     }
   }, [session, ilanlar]);
 
-  // ✅ useMemo ile filtreleme önbelleğe alındı
+  // ✅ useMemo ile önbelleğe alındı
   const filtrelenmisIlanlar = useMemo(() => {
     let liste = [...ilanlar];
     if (searchTerm) liste = liste.filter(i =>
@@ -235,7 +233,7 @@ export default function Home() {
     return liste;
   }, [ilanlar, searchTerm, aktifKategori, aktifSehir, minFiyat, maxFiyat, sadeceTakaslik, aktifAltFiltre]);
 
-  // ✅ useCallback ile fonksiyonlar önbelleğe alındı
+  // ✅ useCallback ile önbelleğe alındı
   const openModal = useCallback((ilan: any, tur: "takas" | "satinal") => {
     if (!session) return router.push("/giris");
     const saticiEmail = (ilan.satici?.email || ilan.sellerEmail || "").toLowerCase();
@@ -308,17 +306,19 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans italic pb-24 selection:bg-[#00f260] selection:text-black">
       <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.03]">
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] blur-[150px] rounded-full"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-[#00f260] blur-[150px] rounded-full" />
       </div>
 
       {/* HEADER */}
       <div className="sticky top-0 z-[100] bg-[#050505]/95 backdrop-blur-3xl border-b border-white/5 pt-6 pb-4 px-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center gap-4 mb-5">
+
+            {/* LOGO */}
             <div className="flex items-center gap-3 cursor-pointer shrink-0 w-full md:w-auto justify-between md:justify-start" onClick={() => { setAktifKategori("Hepsi"); setSearchTerm(""); }}>
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,242,96,0.4)] relative overflow-hidden group shrink-0">
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all" />
                   <span className="text-xl font-black text-black relative z-10 italic">At<span className="text-white">⇄</span></span>
                 </div>
                 <div className="flex flex-col">
@@ -330,13 +330,19 @@ export default function Home() {
               </div>
             </div>
 
+            {/* ARAMA */}
             <div className="relative w-full md:flex-1">
-              <input type="text" placeholder="Varlık veya kelime ara..." value={searchTerm}
+              <input
+                type="text"
+                placeholder="Varlık veya kelime ara..."
+                value={searchTerm}
                 className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] pl-5 pr-12 py-3.5 outline-none focus:border-[#00f260] text-sm transition-all shadow-inner"
-                onChange={(e) => setSearchTerm(e.target.value)} />
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
               <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[#00f260] text-[10px] font-black">🔍</span>
             </div>
 
+            {/* BUTONLAR */}
             <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2 md:pb-0">
               <button onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)} className={`flex-1 md:flex-none px-4 py-3.5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest transition-all border shrink-0 text-center ${filtreMenusuAcik ? 'bg-[#00f260] text-black border-[#00f260]' : 'bg-[#0a0a0a] text-white border-white/10 hover:border-[#00f260]'}`}>
                 🛠️ <span className="hidden sm:inline">RADAR</span>
@@ -350,6 +356,7 @@ export default function Home() {
             </div>
           </div>
 
+          {/* RADAR FİLTRE */}
           {filtreMenusuAcik && (
             <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-3xl p-6 mb-5 shadow-[0_0_30px_rgba(0,242,96,0.1)]">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -380,6 +387,7 @@ export default function Home() {
             </div>
           )}
 
+          {/* KATEGORİ */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
             <button onClick={() => { setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar"); }} className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${aktifKategori === "Hepsi" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}>
               🌐 KARIŞIK AKIŞ
@@ -414,7 +422,7 @@ export default function Home() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[1,2,3,4,5,6,7,8].map(n => <div key={n} className="h-[450px] bg-white/5 rounded-[2.5rem] animate-pulse border border-white/5"></div>)}
+            {[1,2,3,4,5,6,7,8].map(n => <div key={n} className="h-[450px] bg-white/5 rounded-[2.5rem] animate-pulse border border-white/5" />)}
           </div>
         ) : filtrelenmisIlanlar.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-1000">
@@ -469,8 +477,8 @@ export default function Home() {
                 </div>
                 <input type="text" placeholder="Teslim Alacak Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none focus:border-[#00f260]" />
                 <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e) => setSiparisForm({...siparisForm, telefon: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none focus:border-[#00f260]" />
-                <textarea placeholder="Açık Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none h-20 resize-none focus:border-[#00f260]"></textarea>
-                <textarea placeholder="Sipariş Notu (İsteğe Bağlı)" value={siparisForm.not} onChange={(e) => setSiparisForm({...siparisForm, not: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none h-16 resize-none focus:border-[#00f260]"></textarea>
+                <textarea placeholder="Açık Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none h-20 resize-none focus:border-[#00f260]" />
+                <textarea placeholder="Sipariş Notu (İsteğe Bağlı)" value={siparisForm.not} onChange={(e) => setSiparisForm({...siparisForm, not: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none h-16 resize-none focus:border-[#00f260]" />
                 <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-[#030712] border border-white/10 text-white text-xs p-4 rounded-2xl outline-none focus:border-[#00f260]">
                   <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
                   <option value="havale">🏦 Havale / EFT</option>
