@@ -1,139 +1,139 @@
-import React from "react";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import Link from "next/link";
-import CyberNav from "../components/CyberNav";
-import AuthProvider from "../components/AuthProvider";
-import { Analytics } from "@vercel/analytics/react";
-// Importları tutuyoruz ama aşağıda bileşenleri yoruma alacağız
-import JsonLd from "../components/JsonLd";
-import HeaderSearch from "../components/HeaderSearch";
+import { NextResponse } from "next/server";
+import { connectMongoDB } from "../../../lib/mongodb";
+import Varlik from "../../../models/Varlik";
+import User from "../../../models/User";
 
-// 🚀 VERCEL 60 SANİYE ÇÖKME HATASINI BİTİREN SİBER KİLİT 
+// 🚀 VERCEL ÇÖKME HATASINI BİTİREN SİBER KİLİT
 export const dynamic = "force-dynamic";
 
-const inter = Inter({ subsets: ["latin"] });
+const requestCounts = new Map<string, number[]>();
 
-// 🚀 SİBER SEO ZIRHI: Google CEO'larının Aşık Olduğu Veri Yapısı
-export const metadata = {
-  title: {
-    default: "At takasa.com | Türkiye'nin Siber Takas ve İkinci El Terminali",
-    template: "%s | At takasa.com",
-  },
-  description: "Elinde tutma, At takasa! Zararına satmak yerine değerinde takas yapın. Elektronik, araç, emlak ve binlerce varlığı güvenle değiştirin. Nakitsiz ticaretin siber ağı.",
-  keywords: [
-    "takas yap", "ücretsiz ilan ver", "ikinci el takas", "eşya takas sitesi", 
-    "at takasa", "güvenli ticaret", "barter", "online takas", "takas borsası", 
-    "ikinci el alım satım", "araç takas", "telefon takas", "siber ticaret"
-  ],
-  authors: [{ name: "At takasa.com", url: "https://atakasa.com" }],
-  creator: "At takasa",
-  publisher: "At takasa",
-  metadataBase: new URL("https://atakasa.com"),
-  alternates: { canonical: "https://atakasa.com" },
-  
-  openGraph: {
-    title: "At takasa.com | Değiştir. Kazan. Özgürleş.",
-    description: "Değersiz sanma ne varsa, At takasa! Siber ağda varlığını mühürle, ihtiyacın olanla güvenle takasla.",
-    url: "https://atakasa.com",
-    siteName: "At takasa",
-    images: [
-      { 
-        url: "https://atakasa.com/og-image.jpg",
-        width: 1200, 
-        height: 630, 
-        alt: "At takasa.com Siber Pazar Yeri" 
-      }
-    ],
-    locale: "tr_TR",
-    type: "website",
-  },
-  
-  twitter: {
-    card: "summary_large_image",
-    title: "At takasa.com | Siber Takas Terminali",
-    description: "Zararına satma, At takasa! Türkiye'nin en güvenli takas platformu.",
-    images: ["https://atakasa.com/og-image.jpg"],
-    creator: "@attakasa",
-  },
-  
-  robots: {
-    index: true,
-    follow: true,
-    nocache: false,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
-  },
-  manifest: '/site.webmanifest',
+const checkRateLimit = (req: Request, limit: number, windowMs: number) => {
+  const ip = req.headers.get("x-forwarded-for") || "unknown_ip";
+  const currentTime = Date.now();
+  if (!requestCounts.has(ip)) { requestCounts.set(ip, [currentTime]); return true; }
+  const userRequests = requestCounts.get(ip) || [];
+  const recentRequests = userRequests.filter(time => currentTime - time < windowMs);
+  recentRequests.push(currentTime);
+  requestCounts.set(ip, recentRequests);
+  return recentRequests.length <= limit;
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="tr" className="scroll-smooth">
-      <head>
-        {/* 🚨 TEST İÇİN ŞİMDİLİK KAPATILDI: JsonLd Vercel'i kilitliyor olabilir */}
-        {/* <JsonLd /> */}
-      </head>
-      <body className={`${inter.className} bg-[#050505] text-white antialiased min-h-screen overflow-x-hidden pb-24 selection:bg-[#00f260] selection:text-black`}>
+const siberTemizleyici = (veri: any): any => {
+  if (veri instanceof Object) {
+    for (const key in veri) {
+      if (/^\$/.test(key)) delete veri[key];
+      else siberTemizleyici(veri[key]);
+    }
+  }
+  return veri;
+};
 
-        <AuthProvider>
+export async function GET(req: Request) {
+  if (!checkRateLimit(req, 150, 60000)) {
+    return NextResponse.json({ error: "Sisteme aşırı yüklenmeyin." }, { status: 429 });
+  }
 
-          {/* 🌌 SİBER HEADER */}
-          <header className="fixed top-0 left-0 w-full z-[100] bg-[#050505]/80 backdrop-blur-xl border-b border-white/[0.05] px-4 py-4 md:px-8 shadow-sm">
-            <div className="max-w-[1500px] mx-auto flex justify-between items-center">
+  try {
+    await connectMongoDB();
+    const { searchParams } = new URL(req.url);
 
-              {/* LOGO */}
-              <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,242,96,0.3)] relative overflow-hidden shrink-0">
-                  <span className="text-lg font-black text-black relative z-10 italic">At<span className="text-white">⇄</span></span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">
-                    At takasa<span className="text-[#00f260]">.com</span>
-                  </span>
-                </div>
-              </Link>
+    const id         = searchParams.get("id");
+    const emailParam = searchParams.get("email");
+    const kategori   = searchParams.get("kategori") || searchParams.get("sektor");
+    const limitParam = parseInt(searchParams.get("limit") || "50");
+    const limit      = Math.min(limitParam, 100);
 
-              <div className="hidden md:block flex-1 max-w-xl mx-8">
-                {/* 🚨 TEST İÇİN ŞİMDİLİK KAPATILDI: HeaderSearch Vercel'i kilitliyor olabilir */}
-                {/* <HeaderSearch /> */}
-              </div>
+    let query: any = {};
 
-              {/* PANEL GİRİŞİ */}
-              <div className="flex items-center gap-4">
-                <Link
-                  href="/panel"
-                  className="w-10 h-10 bg-white/[0.03] border border-white/[0.05] rounded-full flex items-center justify-center text-slate-300 hover:bg-[#00f260] hover:text-black hover:border-transparent transition-all shadow-[0_0_10px_rgba(0,242,96,0)] hover:shadow-[0_0_15px_rgba(0,242,96,0.4)]"
-                >
-                  👤
-                </Link>
-              </div>
+    if (id) {
+      query._id = id;
+    } else if (emailParam) {
+      const user = await User.findOne({ email: emailParam.toLowerCase() }).select("_id").lean();
+      if (!user) return NextResponse.json([], { status: 200 });
+      query.satici = (user as any)._id;
+    } else {
+      if (kategori) query.kategori = siberTemizleyici(kategori);
+    }
 
-            </div>
-          </header>
+    const ilanlar = await Varlik.find(query)
+      .sort({ createdAt: -1 })
+      .limit(id ? 1 : limit)
+      .select("baslik fiyat eskiFiyat kategori sehir resimler images image aciklama takasIstegi satici durum createdAt")
+      .lean();
 
-          <main className="relative pt-24 min-h-screen">
-            {children}
-          </main>
+    const saticiIdleriSet = new Set<string>();
+    ilanlar.forEach((i: any) => {
+      if (i.satici) saticiIdleriSet.add(i.satici.toString());
+    });
+    const saticiIdleri = Array.from(saticiIdleriSet);
 
-          <CyberNav />
+    const saticilar = saticiIdleri.length > 0
+      ? await User.find({ _id: { $in: saticiIdleri } }).select("_id email name").lean()
+      : [];
 
-        </AuthProvider>
+    const saticiMap = new Map<string, any>();
+    saticilar.forEach((s: any) => {
+      saticiMap.set(s._id.toString(), s);
+    });
 
-        <Analytics />
+    const borsaVeriliIlanlar = ilanlar.map((ilan: any) => {
+      let degisimYuzdesi = 0;
+      if (ilan.eskiFiyat > 0 && ilan.fiyat !== ilan.eskiFiyat) {
+        degisimYuzdesi = ((ilan.fiyat - ilan.eskiFiyat) / ilan.eskiFiyat) * 100;
+      }
+      const saticiObj = saticiMap.get(ilan.satici?.toString());
+      return {
+        ...ilan,
+        _id: ilan._id.toString(),
+        satici: {
+          _id: ilan.satici?.toString() || "",
+          email: saticiObj?.email || "",
+          name: saticiObj?.name || "",
+        },
+        saticiEmail: saticiObj?.email || "",
+        sellerEmail: saticiObj?.email || "",
+        degisimYuzdesi: Number(degisimYuzdesi.toFixed(1)),
+        borsaDurumu: degisimYuzdesi < 0 ? "DÜŞÜŞ" : degisimYuzdesi > 0 ? "YÜKSELİŞ" : "STABİL",
+      };
+    });
 
-      </body>
-    </html>
-  );
+    return NextResponse.json(borsaVeriliIlanlar, { status: 200 });
+
+  } catch (error) {
+    console.error("Turbo Motor Hatası:", error);
+    return NextResponse.json({ message: "Sinyal kesildi." }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  if (!checkRateLimit(req, 20, 60000)) {
+    return NextResponse.json({ error: "Çok fazla işlem denemesi." }, { status: 429 });
+  }
+
+  try {
+    await connectMongoDB();
+    const data = siberTemizleyici(await req.json());
+
+    if (!data.id) return NextResponse.json({ error: "Kimlik eksik." }, { status: 400 });
+
+    const mevcutVarlik = await Varlik.findById(data.id);
+    if (!mevcutVarlik) return NextResponse.json({ error: "Varlık bulunamadı." }, { status: 404 });
+
+    if (data.fiyat && Number(data.fiyat) !== mevcutVarlik.fiyat) {
+      mevcutVarlik.eskiFiyat = mevcutVarlik.fiyat;
+      mevcutVarlik.fiyat = Number(data.fiyat);
+      mevcutVarlik.fiyatGuncellemeTarihi = new Date();
+    }
+
+    const guvenliAlanlar = ["baslik", "title", "aciklama", "description", "kategori", "sehir", "resimler", "images"];
+    guvenliAlanlar.forEach((alan) => {
+      if (data[alan] !== undefined) mevcutVarlik[alan] = data[alan];
+    });
+
+    await mevcutVarlik.save();
+    return NextResponse.json({ message: "Güncellendi." }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ error: "İşlem başarısız." }, { status: 500 });
+  }
 }
