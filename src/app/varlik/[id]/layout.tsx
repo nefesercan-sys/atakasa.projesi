@@ -1,45 +1,74 @@
 import type { Metadata } from "next";
+import { connectMongoDB } from "../../../../lib/mongodb";
+import Varlik from "../../../../models/Varlik";
 
-// 📡 SİBER RADAR: Gelen ID'ye göre veritabanından ilanı bulur
-async function getIlanVerisi(id: string) {
-  try {
-    // API'nin tam yolunu yazmalısın (Kendi veritabanı url'ni buraya uyarla)
-    const res = await fetch(`https://atakasa.com/api/varliklar`, { cache: 'no-store' });
-    const data = await res.json();
-    let liste = Array.isArray(data) ? data : data.data || data.ilanlar || [];
-    const ilan = liste.find((i: any) => i._id === id || i.id === id);
-    return ilan;
-  } catch (error) {
-    return null;
-  }
-}
+// 🚀 VERCEL'in önbelleğini iptal eder, WhatsApp'a hep güncel veriyi verir
+export const dynamic = "force-dynamic";
 
-// 🎯 DİNAMİK META ETİKET ÜRETİCİSİ (SEO)
+// 🎯 DİNAMİK META ETİKET ÜRETİCİSİ (SEO & WHATSAPP)
 export async function generateMetadata({ params }: { params: any }): Promise<Metadata> {
-  const resolvedParams = await params;
-  const ilan = await getIlanVerisi(resolvedParams.id);
+  try {
+    // API'yi beklemek yerine DOĞRUDAN veritabanına tünel açıyoruz (Saniyenin onda biri sürer!)
+    await connectMongoDB();
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
 
-  if (!ilan) {
+    // Sadece WhatsApp'a göstermek için ilgili ilanı saniyesinde çekiyoruz
+    const ilan = await Varlik.findById(id).select("baslik title aciklama description resimler images image").lean() as any;
+
+    if (!ilan) {
+      return {
+        title: "Varlık Bulunamadı | At takasa.com",
+        description: "Aradığınız siber varlık borsadan kaldırılmış olabilir.",
+      };
+    }
+
+    const baslik = ilan.baslik || ilan.title || "İsimsiz Varlık";
+    const aciklama = ilan.aciklama || ilan.description || "Zararına satma, At takasa! Siber terminaldeki bu eşsiz varlığı hemen incele.";
+    
+    // İlk medyayı yakalıyoruz
+    let resimUrl = ilan.resimler?.[0] || ilan.images?.[0] || ilan.image || "https://atakasa.com/og-image.jpg";
+    
+    // 🚨 SİBER HİLE: Sosyal medya botları mp4/video oynatamaz ve resmi boş bırakır! 
+    // Eğer ilk medya video ise, varsayılan Atakasa resmini basıyoruz.
+    if (typeof resimUrl === "string" && (resimUrl.includes(".mp4") || resimUrl.includes(".webm") || resimUrl.includes(".mov"))) {
+        resimUrl = "https://atakasa.com/og-image.jpg"; 
+    }
+
     return {
-      title: "Varlık Bulunamadı | A-TAKASA",
-      description: "Aradığınız siber varlık borsadan kaldırılmış olabilir.",
+      title: `${baslik} | At takasa.com`,
+      description: aciklama,
+      openGraph: {
+        title: `${baslik} | At takasa.com`,
+        description: aciklama,
+        url: `https://atakasa.com/varlik/${id}`,
+        siteName: "At takasa",
+        images: [
+          {
+            url: resimUrl,
+            width: 1200,
+            height: 630,
+            alt: baslik,
+          }
+        ],
+        type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${baslik} | At takasa.com`,
+        description: aciklama,
+        images: [resimUrl],
+      },
+    };
+  } catch (error) {
+    return { 
+      title: "At takasa.com | Siber Takas Ağı",
+      description: "Zararına satma, At takasa!"
     };
   }
-
-  // Google'a gösterilecek o kusursuz başlık: (Örn: "iPhone 13 - 128GB | Takas İlanı | A-TAKASA")
-  return {
-    title: `${ilan.title || ilan.baslik} | Takas İlanı | A-TAKASA`,
-    description: ilan.description || ilan.aciklama,
-    openGraph: {
-      title: `${ilan.title || ilan.baslik} A-TAKASA'da!`,
-      description: ilan.description || ilan.aciklama,
-      // Resim URL'sini çekiyoruz
-      images: [ilan.resimler?.[0] || ilan.images?.[0] || ilan.resim || ilan.image || ilan.gorsel || "https://atakasa.com/logo.png"],
-    },
-  };
 }
 
-// 🛡️ KALKAN: Senin mevcut (use client) page.tsx dosyan bu {children} içine gömülecek
+// 🛡️ SİBER SAYFAYI İÇİNE ALAN ANA İSKELET
 export default function VarlikLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
