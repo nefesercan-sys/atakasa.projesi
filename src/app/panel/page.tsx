@@ -36,6 +36,13 @@ export default function SiberBorsaPaneli() {
   const [duzenleModal, setDuzenleModal] = useState<any>(null);
   const [islemLoading, setIslemLoading] = useState(false);
 
+  // 🤖 AI TAKAS MOTORU DEĞİŞKENLERİ
+  const [aiKategori, setAiKategori] = useState('vasita');
+  const [aiSehir, setAiSehir] = useState('İstanbul');
+  const [aiAdet, setAiAdet] = useState(5);
+  const [aiYukleniyor, setAiYukleniyor] = useState(false);
+  const [aiSonuc, setAiSonuc] = useState('');
+
   // 📡 SWR CANLI RADAR BAĞLANTILARI
   const { data: walletData } = useSWR(aktifEmail ? `/api/wallet?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
   const { data: listingsData, mutate: mutateListings } = useSWR(aktifEmail ? `/api/listings?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
@@ -57,12 +64,10 @@ export default function SiberBorsaPaneli() {
   const gelenSiparisler = safeOrders.filter((o: any) => String(o?.sellerEmail || o?.saticiEmail || "").toLowerCase() === aktifEmail);
   const gidenSiparisler = safeOrders.filter((o: any) => String(o?.buyerEmail || o?.aliciEmail || "").toLowerCase() === aktifEmail);
 
+  // 🛡️ GİRİŞ KONTROL ZIRHI
   const loading = status === "loading" || (aktifEmail && (!walletData && !listingsData && !takasData && !ordersData));
-
-  if (status === "unauthenticated") {
-    router.push("/giris");
-    return null;
-  }
+  if (status === "loading") return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#00f260] font-black tracking-widest animate-pulse italic">KONTROL MERKEZİNE BAĞLANILIYOR... ⏳</div>;
+  if (status === "unauthenticated") { router.push("/giris"); return null; }
 
   // ── SİPARİŞ & TAKAS GÜNCELLEME MOTORLARI ──
   const handleDurumGuncelle = async (takasId: string, yeniDurum: string) => {
@@ -92,7 +97,7 @@ export default function SiberBorsaPaneli() {
     } catch (error) { alert("Ağ arızası."); }
   };
 
-  // 🚀 YENİ: İLAN (VARLIK) YÖNETİM MOTORLARI
+  // 🚀 İLAN (VARLIK) YÖNETİM MOTORLARI
   const handleIlanSil = async (id: string) => {
     if (!confirm("⚠️ SİBER UYARI: Bu varlığı tamamen silmek istediğinize emin misiniz?")) return;
     try {
@@ -121,7 +126,6 @@ export default function SiberBorsaPaneli() {
     } catch (err) { alert("Bağlantı hatası."); }
   };
 
-  // 🚀 ZIRHLI VE GÜNCELLENMİŞ DÜZENLEME MOTORU
   const handleDuzenleKaydet = async (e: React.FormEvent) => {
     e.preventDefault();
     setIslemLoading(true);
@@ -130,12 +134,12 @@ export default function SiberBorsaPaneli() {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           baslik: duzenleModal.baslik,
-          fiyat: Number(duzenleModal.fiyat), // 🛡️ Kesin sayıya çevirdik
+          fiyat: Number(duzenleModal.fiyat),
           aciklama: duzenleModal.aciklama,
           kategori: duzenleModal.kategori,
-          sehir: duzenleModal.sehir, // 🛡️ Şehir eklendi
-          ilce: duzenleModal.ilce, // 🛡️ İlçe eklendi
-          mahalle: duzenleModal.mahalle // 🛡️ Mahalle eklendi
+          sehir: duzenleModal.sehir, 
+          ilce: duzenleModal.ilce, 
+          mahalle: duzenleModal.mahalle 
         }),
       });
       if (res.ok) {
@@ -148,6 +152,34 @@ export default function SiberBorsaPaneli() {
       }
     } catch (err) { alert("Bağlantı hatası."); } 
     finally { setIslemLoading(false); }
+  };
+
+  // 🤖 AI TAKAS MOTORU TETİKLEYİCİSİ
+  const aiIlanOlustur = async () => {
+    setAiYukleniyor(true);
+    setAiSonuc('');
+    try {
+      const res = await fetch('/api/ai-ilan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kategoriId: aiKategori, // Atakasa'ya özel kategori ID'si
+          sehir: aiSehir,
+          adet: aiAdet,
+          adminKey: process.env.NEXT_PUBLIC_ADMIN_KEY,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAiSonuc(`✅ ${data.uretilen} takas ilanı başarıyla oluşturuldu!`);
+        mutateListings(); // SWR ile listeyi canlı olarak yeniler
+      } else {
+        setAiSonuc('❌ Hata: ' + data.error);
+      }
+    } catch (e: any) {
+      setAiSonuc('❌ Sistem Hatası: ' + e.message);
+    }
+    setAiYukleniyor(false);
   };
 
   // ROZET FONKSİYONU
@@ -216,6 +248,7 @@ export default function SiberBorsaPaneli() {
             { id: "gelen_teklifler", icon: "🔄", ad: "Gelen Takaslar", bildirim: bekleyenTakas },
             { id: "giden_teklifler", icon: "🚀", ad: "Yaptığım Takaslar" },
             { id: "guvenlik", icon: "🛡️", ad: "Kalkan (Güvenlik)" },
+            { id: "ai_ilan", icon: "🤖", ad: "AI Takas İlanı" }, // 🚨 YENİ AI MENÜSÜ EKLENDİ!
           ].map((menu) => (
             <button key={menu.id} onClick={() => {setAktifSekme(menu.id); setAltFiltre("hepsi");}} 
               className={`flex items-center justify-between px-5 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${aktifSekme === menu.id ? 'bg-[#00f260] text-black shadow-[0_0_20px_rgba(0,242,96,0.3)] scale-105' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
@@ -290,7 +323,7 @@ export default function SiberBorsaPaneli() {
           </div>
         )}
 
-        {/* 💎 YENİ SEKME: SİBER VARLIKLARIM (İlan Yönetimi) */}
+        {/* 💎 SEKME: SİBER VARLIKLARIM (İlan Yönetimi) */}
         {aktifSekme === "ilanlarim" && (
           <div className="animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
@@ -327,7 +360,7 @@ export default function SiberBorsaPaneli() {
                             <span className="bg-[#00f260]/20 text-[#00f260] px-2 py-1 rounded text-[8px] font-black uppercase shrink-0">AKTİF</span>
                           )}
                         </div>
-                        <p className="text-[#00f260] font-black text-xl">{Number(ilan.fiyat).toLocaleString()} ₺</p>
+                        <p className="text-[#00f260] font-black text-xl">{Number(ilan.fiyat || ilan.tahminiDeger || 0).toLocaleString()} ₺</p>
                         <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mt-1 truncate">{ilan.kategori}</p>
                       </div>
                     </div>
@@ -345,6 +378,64 @@ export default function SiberBorsaPaneli() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 🤖 YENİ SEKME: AI TAKAS KOKPİTİ */}
+        {aktifSekme === "ai_ilan" && (
+          <div className="animate-in fade-in duration-500">
+            <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-6">AI Takas <span className="text-[#00f260]">Motoru.</span></h2>
+            <p className="text-[12px] text-slate-400 mb-10 font-bold tracking-wider max-w-2xl">
+              Claude AI ile otomatik takas ilanları oluştur. Bu ilanlar sitede gerçek kullanıcı ilanı gibi görünür ve platform dolgunluğunu anında artırır.
+            </p>
+            
+            <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem] shadow-[0_0_40px_rgba(0,242,96,0.05)] relative overflow-hidden mb-6 max-w-2xl">
+              <div className="mb-6">
+                <label className="text-[10px] font-black text-[#00f260] uppercase tracking-widest ml-2 mb-2 block">Kategori / Sektör</label>
+                <select value={aiKategori} onChange={e => setAiKategori(e.target.value)} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-[#00f260] appearance-none transition-colors">
+                  <option value="vasita">🚗 Vasıta & Araç</option>
+                  <option value="elektronik">📱 Elektronik</option>
+                  <option value="emlak">🏠 Emlak</option>
+                  <option value="giyim">⌚ Saat & Giyim</option>
+                  <option value="mobilya">🛋️ Mobilya</option>
+                  <option value="hobi">🎸 Hobi & Müzik</option>
+                  <option value="diger">📦 Diğer Her Şey</option>
+                </select>
+              </div>
+              
+              <div className="mb-6">
+                <label className="text-[10px] font-black text-[#00f260] uppercase tracking-widest ml-2 mb-2 block">Hedef Şehir</label>
+                <select value={aiSehir} onChange={e => setAiSehir(e.target.value)} className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-[#00f260] appearance-none transition-colors">
+                  {sehirler.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="mb-10">
+                <label className="text-[10px] font-black text-[#00f260] uppercase tracking-widest ml-2 mb-2 block flex justify-between">
+                  <span>Kaç İlan Üretilsin?</span>
+                  <span className="text-white text-base">{aiAdet} Adet</span>
+                </label>
+                <input type="range" min={1} max={20} value={aiAdet} onChange={e => setAiAdet(Number(e.target.value))} className="w-full accent-[#00f260] cursor-pointer" />
+                <div className="flex justify-between text-[10px] text-slate-500 font-black mt-2">
+                  <span>1 Min</span><span>20 Max</span>
+                </div>
+              </div>
+              
+              <button 
+                onClick={aiIlanOlustur} 
+                disabled={aiYukleniyor} 
+                className={`w-full py-5 rounded-2xl text-[12px] font-black uppercase tracking-widest transition-all ${aiYukleniyor ? 'bg-white/10 text-slate-500 cursor-not-allowed border border-white/5' : 'bg-[#00f260] text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(0,242,96,0.4)]'}`}>
+                {aiYukleniyor ? '⏳ CLAUDE AI ÇALIŞIYOR...' : '🤖 AI İLE TAKAS İLANI OLUŞTUR VE YAYINLA'}
+              </button>
+            </div>
+
+            {aiSonuc && (
+              <div className={`max-w-2xl p-6 rounded-2xl border text-xs font-black tracking-widest uppercase shadow-xl ${aiSonuc.includes('❌') ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-[#00f260]/10 border-[#00f260]/30 text-[#00f260]'}`}>
+                {aiSonuc}
               </div>
             )}
           </div>
@@ -474,7 +565,7 @@ export default function SiberBorsaPaneli() {
         )}
       </div>
 
-      {/* 🚀 SİBER DÜZENLEME MODALI (GÜNCELLENDİ VE ZIRHLANDI) */}
+      {/* 🚀 SİBER DÜZENLEME MODALI */}
       {duzenleModal && (
         <div className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-[#0a0a0a] border border-[#00f260]/30 rounded-[2.5rem] p-8 max-w-2xl w-full shadow-[0_0_50px_rgba(0,242,96,0.2)] max-h-[90vh] overflow-y-auto custom-scrollbar">
