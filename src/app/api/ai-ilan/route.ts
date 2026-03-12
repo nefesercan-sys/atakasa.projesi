@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectMongoDB } from '@/lib/mongodb';
-import Varlik from '@/models/Varlik';
+// 🚨 SİBER ZIRH: @/ kısayolu yerine en garanti yöntem olan geriye doğru klasör sayma eklendi!
+import { connectMongoDB } from '../../../lib/mongodb';
+import Varlik from '../../../models/Varlik';
 import mongoose from 'mongoose';
 
-// 🚨 SİBER ZIRH: Atakasa Kategorileri DB'deki Tam İsimlerle Eşleştirildi
+// Atakasa Kategorileri DB'deki Tam İsimlerle Eşleştirildi
 const KATEGORI_BILGI: Record<string, { ad: string; ornekler: string[]; resimKelimeleri: string; dbKategori: string }> = {
   vasita: { ad: 'Vasıta & Araç', ornekler: ['otomobil', 'motosiklet'], resimKelimeleri: 'car,vehicle', dbKategori: 'Vasıta - Otomobil' },
   elektronik: { ad: 'Elektronik', ornekler: ['akıllı telefon', 'laptop'], resimKelimeleri: 'smartphone,laptop', dbKategori: 'Elektronik - Telefon' },
@@ -59,7 +60,7 @@ SADECE JSON array döndür:
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', // SENİN AMİRAL GEMİSİ MOTORUN
+        model: 'claude-sonnet-4-20250514', // Amiral Gemisi
         max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -82,10 +83,10 @@ SADECE JSON array döndür:
       return NextResponse.json({ success: false, error: 'Yapay Zeka JSON formatını bozdu.' }, { status: 500 });
     }
 
-    // 🚨 1. ADIM: MONGOOSE MOTORUNU ÇALIŞTIR
+    // MONGOOSE MOTORUNU ÇALIŞTIR
     await connectMongoDB();
 
-    // 🚨 2. ADIM: "SATICI" (USER ID) ZORUNLULUĞUNU AŞMAK İÇİN SİSTEM BOTU BUL/YARAT
+    // SİSTEM BOTU BUL/YARAT
     let systemUser = await mongoose.connection.collection('users').findOne({ email: 'sistem@atakasa.com' });
     let saticiId;
     
@@ -102,7 +103,7 @@ SADECE JSON array döndür:
       saticiId = systemUser._id;
     }
 
-    // 🚨 3. ADIM: ATAKASA "VARLIK" ŞEMASINA GÖRE VERİLERİ HARMANLA
+    // ATAKASA "VARLIK" ŞEMASINA GÖRE VERİLERİ HARMANLA
     const kayitlar = uretilen.map((ilan: any, index: number) => {
       const randomId = Math.floor(Math.random() * 10000) + index;
       const dinamikResimUrl = `https://loremflickr.com/800/600/${kategori.resimKelimeleri}?lock=${randomId}`;
@@ -111,14 +112,14 @@ SADECE JSON array döndür:
         baslik: ilan.baslik,
         fiyat: ilan.tahminiDeger || 0,
         eskiFiyat: 0,
-        kategori: kategori.dbKategori, // Tam DB formatında kategori (Örn: "Vasıta - Otomobil")
+        kategori: kategori.dbKategori, 
         ulke: 'Türkiye',
         sehir: ilan.sehir,
         ilce: ilan.ilce,
         aciklama: ilan.aciklama,
         takasIstegi: ilan.takasTalebi,
-        resimler: [dinamikResimUrl], // Dinamik resim motoru
-        satici: saticiId, // Yukarıda ürettiğimiz geçerli ObjectId
+        resimler: [dinamikResimUrl], 
+        satici: saticiId, 
         aktif: true,
         goruntulenmeSayisi: Math.floor(Math.random() * 200) + 20,
         takasTeklifiSayisi: 0,
@@ -126,7 +127,7 @@ SADECE JSON array döndür:
       };
     });
 
-    // 🚨 4. ADIM: VERİTABANINA KAYDET
+    // VERİTABANINA KAYDET
     const result = await Varlik.insertMany(kayitlar);
 
     return NextResponse.json({
