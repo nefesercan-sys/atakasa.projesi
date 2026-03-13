@@ -2,16 +2,14 @@
 import React, { useState } from "react";
 import { useSession, signOut } from "next-auth/react"; 
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import useSWR from "swr";
-// 🚨 İŞTE ÇÖZÜM: 'Package' ikonu buraya eklendi!
 import { LogOut, Edit, Trash2, Power, LayoutDashboard, Package, ArrowLeftRight, ShoppingCart, Truck, Sparkles, Image as ImageIcon } from "lucide-react";
 
 // 📡 SWR VERİ ÇEKME MOTORU
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 // 🌍 TÜRKİYE'NİN 81 İLİ
-const sehirler = [
+const SEHIRLER = [
   "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", 
   "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", 
   "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", 
@@ -22,27 +20,34 @@ const sehirler = [
   "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
 ];
 
+// 📦 AI MOTORU İÇİN TÜM SEKTÖRLER
+const AI_KATEGORILER = [
+  { id: "Emlak", icon: "🏠" }, { id: "Vasıta", icon: "🚗" }, { id: "Elektronik", icon: "💻" },
+  { id: "Ev & Yaşam", icon: "🛋️" }, { id: "Moda & Giyim", icon: "👕" }, { id: "Anne & Bebek", icon: "🧸" },
+  { id: "Kozmetik", icon: "💄" }, { id: "Spor & Outdoor", icon: "⚽" }, { id: "Hobi & Oyuncak", icon: "🎨" },
+  { id: "Kitap & Kırtasiye", icon: "📚" }, { id: "Antika & Sanat", icon: "🏺" }, { id: "Petshop", icon: "🐾" },
+  { id: "Oyun & Konsol", icon: "🎮" }, { id: "Diğer", icon: "📦" }
+];
+
 export default function ProfesyonelKullaniciPaneli() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  
   const aktifEmail = session?.user?.email?.toLowerCase() || "";
 
-  // 🎛️ PANEL KONTROLLERİ
   const [aktifSekme, setAktifSekme] = useState("panelim");
   const [altFiltre, setAltFiltre] = useState("hepsi");
   const [kargoKoduForm, setKargoKoduForm] = useState("");
   const [duzenleModal, setDuzenleModal] = useState<any>(null);
   const [islemLoading, setIslemLoading] = useState(false);
+  const [topluSilLoading, setTopluSilLoading] = useState(false); // 🚀 Yeni: Toplu Silme Yükleniyor
 
-  // 🤖 AI TAKAS MOTORU DEĞİŞKENLERİ
-  const [aiKategori, setAiKategori] = useState('vasita');
+  // 🤖 AI MOTORU KONTROLLERİ
+  const [aiKategori, setAiKategori] = useState('Vasıta');
   const [aiSehir, setAiSehir] = useState('İstanbul');
   const [aiAdet, setAiAdet] = useState(5);
   const [aiYukleniyor, setAiYukleniyor] = useState(false);
   const [aiSonuc, setAiSonuc] = useState('');
 
-  // 📡 SWR CANLI RADAR BAĞLANTILARI
   const { data: walletData } = useSWR(aktifEmail ? `/api/wallet?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
   const { data: listingsData, mutate: mutateListings } = useSWR(aktifEmail ? `/api/listings?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
   const { data: takasData, mutate: mutateTakas } = useSWR(aktifEmail ? `/api/takas?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
@@ -59,15 +64,18 @@ export default function ProfesyonelKullaniciPaneli() {
   const gelenSiparisler = safeOrders.filter((o: any) => String(o?.sellerEmail || o?.saticiEmail || "").toLowerCase() === aktifEmail);
   const gidenSiparisler = safeOrders.filter((o: any) => String(o?.buyerEmail || o?.aliciEmail || "").toLowerCase() === aktifEmail);
 
-  // 📸 KUSURSUZ GÖRSEL DEDEKTÖRÜ
+  // 📸 SİBER GÖRSEL DEDEKTÖRÜ
   const getImageUrl = (ilan: any) => {
-    if (!ilan) return "https://placehold.co/400x300/f3f4f6/4f46e5?text=Görsel+Yok";
-    if (Array.isArray(ilan.resimler) && ilan.resimler.length > 0) return ilan.resimler[0];
-    if (Array.isArray(ilan.medyalar) && ilan.medyalar.length > 0) return ilan.medyalar[0];
-    if (Array.isArray(ilan.images) && ilan.images.length > 0) return ilan.images[0];
-    if (typeof ilan.resimler === 'string' && ilan.resimler.startsWith('http')) return ilan.resimler;
-    if (typeof ilan.medyalar === 'string' && ilan.medyalar.startsWith('http')) return ilan.medyalar;
-    return "https://placehold.co/400x300/f3f4f6/4f46e5?text=Görsel+Yok";
+    try {
+      if (!ilan) return "https://placehold.co/400x300/f3f4f6/4f46e5?text=Görsel+Yok";
+      if (Array.isArray(ilan.resimler) && ilan.resimler.length > 0 && typeof ilan.resimler[0] === 'string') return ilan.resimler[0];
+      if (Array.isArray(ilan.medyalar) && ilan.medyalar.length > 0 && typeof ilan.medyalar[0] === 'string') return ilan.medyalar[0];
+      if (Array.isArray(ilan.images) && ilan.images.length > 0 && typeof ilan.images[0] === 'string') return ilan.images[0];
+      if (typeof ilan.image === 'string' && ilan.image.length > 5) return ilan.image;
+      if (typeof ilan.imageUrl === 'string' && ilan.imageUrl.length > 5) return ilan.imageUrl;
+      if (typeof ilan.resimler === 'string' && ilan.resimler.length > 5) return ilan.resimler;
+      return "https://placehold.co/400x300/f3f4f6/4f46e5?text=Görsel+Yok";
+    } catch (e) { return "https://placehold.co/400x300/f3f4f6/ef4444?text=Hata"; }
   };
 
   const handleDurumGuncelle = async (takasId: string, yeniDurum: string) => {
@@ -89,17 +97,34 @@ export default function ProfesyonelKullaniciPaneli() {
   };
 
   const handleIlanSil = async (id: string) => {
-    if (!confirm("⚠️ Bu varlığı tamamen silmek istediğinize emin misiniz?")) return;
+    if (!confirm("⚠️ Bu ilanı kalıcı olarak silmek istediğinize emin misiniz?")) return;
     try {
       const res = await fetch(`/api/varliklar/${id}`, { method: "DELETE" });
-      if (res.ok) { alert("🗑️ Varlık başarıyla silindi."); mutateListings(); } 
-      else { alert("Silme işlemi başarısız."); }
+      if (res.ok) { mutateListings(); } else { alert("Silme işlemi başarısız."); }
     } catch (err) { alert("Bağlantı hatası."); }
+  };
+
+  // 🚀 YENİ: TOPLU SİLME MOTORU
+  const handleTopluSil = async () => {
+    if (ilanlarim.length === 0) return alert("Silinecek ilan bulunamadı.");
+    if (!confirm(`⚠️ DİKKAT: Yayındaki TÜM (${ilanlarim.length} adet) ilanınız kalıcı olarak silinecektir. Bu işlem geri alınamaz. Onaylıyor musunuz?`)) return;
+    
+    setTopluSilLoading(true);
+    try {
+      // Bütün ilanları paralel olarak (aynı anda) silme isteği atar, çok hızlıdır.
+      await Promise.all(ilanlarim.map((ilan: any) => fetch(`/api/varliklar/${ilan._id}`, { method: "DELETE" })));
+      alert("✅ Bütün ilanlar başarıyla temizlendi!");
+      mutateListings();
+    } catch (err) {
+      alert("❌ Toplu silme sırasında bir sorun oluştu.");
+    } finally {
+      setTopluSilLoading(false);
+    }
   };
 
   const handleIlanDurumDegistir = async (ilan: any) => {
     const yeniDurum = ilan.durum === "pasif" ? "aktif" : "pasif";
-    const mesaj = yeniDurum === "pasif" ? "Varlık yayından kaldırılacak. Emin misiniz?" : "Varlık tekrar vitrine çıkacak. Emin misiniz?";
+    const mesaj = yeniDurum === "pasif" ? "İlan yayından kaldırılacak. Emin misiniz?" : "İlan tekrar vitrine çıkacak. Emin misiniz?";
     if (!confirm(mesaj)) return;
     try {
       const res = await fetch(`/api/varliklar/${ilan._id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ durum: yeniDurum }) });
@@ -126,7 +151,7 @@ export default function ProfesyonelKullaniciPaneli() {
     try {
       const res = await fetch('/api/ai-ilan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kategoriId: aiKategori, sehir: aiSehir, adet: aiAdet, adminKey: process.env.NEXT_PUBLIC_ADMIN_KEY }) });
       const data = await res.json();
-      if (data.success) { setAiSonuc(`✅ ${data.uretilen} profesyonel ilan başarıyla oluşturuldu!`); mutateListings(); } 
+      if (data.success) { setAiSonuc(`✅ ${data.uretilen} adet "${aiKategori}" ilanı başarıyla oluşturuldu!`); mutateListings(); } 
       else { setAiSonuc('❌ Hata: ' + data.error); }
     } catch (e: any) { setAiSonuc('❌ Sistem Hatası: ' + e.message); }
     setAiYukleniyor(false);
@@ -186,7 +211,7 @@ export default function ProfesyonelKullaniciPaneli() {
             { id: "giden_siparisler", icon: <Truck size={18}/>, ad: "Aldıklarım", bildirim: aktifAldiklarim },
             { id: "gelen_teklifler", icon: <ArrowLeftRight size={18}/>, ad: "Gelen Takaslar", bildirim: bekleyenTakas },
             { id: "giden_teklifler", icon: <ArrowLeftRight size={18}/>, ad: "Yaptığım Takaslar" },
-            { id: "ai_ilan", icon: <Sparkles size={18}/>, ad: "Akıllı İlan Motoru" }, 
+            { id: "ai_ilan", icon: <Sparkles size={18} className="text-indigo-600"/>, ad: "Akıllı İlan Motoru" }, 
           ].map((menu) => (
             <button key={menu.id} onClick={() => {setAktifSekme(menu.id); setAltFiltre("hepsi");}} className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-[13px] transition-all whitespace-nowrap ${aktifSekme === menu.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
               <div className="flex items-center gap-3">{menu.icon} {menu.ad}</div>
@@ -227,7 +252,15 @@ export default function ProfesyonelKullaniciPaneli() {
           <div className="animate-in fade-in duration-300">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
               <h2 className="text-3xl font-extrabold text-gray-900">Varlıklarım</h2>
-              <button onClick={() => router.push('/ilan-ver')} className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-[13px] font-semibold hover:bg-indigo-700 transition-colors shadow-sm">+ Yeni İlan Ekle</button>
+              <div className="flex items-center gap-3">
+                {/* 🚀 TOPLU SİL BUTONU BURADA */}
+                {ilanlarim.length > 0 && (
+                  <button onClick={handleTopluSil} disabled={topluSilLoading} className={`px-5 py-3 rounded-xl text-[13px] font-semibold transition-colors shadow-sm border ${topluSilLoading ? 'bg-red-50 text-red-300 border-red-100 cursor-wait' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}>
+                    {topluSilLoading ? "⏳ SİLİNİYOR..." : "🗑️ TÜMÜNÜ SİL"}
+                  </button>
+                )}
+                <button onClick={() => router.push('/ilan-ver')} className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-[13px] font-semibold hover:bg-indigo-700 transition-colors shadow-sm">+ Yeni İlan Ekle</button>
+              </div>
             </div>
             {ilanlarim.length === 0 ? (
               <div className="text-center py-20 border-2 border-dashed border-gray-200 rounded-3xl bg-white">
@@ -238,11 +271,16 @@ export default function ProfesyonelKullaniciPaneli() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {ilanlarim.map((ilan: any) => (
                   <div key={ilan._id} className={`flex flex-col bg-white border rounded-2xl p-4 shadow-sm transition-all ${ilan.durum === 'pasif' ? 'border-red-200 opacity-80 grayscale-[20%]' : 'border-gray-200 hover:border-indigo-200 hover:shadow-md'}`}>
-                    <div className="w-full h-48 rounded-xl overflow-hidden mb-4 bg-gray-100">
+                    <div className="w-full h-48 rounded-xl overflow-hidden mb-4 bg-gray-100 relative group">
                       {ilan.resimler?.[0]?.includes(".mp4") ? (
                         <video src={ilan.resimler[0]} className="w-full h-full object-cover" muted />
                       ) : (
-                        <img src={getImageUrl(ilan)} alt={ilan.baslik} className="w-full h-full object-cover" />
+                        <img 
+                          src={getImageUrl(ilan)} 
+                          alt={ilan.baslik} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300/f3f4f6/4f46e5?text=Görsel+Yok"; }} 
+                        />
                       )}
                     </div>
                     <div className="flex-1 min-w-0 mb-4">
@@ -277,7 +315,6 @@ export default function ProfesyonelKullaniciPaneli() {
                 <div className="bg-white border border-gray-200 rounded-3xl py-16 text-center shadow-sm">
                   <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-900 font-bold text-sm mb-1">Bu filtrede işlem bulunamadı</p>
-                  <p className="text-gray-500 text-xs">Sadece kesinleşmiş işlemler burada listelenir.</p>
                 </div>
               ) : (
                 gosterilenVeri().map((islem: any, index: number) => {
@@ -324,7 +361,6 @@ export default function ProfesyonelKullaniciPaneli() {
                   if (isSiparis) {
                     const benimRolum = String(islem.sellerEmail || islem.saticiEmail || "").toLowerCase() === aktifEmail ? "satici" : "alici";
                     const islemDurumu = String(islem.durum || islem.status || "").toLowerCase();
-                    const kisaId = guvenliID.length > 6 ? guvenliID.slice(-6) : guvenliID;
 
                     return (
                       <div key={`siparis-${guvenliID}`} className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
@@ -335,7 +371,6 @@ export default function ProfesyonelKullaniciPaneli() {
                             </span>
                             {getDurumRozeti(islemDurumu)}
                           </div>
-                          <span className="text-gray-400 text-[10px] font-semibold uppercase">ID: {kisaId}</span>
                         </div>
 
                         <div className="flex flex-col md:flex-row gap-6 mb-6 bg-gray-50 p-5 rounded-xl border border-gray-100">
@@ -380,37 +415,65 @@ export default function ProfesyonelKullaniciPaneli() {
           </div>
         )}
 
+        {/* 🤖 AKILLI AI İLAN MOTORU */}
         {aktifSekme === "ai_ilan" && (
           <div className="animate-in fade-in duration-300">
             <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Akıllı İlan Motoru</h2>
-            <p className="text-[13px] text-gray-500 mb-8 font-medium max-w-2xl">Claude AI ile otomatik ilanlar oluşturun. Bu ilanlar sitede gerçek kullanıcı ilanı gibi görünür.</p>
+            <p className="text-[13px] text-gray-500 mb-8 font-medium max-w-2xl">
+              Claude AI ile otomatik takas ilanları oluşturun. Tüm Türkiye şehirleri ve sektörler emrinizde!
+            </p>
             
             <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm max-w-2xl">
+              
               <div className="mb-6">
-                <label className="text-[12px] font-bold text-gray-700 uppercase mb-2 block">Kategori Seçimi</label>
-                <select value={aiKategori} onChange={e => setAiKategori(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-medium outline-none focus:border-indigo-500">
-                  <option value="vasita">🚗 Vasıta & Araç</option><option value="elektronik">📱 Elektronik</option><option value="emlak">🏠 Emlak</option><option value="giyim">⌚ Saat & Giyim</option>
+                <label className="text-[12px] font-bold text-gray-700 uppercase mb-2 block">Kategori / Sektör Seçimi</label>
+                <select value={aiKategori} onChange={e => setAiKategori(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-medium outline-none focus:border-indigo-500 focus:bg-white transition-colors cursor-pointer">
+                  {AI_KATEGORILER.map(kat => (
+                    <option key={kat.id} value={kat.id}>{kat.icon} {kat.id}</option>
+                  ))}
                 </select>
               </div>
+              
               <div className="mb-6">
                 <label className="text-[12px] font-bold text-gray-700 uppercase mb-2 block">Hedef Şehir</label>
-                <select value={aiSehir} onChange={e => setAiSehir(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-medium outline-none focus:border-indigo-500">
-                  {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+                <select value={aiSehir} onChange={e => setAiSehir(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-medium outline-none focus:border-indigo-500 focus:bg-white transition-colors cursor-pointer">
+                  <option value="Rastgele">🎲 Bütün Türkiye (Rastgele Dağıt)</option>
+                  {SEHIRLER.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </select>
               </div>
+              
               <div className="mb-10">
-                <label className="text-[12px] font-bold text-gray-700 uppercase mb-3 block flex justify-between items-center"><span>Üretilecek İlan</span><span className="text-indigo-700 font-bold bg-indigo-50 px-2 py-1 rounded-md">{aiAdet} Adet</span></label>
+                <label className="text-[12px] font-bold text-gray-700 uppercase mb-3 block flex justify-between items-center">
+                  <span>Üretilecek İlan Sayısı</span>
+                  <span className="text-indigo-700 font-bold bg-indigo-50 px-2 py-1 rounded-md">{aiAdet} Adet</span>
+                </label>
                 <input type="range" min={1} max={20} value={aiAdet} onChange={e => setAiAdet(Number(e.target.value))} className="w-full accent-indigo-600 cursor-pointer" />
+                <div className="flex justify-between text-[11px] text-gray-400 font-semibold mt-2">
+                  <span>1</span><span>20</span>
+                </div>
               </div>
-              <button onClick={aiIlanOlustur} disabled={aiYukleniyor} className={`w-full py-4 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 ${aiYukleniyor ? 'bg-indigo-100 text-indigo-400' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'}`}>
-                {aiYukleniyor ? <><Sparkles size={18} className="animate-spin"/> Üretiliyor...</> : <><Sparkles size={18}/> Yapay İlanları Yayına Al</>}
+              
+              <button 
+                onClick={aiIlanOlustur} 
+                disabled={aiYukleniyor} 
+                className={`w-full py-4 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${aiYukleniyor ? 'bg-indigo-100 text-indigo-400 cursor-wait' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'}`}>
+                {aiYukleniyor ? <><Sparkles size={18} className="animate-spin"/> AI İlanları Hazırlıyor...</> : <><Sparkles size={18}/> Yapay İlanları Yayına Al</>}
               </button>
             </div>
-            {aiSonuc && <div className={`max-w-2xl mt-6 p-5 rounded-xl border text-[13px] font-bold flex items-center gap-2 ${aiSonuc.includes('❌') ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>{aiSonuc}</div>}
+
+            {aiSonuc && (
+              <div className={`max-w-2xl mt-6 p-5 rounded-xl border text-[13px] font-bold flex items-center gap-2 ${aiSonuc.includes('❌') ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+                {aiSonuc}
+              </div>
+            )}
           </div>
         )}
+
       </div>
 
+      {/* DÜZENLEME MODALI */}
       {duzenleModal && (
         <div className="fixed inset-0 z-[999] bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-gray-200 rounded-3xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -418,25 +481,82 @@ export default function ProfesyonelKullaniciPaneli() {
               <h3 className="text-xl font-extrabold text-gray-900">Varlığı Düzenle</h3>
               <button onClick={() => setDuzenleModal(null)} className="text-gray-400 hover:text-gray-700"><Trash2 size={20}/></button>
             </div>
+            
             <form onSubmit={handleDuzenleKaydet} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div><label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block">Başlık</label><input type="text" value={duzenleModal.baslik || ""} onChange={e => setDuzenleModal({...duzenleModal, baslik: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500" required /></div>
-                <div><label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block">Fiyat (₺)</label><input type="number" value={duzenleModal.fiyat || ""} onChange={e => setDuzenleModal({...duzenleModal, fiyat: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-indigo-700 font-black outline-none focus:border-indigo-500" required /></div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block ml-1">Başlık</label>
+                  <input type="text" value={duzenleModal.baslik || ""} onChange={e => setDuzenleModal({...duzenleModal, baslik: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500 focus:bg-white transition-colors" required />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block ml-1">Fiyat (₺)</label>
+                  <input type="number" value={duzenleModal.fiyat || ""} onChange={e => setDuzenleModal({...duzenleModal, fiyat: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-indigo-700 font-black outline-none focus:border-indigo-500 focus:bg-white transition-colors" required />
+                </div>
               </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block ml-1">Kategori</label>
+                <select className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500 focus:bg-white transition-colors cursor-pointer" value={duzenleModal.kategori || ""} onChange={e => setDuzenleModal({...duzenleModal, kategori: e.target.value})} required>
+                  <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
+                  <optgroup label="🏢 EMLAK & GAYRİMENKUL">
+                    <option value="Emlak - Konut">Konut / Ev</option><option value="Emlak - İşyeri & Mağaza">İşyeri / Dükkan / Mağaza / Fabrika</option><option value="Emlak - Arsa & Tarla">Arsa / Tarla</option>
+                  </optgroup>
+                  <optgroup label="🚗 VASITA & MOBİLİTE">
+                    <option value="Vasıta - Otomobil">Otomobil (Araç)</option><option value="Vasıta - Motosiklet & Bisiklet">Motosiklet / Bisiklet / Scooter</option><option value="Vasıta - Deniz & Diğer">Deniz Araçları / Akülü Araçlar</option><option value="Vasıta - Yedek Parça">Yedek Parça & Donanım</option>
+                  </optgroup>
+                  <optgroup label="💻 ELEKTRONİK & TEKNOLOJİ">
+                    <option value="Elektronik - Telefon">Cep Telefonu</option><option value="Elektronik - Bilgisayar">Bilgisayar / Donanım</option><option value="Elektronik - TV & Görüntü">Televizyon / Ses / Görüntü</option><option value="Elektronik - Oyun Konsolu">PlayStation / Oyun Konsolu</option>
+                  </optgroup>
+                  <optgroup label="🛋️ EV, YAŞAM & BEYAZ EŞYA">
+                    <option value="Ev - Mobilya & Tekstil">Mobilya / Halı / Ev Tekstili</option><option value="Ev - Beyaz Eşya & Isıtıcı">Beyaz Eşya / Isıtıcı</option><option value="Ev - Dekorasyon & Banyo">Duş Eşyaları / Dekorasyon</option>
+                  </optgroup>
+                  <optgroup label="⌚ MODA, SAAT & KOZMETİK">
+                    <option value="Moda - Giyim & Ayakkabı">Elbise / Giyim</option><option value="Moda - Saat & Takı">Saat / Takı / Özel Eşya</option><option value="Kozmetik & Kişisel Bakım">Kozmetik / Kişisel Bakım</option>
+                  </optgroup>
+                  <optgroup label="🎨 ANTİKA, SANAT & HOBİ">
+                    <option value="Sanat - Antika & El Sanatı">Antika Eserler / El Sanatları</option><option value="Sanat - Özel Tasarım">Özel Tasarımlar</option><option value="Hobi - Oyuncak & Kitap">Oyuncak / Kitap / Kırtasiye</option>
+                  </optgroup>
+                  <optgroup label="⚙️ SANAYİ & DİĞER">
+                    <option value="Sanayi - Makine & Nalbur">Makine / Nalbur Ürünleri</option><option value="Evcil Hayvan & Petshop">Canlı Hayvan / Petshop</option><option value="Gıda & İçecek">Gıda / Yiyecek / İçecek</option><option value="Diğer">Diğer İlanlar</option>
+                  </optgroup>
+                </select>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div><label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block">Şehir</label><select className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500" value={duzenleModal.sehir || ""} onChange={e => setDuzenleModal({...duzenleModal, sehir: e.target.value})} required><option value="" disabled>Seçiniz...</option>{sehirler.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-                <div><label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block">İlçe</label><input type="text" value={duzenleModal.ilce || ""} onChange={e => setDuzenleModal({...duzenleModal, ilce: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500" required /></div>
-                <div><label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block">Kategori</label><input type="text" value={duzenleModal.kategori || ""} onChange={e => setDuzenleModal({...duzenleModal, kategori: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500" required /></div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block ml-1">Şehir</label>
+                  <select className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500 focus:bg-white transition-colors cursor-pointer" value={duzenleModal.sehir || ""} onChange={e => setDuzenleModal({...duzenleModal, sehir: e.target.value})} required>
+                    <option value="" disabled>Seçiniz...</option>
+                    {SEHIRLER.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block ml-1">İlçe</label>
+                  <input type="text" value={duzenleModal.ilce || ""} onChange={e => setDuzenleModal({...duzenleModal, ilce: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500 focus:bg-white transition-colors" required />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block ml-1">Mahalle</label>
+                  <input type="text" value={duzenleModal.mahalle || ""} onChange={e => setDuzenleModal({...duzenleModal, mahalle: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500 focus:bg-white transition-colors" />
+                </div>
               </div>
-              <div><label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block">Açıklama</label><textarea value={duzenleModal.aciklama || ""} onChange={e => setDuzenleModal({...duzenleModal, aciklama: e.target.value})} rows={4} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 text-sm font-medium outline-none focus:border-indigo-500 resize-none" required></textarea></div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block ml-1">Açıklama / Şartlar</label>
+                <textarea value={duzenleModal.aciklama || ""} onChange={e => setDuzenleModal({...duzenleModal, aciklama: e.target.value})} rows={4} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 text-sm font-medium outline-none focus:border-indigo-500 focus:bg-white transition-colors resize-none" required></textarea>
+              </div>
+
               <div className="flex gap-3 mt-8 pt-6 border-t border-gray-100">
-                <button type="button" onClick={() => setDuzenleModal(null)} className="flex-1 py-4 bg-white border border-gray-200 text-gray-700 font-bold text-[12px] uppercase rounded-xl hover:bg-gray-50">İptal</button>
-                <button type="submit" disabled={islemLoading} className="flex-1 py-4 bg-indigo-600 text-white font-bold text-[12px] uppercase rounded-xl hover:bg-indigo-700 shadow-md">{islemLoading ? "KAYDEDİLİYOR..." : "KAYDET"}</button>
+                <button type="button" onClick={() => setDuzenleModal(null)} className="flex-1 py-4 bg-white border border-gray-200 text-gray-700 font-bold text-[12px] uppercase rounded-xl hover:bg-gray-50 transition-colors">İptal</button>
+                <button type="submit" disabled={islemLoading} className="flex-1 py-4 bg-indigo-600 text-white font-bold text-[12px] uppercase rounded-xl hover:bg-indigo-700 transition-colors shadow-md">
+                  {islemLoading ? "KAYDEDİLİYOR..." : "DEĞİŞİKLİKLERİ KAYDET"}
+                </button>
               </div>
             </form>
+
           </div>
         </div>
       )}
+      
     </div>
   );
 }
