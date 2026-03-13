@@ -20,13 +20,24 @@ const SEHIRLER = [
   "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
 ];
 
-// 📦 AI MOTORU İÇİN TÜM SEKTÖRLER
+// 📦 AI MOTORU İÇİN TAM 16 SEKTÖR (Temizlik ve 2. El Eklendi)
 const AI_KATEGORILER = [
-  { id: "Emlak", icon: "🏠" }, { id: "Vasıta", icon: "🚗" }, { id: "Elektronik", icon: "💻" },
-  { id: "Ev & Yaşam", icon: "🛋️" }, { id: "Moda & Giyim", icon: "👕" }, { id: "Anne & Bebek", icon: "🧸" },
-  { id: "Kozmetik", icon: "💄" }, { id: "Spor & Outdoor", icon: "⚽" }, { id: "Hobi & Oyuncak", icon: "🎨" },
-  { id: "Kitap & Kırtasiye", icon: "📚" }, { id: "Antika & Sanat", icon: "🏺" }, { id: "Petshop", icon: "🐾" },
-  { id: "Oyun & Konsol", icon: "🎮" }, { id: "Diğer", icon: "📦" }
+  { id: "Emlak", icon: "🏠" }, 
+  { id: "Vasıta", icon: "🚗" }, 
+  { id: "Elektronik", icon: "💻" },
+  { id: "Ev & Yaşam", icon: "🛋️" }, 
+  { id: "Moda & Giyim", icon: "👕" }, 
+  { id: "Anne & Bebek", icon: "🧸" },
+  { id: "Kozmetik", icon: "💄" }, 
+  { id: "Spor & Outdoor", icon: "⚽" }, 
+  { id: "Hobi & Oyuncak", icon: "🎨" },
+  { id: "Kitap & Kırtasiye", icon: "📚" }, 
+  { id: "Antika & Sanat", icon: "🏺" }, 
+  { id: "Petshop", icon: "🐾" },
+  { id: "Oyun & Konsol", icon: "🎮" }, 
+  { id: "Temizlik Hizmetleri", icon: "🧹" }, // YENİ
+  { id: "2. El Eşya", icon: "♻️" },         // YENİ
+  { id: "Diğer", icon: "📦" }               // TOPLAM 16
 ];
 
 export default function ProfesyonelKullaniciPaneli() {
@@ -39,7 +50,7 @@ export default function ProfesyonelKullaniciPaneli() {
   const [kargoKoduForm, setKargoKoduForm] = useState("");
   const [duzenleModal, setDuzenleModal] = useState<any>(null);
   const [islemLoading, setIslemLoading] = useState(false);
-  const [topluSilLoading, setTopluSilLoading] = useState(false); // 🚀 Yeni: Toplu Silme Yükleniyor
+  const [topluSilLoading, setTopluSilLoading] = useState(false);
 
   // 🤖 AI MOTORU KONTROLLERİ
   const [aiKategori, setAiKategori] = useState('Vasıta');
@@ -96,6 +107,7 @@ export default function ProfesyonelKullaniciPaneli() {
     } catch (error) { alert("Ağ arızası."); }
   };
 
+  // 🚀 TEKLİ SİLME MOTORU
   const handleIlanSil = async (id: string) => {
     if (!confirm("⚠️ Bu ilanı kalıcı olarak silmek istediğinize emin misiniz?")) return;
     try {
@@ -104,14 +116,14 @@ export default function ProfesyonelKullaniciPaneli() {
     } catch (err) { alert("Bağlantı hatası."); }
   };
 
-  // 🚀 YENİ: TOPLU SİLME MOTORU
+  // 🚀 TOPLU SİLME MOTORU
   const handleTopluSil = async () => {
     if (ilanlarim.length === 0) return alert("Silinecek ilan bulunamadı.");
     if (!confirm(`⚠️ DİKKAT: Yayındaki TÜM (${ilanlarim.length} adet) ilanınız kalıcı olarak silinecektir. Bu işlem geri alınamaz. Onaylıyor musunuz?`)) return;
     
     setTopluSilLoading(true);
     try {
-      // Bütün ilanları paralel olarak (aynı anda) silme isteği atar, çok hızlıdır.
+      // Bütün ilanlara aynı anda silme isteği atar
       await Promise.all(ilanlarim.map((ilan: any) => fetch(`/api/varliklar/${ilan._id}`, { method: "DELETE" })));
       alert("✅ Bütün ilanlar başarıyla temizlendi!");
       mutateListings();
@@ -248,20 +260,26 @@ export default function ProfesyonelKullaniciPaneli() {
           </div>
         )}
 
+        {/* 💎 VARLIKLARIM VE TOPLU SİLME EKRANI */}
         {aktifSekme === "ilanlarim" && (
           <div className="animate-in fade-in duration-300">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
               <h2 className="text-3xl font-extrabold text-gray-900">Varlıklarım</h2>
-              <div className="flex items-center gap-3">
+              
+              <div className="flex items-center gap-3 w-full md:w-auto">
                 {/* 🚀 TOPLU SİL BUTONU BURADA */}
                 {ilanlarim.length > 0 && (
-                  <button onClick={handleTopluSil} disabled={topluSilLoading} className={`px-5 py-3 rounded-xl text-[13px] font-semibold transition-colors shadow-sm border ${topluSilLoading ? 'bg-red-50 text-red-300 border-red-100 cursor-wait' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}>
-                    {topluSilLoading ? "⏳ SİLİNİYOR..." : "🗑️ TÜMÜNÜ SİL"}
+                  <button onClick={handleTopluSil} disabled={topluSilLoading} className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[13px] font-bold transition-all shadow-sm border flex items-center justify-center gap-2 ${topluSilLoading ? 'bg-red-50 text-red-400 border-red-100 cursor-wait' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-600 hover:text-white'}`}>
+                    <Trash2 size={16} />
+                    {topluSilLoading ? "SİLİNİYOR..." : "TÜMÜNÜ SİL"}
                   </button>
                 )}
-                <button onClick={() => router.push('/ilan-ver')} className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-[13px] font-semibold hover:bg-indigo-700 transition-colors shadow-sm">+ Yeni İlan Ekle</button>
+                <button onClick={() => router.push('/ilan-ver')} className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-3 rounded-xl text-[13px] font-bold hover:bg-indigo-700 transition-all shadow-sm">
+                  + Yeni İlan
+                </button>
               </div>
             </div>
+
             {ilanlarim.length === 0 ? (
               <div className="text-center py-20 border-2 border-dashed border-gray-200 rounded-3xl bg-white">
                 <ImageIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -291,7 +309,8 @@ export default function ProfesyonelKullaniciPaneli() {
                     <div className="grid grid-cols-3 gap-2 mt-auto pt-4 border-t border-gray-100">
                       <button onClick={() => setDuzenleModal(ilan)} className="flex items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2.5 rounded-lg text-[11px] font-bold transition-colors"><Edit size={14} /> Düzenle</button>
                       <button onClick={() => handleIlanDurumDegistir(ilan)} className={`flex items-center justify-center gap-1 py-2.5 rounded-lg text-[11px] font-bold transition-colors ${ilan.durum === 'pasif' ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}><Power size={14} /> {ilan.durum === 'pasif' ? 'Yayınla' : 'Durdur'}</button>
-                      <button onClick={() => handleIlanSil(ilan._id)} className="flex items-center justify-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-lg text-[11px] font-bold transition-colors"><Trash2 size={14} /> Sil</button>
+                      {/* TEKLİ SİL BUTONU */}
+                      <button onClick={() => handleIlanSil(ilan._id)} className="flex items-center justify-center gap-1 bg-red-50 hover:bg-red-500 hover:text-white text-red-600 py-2.5 rounded-lg text-[11px] font-bold transition-colors"><Trash2 size={14} /> Sil</button>
                     </div>
                   </div>
                 ))}
@@ -300,6 +319,7 @@ export default function ProfesyonelKullaniciPaneli() {
           </div>
         )}
 
+        {/* İŞLEM TAHTASI */}
         {["gelen_teklifler", "giden_teklifler", "gelen_siparisler", "giden_siparisler"].includes(aktifSekme) && (
           <div className="animate-in fade-in duration-300">
             <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2">
@@ -415,12 +435,12 @@ export default function ProfesyonelKullaniciPaneli() {
           </div>
         )}
 
-        {/* 🤖 AKILLI AI İLAN MOTORU */}
+        {/* 🤖 AKILLI AI İLAN MOTORU (16 KATEGORİ EKLENDİ) */}
         {aktifSekme === "ai_ilan" && (
           <div className="animate-in fade-in duration-300">
             <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Akıllı İlan Motoru</h2>
             <p className="text-[13px] text-gray-500 mb-8 font-medium max-w-2xl">
-              Claude AI ile otomatik takas ilanları oluşturun. Tüm Türkiye şehirleri ve sektörler emrinizde!
+              Claude AI ile otomatik takas ilanları oluşturun. Tüm Türkiye şehirleri ve 16 farklı sektör emrinizde!
             </p>
             
             <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm max-w-2xl">
@@ -498,27 +518,9 @@ export default function ProfesyonelKullaniciPaneli() {
                 <label className="text-[11px] font-bold text-gray-600 uppercase mb-1.5 block ml-1">Kategori</label>
                 <select className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500 focus:bg-white transition-colors cursor-pointer" value={duzenleModal.kategori || ""} onChange={e => setDuzenleModal({...duzenleModal, kategori: e.target.value})} required>
                   <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
-                  <optgroup label="🏢 EMLAK & GAYRİMENKUL">
-                    <option value="Emlak - Konut">Konut / Ev</option><option value="Emlak - İşyeri & Mağaza">İşyeri / Dükkan / Mağaza / Fabrika</option><option value="Emlak - Arsa & Tarla">Arsa / Tarla</option>
-                  </optgroup>
-                  <optgroup label="🚗 VASITA & MOBİLİTE">
-                    <option value="Vasıta - Otomobil">Otomobil (Araç)</option><option value="Vasıta - Motosiklet & Bisiklet">Motosiklet / Bisiklet / Scooter</option><option value="Vasıta - Deniz & Diğer">Deniz Araçları / Akülü Araçlar</option><option value="Vasıta - Yedek Parça">Yedek Parça & Donanım</option>
-                  </optgroup>
-                  <optgroup label="💻 ELEKTRONİK & TEKNOLOJİ">
-                    <option value="Elektronik - Telefon">Cep Telefonu</option><option value="Elektronik - Bilgisayar">Bilgisayar / Donanım</option><option value="Elektronik - TV & Görüntü">Televizyon / Ses / Görüntü</option><option value="Elektronik - Oyun Konsolu">PlayStation / Oyun Konsolu</option>
-                  </optgroup>
-                  <optgroup label="🛋️ EV, YAŞAM & BEYAZ EŞYA">
-                    <option value="Ev - Mobilya & Tekstil">Mobilya / Halı / Ev Tekstili</option><option value="Ev - Beyaz Eşya & Isıtıcı">Beyaz Eşya / Isıtıcı</option><option value="Ev - Dekorasyon & Banyo">Duş Eşyaları / Dekorasyon</option>
-                  </optgroup>
-                  <optgroup label="⌚ MODA, SAAT & KOZMETİK">
-                    <option value="Moda - Giyim & Ayakkabı">Elbise / Giyim</option><option value="Moda - Saat & Takı">Saat / Takı / Özel Eşya</option><option value="Kozmetik & Kişisel Bakım">Kozmetik / Kişisel Bakım</option>
-                  </optgroup>
-                  <optgroup label="🎨 ANTİKA, SANAT & HOBİ">
-                    <option value="Sanat - Antika & El Sanatı">Antika Eserler / El Sanatları</option><option value="Sanat - Özel Tasarım">Özel Tasarımlar</option><option value="Hobi - Oyuncak & Kitap">Oyuncak / Kitap / Kırtasiye</option>
-                  </optgroup>
-                  <optgroup label="⚙️ SANAYİ & DİĞER">
-                    <option value="Sanayi - Makine & Nalbur">Makine / Nalbur Ürünleri</option><option value="Evcil Hayvan & Petshop">Canlı Hayvan / Petshop</option><option value="Gıda & İçecek">Gıda / Yiyecek / İçecek</option><option value="Diğer">Diğer İlanlar</option>
-                  </optgroup>
+                  {AI_KATEGORILER.map(kat => (
+                    <option key={kat.id} value={kat.id}>{kat.icon} {kat.id}</option>
+                  ))}
                 </select>
               </div>
 
