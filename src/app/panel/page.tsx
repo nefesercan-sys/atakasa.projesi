@@ -20,24 +20,24 @@ const SEHIRLER = [
   "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
 ];
 
-// 📦 AI MOTORU İÇİN TAM 16 SEKTÖR (Temizlik ve 2. El Eklendi)
+// 📦 AI MOTORU İÇİN TAM 16 SEKTÖR (Arka planın anlayacağı güvenli "id" yapısı)
 const AI_KATEGORILER = [
-  { id: "Emlak", icon: "🏠" }, 
-  { id: "Vasıta", icon: "🚗" }, 
-  { id: "Elektronik", icon: "💻" },
-  { id: "Ev & Yaşam", icon: "🛋️" }, 
-  { id: "Moda & Giyim", icon: "👕" }, 
-  { id: "Anne & Bebek", icon: "🧸" },
-  { id: "Kozmetik", icon: "💄" }, 
-  { id: "Spor & Outdoor", icon: "⚽" }, 
-  { id: "Hobi & Oyuncak", icon: "🎨" },
-  { id: "Kitap & Kırtasiye", icon: "📚" }, 
-  { id: "Antika & Sanat", icon: "🏺" }, 
-  { id: "Petshop", icon: "🐾" },
-  { id: "Oyun & Konsol", icon: "🎮" }, 
-  { id: "Temizlik Hizmetleri", icon: "🧹" }, // YENİ
-  { id: "2. El Eşya", icon: "♻️" },         // YENİ
-  { id: "Diğer", icon: "📦" }               // TOPLAM 16
+  { id: "emlak", ad: "Emlak", icon: "🏠" }, 
+  { id: "vasita", ad: "Vasıta", icon: "🚗" }, 
+  { id: "elektronik", ad: "Elektronik", icon: "💻" },
+  { id: "ev_yasam", ad: "Ev & Yaşam", icon: "🛋️" }, 
+  { id: "moda", ad: "Moda & Giyim", icon: "👕" }, 
+  { id: "anne_bebek", ad: "Anne & Bebek", icon: "🧸" },
+  { id: "kozmetik", ad: "Kozmetik", icon: "💄" }, 
+  { id: "spor", ad: "Spor & Outdoor", icon: "⚽" }, 
+  { id: "hobi", ad: "Hobi & Oyuncak", icon: "🎨" },
+  { id: "kitap", ad: "Kitap & Kırtasiye", icon: "📚" }, 
+  { id: "antika", ad: "Antika & Sanat", icon: "🏺" }, 
+  { id: "petshop", ad: "Petshop", icon: "🐾" },
+  { id: "oyun", ad: "Oyun & Konsol", icon: "🎮" }, 
+  { id: "temizlik", ad: "Temizlik Hizmetleri", icon: "🧹" }, 
+  { id: "ikinci_el", ad: "2. El Eşya", icon: "♻️" },         
+  { id: "diger", ad: "Diğer", icon: "📦" }               
 ];
 
 export default function ProfesyonelKullaniciPaneli() {
@@ -45,7 +45,7 @@ export default function ProfesyonelKullaniciPaneli() {
   const router = useRouter();
   const aktifEmail = session?.user?.email?.toLowerCase() || "";
 
-  const [aktifSekme, setAktifSekme] = useState("panelim");
+  const [aktifSekme, setAktifSekme] = useState("ai_ilan"); // Açılışta direkt AI sekmesi gelsin diye ayarladım
   const [altFiltre, setAltFiltre] = useState("hepsi");
   const [kargoKoduForm, setKargoKoduForm] = useState("");
   const [duzenleModal, setDuzenleModal] = useState<any>(null);
@@ -53,7 +53,7 @@ export default function ProfesyonelKullaniciPaneli() {
   const [topluSilLoading, setTopluSilLoading] = useState(false);
 
   // 🤖 AI MOTORU KONTROLLERİ
-  const [aiKategori, setAiKategori] = useState('Vasıta');
+  const [aiKategori, setAiKategori] = useState('vasita'); // Güvenli başlangıç değeri
   const [aiSehir, setAiSehir] = useState('İstanbul');
   const [aiAdet, setAiAdet] = useState(5);
   const [aiYukleniyor, setAiYukleniyor] = useState(false);
@@ -75,7 +75,7 @@ export default function ProfesyonelKullaniciPaneli() {
   const gelenSiparisler = safeOrders.filter((o: any) => String(o?.sellerEmail || o?.saticiEmail || "").toLowerCase() === aktifEmail);
   const gidenSiparisler = safeOrders.filter((o: any) => String(o?.buyerEmail || o?.aliciEmail || "").toLowerCase() === aktifEmail);
 
-  // 📸 SİBER GÖRSEL DEDEKTÖRÜ
+  // 📸 SİBER GÖRSEL DEDEKTÖRÜ (HATA KORUMALI)
   const getImageUrl = (ilan: any) => {
     try {
       if (!ilan) return "https://placehold.co/400x300/f3f4f6/4f46e5?text=Görsel+Yok";
@@ -116,16 +116,17 @@ export default function ProfesyonelKullaniciPaneli() {
     } catch (err) { alert("Bağlantı hatası."); }
   };
 
-  // 🚀 TOPLU SİLME MOTORU
+  // 🚀 MUHTEŞEM TOPLU SİLME MOTORU
   const handleTopluSil = async () => {
     if (ilanlarim.length === 0) return alert("Silinecek ilan bulunamadı.");
     if (!confirm(`⚠️ DİKKAT: Yayındaki TÜM (${ilanlarim.length} adet) ilanınız kalıcı olarak silinecektir. Bu işlem geri alınamaz. Onaylıyor musunuz?`)) return;
     
     setTopluSilLoading(true);
     try {
-      // Bütün ilanlara aynı anda silme isteği atar
+      // Bütün ilanlara paralel (aynı anda) silme isteği atar
       await Promise.all(ilanlarim.map((ilan: any) => fetch(`/api/varliklar/${ilan._id}`, { method: "DELETE" })));
       alert("✅ Bütün ilanlar başarıyla temizlendi!");
+      setAiSonuc("✅ Sistemdeki tüm ilanlar başarıyla silindi.");
       mutateListings();
     } catch (err) {
       alert("❌ Toplu silme sırasında bir sorun oluştu.");
@@ -260,21 +261,19 @@ export default function ProfesyonelKullaniciPaneli() {
           </div>
         )}
 
-        {/* 💎 VARLIKLARIM VE TOPLU SİLME EKRANI */}
+        {/* 💎 VARLIKLARIM EKRANI */}
         {aktifSekme === "ilanlarim" && (
           <div className="animate-in fade-in duration-300">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
               <h2 className="text-3xl font-extrabold text-gray-900">Varlıklarım</h2>
-              
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                {/* 🚀 TOPLU SİL BUTONU BURADA */}
+              <div className="flex items-center gap-3">
                 {ilanlarim.length > 0 && (
-                  <button onClick={handleTopluSil} disabled={topluSilLoading} className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-[13px] font-bold transition-all shadow-sm border flex items-center justify-center gap-2 ${topluSilLoading ? 'bg-red-50 text-red-400 border-red-100 cursor-wait' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-600 hover:text-white'}`}>
+                  <button onClick={handleTopluSil} disabled={topluSilLoading} className={`px-5 py-3 rounded-xl text-[13px] font-bold transition-all shadow-sm border flex items-center justify-center gap-2 ${topluSilLoading ? 'bg-red-50 text-red-400 border-red-100 cursor-wait' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-600 hover:text-white'}`}>
                     <Trash2 size={16} />
                     {topluSilLoading ? "SİLİNİYOR..." : "TÜMÜNÜ SİL"}
                   </button>
                 )}
-                <button onClick={() => router.push('/ilan-ver')} className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-3 rounded-xl text-[13px] font-bold hover:bg-indigo-700 transition-all shadow-sm">
+                <button onClick={() => router.push('/ilan-ver')} className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-[13px] font-bold hover:bg-indigo-700 transition-all shadow-sm">
                   + Yeni İlan
                 </button>
               </div>
@@ -309,7 +308,6 @@ export default function ProfesyonelKullaniciPaneli() {
                     <div className="grid grid-cols-3 gap-2 mt-auto pt-4 border-t border-gray-100">
                       <button onClick={() => setDuzenleModal(ilan)} className="flex items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2.5 rounded-lg text-[11px] font-bold transition-colors"><Edit size={14} /> Düzenle</button>
                       <button onClick={() => handleIlanDurumDegistir(ilan)} className={`flex items-center justify-center gap-1 py-2.5 rounded-lg text-[11px] font-bold transition-colors ${ilan.durum === 'pasif' ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}><Power size={14} /> {ilan.durum === 'pasif' ? 'Yayınla' : 'Durdur'}</button>
-                      {/* TEKLİ SİL BUTONU */}
                       <button onClick={() => handleIlanSil(ilan._id)} className="flex items-center justify-center gap-1 bg-red-50 hover:bg-red-500 hover:text-white text-red-600 py-2.5 rounded-lg text-[11px] font-bold transition-colors"><Trash2 size={14} /> Sil</button>
                     </div>
                   </div>
@@ -435,7 +433,7 @@ export default function ProfesyonelKullaniciPaneli() {
           </div>
         )}
 
-        {/* 🤖 AKILLI AI İLAN MOTORU (16 KATEGORİ EKLENDİ) */}
+        {/* 🤖 AKILLI AI İLAN MOTORU EKRANI */}
         {aktifSekme === "ai_ilan" && (
           <div className="animate-in fade-in duration-300">
             <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Akıllı İlan Motoru</h2>
@@ -449,7 +447,7 @@ export default function ProfesyonelKullaniciPaneli() {
                 <label className="text-[12px] font-bold text-gray-700 uppercase mb-2 block">Kategori / Sektör Seçimi</label>
                 <select value={aiKategori} onChange={e => setAiKategori(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-medium outline-none focus:border-indigo-500 focus:bg-white transition-colors cursor-pointer">
                   {AI_KATEGORILER.map(kat => (
-                    <option key={kat.id} value={kat.id}>{kat.icon} {kat.id}</option>
+                    <option key={kat.id} value={kat.id}>{kat.icon} {kat.ad}</option>
                   ))}
                 </select>
               </div>
@@ -475,12 +473,22 @@ export default function ProfesyonelKullaniciPaneli() {
                 </div>
               </div>
               
-              <button 
-                onClick={aiIlanOlustur} 
-                disabled={aiYukleniyor} 
-                className={`w-full py-4 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${aiYukleniyor ? 'bg-indigo-100 text-indigo-400 cursor-wait' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'}`}>
-                {aiYukleniyor ? <><Sparkles size={18} className="animate-spin"/> AI İlanları Hazırlıyor...</> : <><Sparkles size={18}/> Yapay İlanları Yayına Al</>}
-              </button>
+              <div className="flex flex-col gap-4">
+                <button 
+                  onClick={aiIlanOlustur} 
+                  disabled={aiYukleniyor} 
+                  className={`w-full py-4 rounded-xl text-[14px] font-bold transition-all flex items-center justify-center gap-2 ${aiYukleniyor ? 'bg-indigo-100 text-indigo-400 cursor-wait' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'}`}>
+                  {aiYukleniyor ? <><Sparkles size={18} className="animate-spin"/> AI İlanları Hazırlıyor...</> : <><Sparkles size={18}/> Yapay İlanları Yayına Al</>}
+                </button>
+
+                {/* 🚨 YAPAY İLANLARIN HEMEN ALTINDAKİ DEASA SİLME BUTONU */}
+                {ilanlarim.length > 0 && (
+                  <button onClick={handleTopluSil} disabled={topluSilLoading} className={`w-full py-4 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 border ${topluSilLoading ? 'bg-red-50 text-red-400 border-red-200 cursor-wait' : 'bg-white text-red-600 border-red-200 hover:bg-red-600 hover:text-white shadow-sm'}`}>
+                    <Trash2 size={18} />
+                    {topluSilLoading ? "SİSTEM TEMİZLENİYOR..." : `🗑️ SİSTEMDEKİ TÜM İLANLARI SİL (${ilanlarim.length} İLAN)`}
+                  </button>
+                )}
+              </div>
             </div>
 
             {aiSonuc && (
@@ -519,7 +527,7 @@ export default function ProfesyonelKullaniciPaneli() {
                 <select className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-gray-900 font-semibold outline-none focus:border-indigo-500 focus:bg-white transition-colors cursor-pointer" value={duzenleModal.kategori || ""} onChange={e => setDuzenleModal({...duzenleModal, kategori: e.target.value})} required>
                   <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
                   {AI_KATEGORILER.map(kat => (
-                    <option key={kat.id} value={kat.id}>{kat.icon} {kat.id}</option>
+                    <option key={kat.id} value={kat.id}>{kat.icon} {kat.ad}</option>
                   ))}
                 </select>
               </div>
