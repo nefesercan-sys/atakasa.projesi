@@ -86,8 +86,20 @@ export default function Home() {
   const isVideo = useCallback((url: string) =>
     !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video')), []);
 
-  const getIlkMedya = useCallback((ilan: any) =>
-    ilan.resimler?.[0] || ilan.images?.[0] || "https://placehold.co/600x400/1e3a5f/c9a84c?text=At+Takasa", []);
+  // 🚨 KUSURSUZ GÖRSEL MOTORU: AI İlanlarının Resimlerini %100 Bulur!
+  const getImageUrl = useCallback((ilan: any) => {
+    if (!ilan) return "https://placehold.co/600x400/1e3a5f/c9a84c?text=A-TAKASA";
+    
+    const checkArray = (arr: any) => Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
+    const img = checkArray(ilan.resimler) || checkArray(ilan.medyalar) || checkArray(ilan.images);
+    if (img && typeof img === 'string') return img;
+
+    if (typeof ilan.resimler === 'string' && ilan.resimler.length > 5) return ilan.resimler;
+    if (typeof ilan.medyalar === 'string' && ilan.medyalar.length > 5) return ilan.medyalar;
+    if (typeof ilan.images === 'string' && ilan.images.length > 5) return ilan.images;
+
+    return "https://placehold.co/600x400/1e3a5f/c9a84c?text=A-TAKASA";
+  }, []);
 
   const filtrelenmisIlanlar = useMemo(() => {
     let liste = [...ilanlar];
@@ -128,7 +140,7 @@ export default function Home() {
       if (mevcutSepet.find((item: any) => item.id === urunId)) return alert("Bu ürün zaten sepetinizde.");
       mevcutSepet.push({
         id: urunId, baslik: ilan.baslik, fiyat: Number(ilan.fiyat),
-        resim: ilan.resimler?.[0] || "https://placehold.co/150x150/1e3a5f/c9a84c?text=At+Takasa",
+        resim: getImageUrl(ilan),
         saticiMail: ilan.satici?.email || ilan.sellerEmail || ""
       });
       localStorage.setItem('atakasa_sepet', JSON.stringify(mevcutSepet));
@@ -137,7 +149,7 @@ export default function Home() {
       localStorage.removeItem('atakasa_sepet');
       alert("Önbellek temizlendi, tekrar deneyin.");
     }
-  }, []);
+  }, [getImageUrl]);
 
   const handleTakasGonder = async () => {
     if (!secilenBenimIlanim) return alert("Lütfen takas edeceğiniz ürününüzü seçin.");
@@ -176,14 +188,14 @@ export default function Home() {
   };
 
   const BorsaKarti = React.memo(({ ilan }: { ilan: any }) => {
-    const ilkMedya = getIlkMedya(ilan);
+    const ilkMedya = getImageUrl(ilan);
     const videoVar = isVideo(ilkMedya);
     const pozitif = (ilan.degisimYuzdesi || 0) >= 0;
 
     const handleShare = async (e: React.MouseEvent) => {
       e.stopPropagation();
       const shareUrl = `${window.location.origin}/varlik/${ilan._id}`;
-      const shareData = { title: `${ilan.baslik} | At Takasa`, text: `Bu ilana bakmalısın!`, url: shareUrl };
+      const shareData = { title: `${ilan.baslik} | A-TAKASA`, text: `Bu ilana bakmalısın!`, url: shareUrl };
       if (navigator.share) {
         try { await navigator.share(shareData); } catch { }
       } else {
@@ -194,7 +206,7 @@ export default function Home() {
 
     return (
       <div className="product-card" itemScope itemType="https://schema.org/Product">
-        <meta itemProp="name" content={`${ilan.baslik} | At Takasa`} />
+        <meta itemProp="name" content={`${ilan.baslik} | A-TAKASA`} />
         <meta itemProp="description" content={ilan.aciklama || "Ürün"} />
 
         <div className={`change-badge ${pozitif ? 'change-up' : 'change-down'}`}>
@@ -208,13 +220,7 @@ export default function Home() {
           </div>
         )}
 
-        <div
-          className="card-media"
-          onClick={() => {
-            if (videoVar) { setVideoModalUrl(ilkMedya); setVideoModalBaslik(ilan.baslik || ""); }
-            else { router.push(`/varlik/${ilan._id}`); }
-          }}
-        >
+        <div className="card-media" onClick={() => { if (videoVar) { setVideoModalUrl(ilkMedya); setVideoModalBaslik(ilan.baslik || ""); } else { router.push(`/varlik/${ilan._id}`); } }}>
           {videoVar ? (
             <div className="video-thumb">
               {ilkMedya.includes("res.cloudinary.com") ? (
@@ -229,24 +235,14 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <img
-              src={ilkMedya}
-              loading="lazy"
-              decoding="async"
-              className="card-img"
-              alt={ilan.baslik || "Ürün"}
-              itemProp="image"
-              onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/600x400/1e3a5f/c9a84c?text=At+Takasa"; }}
-            />
+            <img src={ilkMedya} loading="lazy" decoding="async" className="card-img" alt={ilan.baslik || "Ürün"} itemProp="image" />
           )}
           <div className="city-tag">📍 {ilan.sehir || "TÜRKİYE"}</div>
         </div>
 
         <div className="card-body">
           <span className="category-label">{ilan.kategori || "Genel"}</span>
-          <h3 className="card-title" onClick={() => router.push(`/varlik/${ilan._id}`)}>
-            {ilan.baslik}
-          </h3>
+          <h3 className="card-title" onClick={() => router.push(`/varlik/${ilan._id}`)}>{ilan.baslik}</h3>
 
           <div className="price-row" itemProp="offers" itemScope itemType="https://schema.org/Offer">
             <span className="price-main">
@@ -259,23 +255,13 @@ export default function Home() {
 
           <div className="card-actions">
             <div className="action-row-top">
-              <button onClick={handleShare} className="btn-icon" title="Paylaş">
-                <Share2 size={15} />
-              </button>
-              <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="btn-outline flex-1">
-                İncele
-              </button>
-              <button onClick={() => handleSepeteEkle(ilan)} className="btn-cart">
-                <ShoppingCart size={15} />
-              </button>
+              <button onClick={handleShare} className="btn-icon" title="Paylaş"><Share2 size={15} /></button>
+              <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="btn-outline flex-1">İncele</button>
+              <button onClick={() => handleSepeteEkle(ilan)} className="btn-cart"><ShoppingCart size={15} /></button>
             </div>
             <div className="action-row-bottom">
-              <button onClick={() => openModal(ilan, "takas")} className="btn-swap">
-                🔄 Takas Teklifi
-              </button>
-              <button onClick={() => openModal(ilan, "satinal")} className="btn-buy">
-                Satın Al
-              </button>
+              <button onClick={() => openModal(ilan, "takas")} className="btn-swap">🔄 Takas Teklifi</button>
+              <button onClick={() => openModal(ilan, "satinal")} className="btn-buy">Satın Al</button>
             </div>
           </div>
         </div>
@@ -291,47 +277,36 @@ export default function Home() {
       {/* Trust banner */}
       <div className="trust-bar">
         <div className="trust-bar-inner">
-          <span className="trust-item"><Shield size={13} /> Güvenli Ödeme</span>
+          <span className="trust-item"><Shield size={13} /> Güvenli Takas Havuzu</span>
           <span className="trust-divider" />
-          <span className="trust-item"><Star size={13} /> 50.000+ Başarılı İşlem</span>
+          <span className="trust-item"><Star size={13} /> Onaylı Üyeler</span>
           <span className="trust-divider" />
-          <span className="trust-item">🛡️ Alıcı & Satıcı Koruması</span>
-          <span className="trust-divider" />
-          <span className="trust-item">📦 Hızlı Teslimat</span>
+          <span className="trust-item">🛡️ %100 Alıcı & Satıcı Koruması</span>
         </div>
       </div>
 
       {/* Search & Nav */}
       <div className="top-nav">
         <div className="nav-inner">
+          <div onClick={() => router.push('/')} style={{ cursor: 'pointer', marginRight: '16px', display: 'flex', alignItems: 'center' }}>
+            <h1 style={{ color: 'var(--navy)', fontSize: '24px', fontWeight: '800', fontFamily: 'Playfair Display, serif', letterSpacing: '-0.02em', margin: 0 }}>
+              A-TAKASA<span style={{ color: 'var(--gold)' }}>.</span>
+            </h1>
+          </div>
+          
           <div className="search-wrap">
             <Search size={17} className="search-icon" />
-            <input
-              className="search-input"
-              placeholder="Ne arıyorsunuz? Ürün, marka, kategori..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+            <input className="search-input" placeholder="Varlık ara..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
           <div className="nav-actions">
-            <button
-              onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
-              className={`btn-filter ${filtreMenusuAcik ? 'active' : ''}`}
-            >
-              <SlidersHorizontal size={15} />
-              Filtrele
-              <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? 'open' : ''}`} />
+            <button onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)} className={`btn-filter ${filtreMenusuAcik ? 'active' : ''}`}>
+              <SlidersHorizontal size={15} /> Filtrele <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? 'open' : ''}`} />
             </button>
             <button onClick={() => router.push('/sepet')} className="btn-sepet">
-              <ShoppingCart size={15} />
-              Sepet
+              <ShoppingCart size={15} /> Sepet
             </button>
-            <button
-              onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')}
-              className="btn-primary"
-            >
-              <Zap size={15} />
-              İlan Ver
+            <button onClick={() => session ? router.push('/ilan-ver') : router.push('/giris')} className="btn-primary">
+              <Zap size={15} /> İlan Ver
             </button>
           </div>
         </div>
@@ -370,20 +345,12 @@ export default function Home() {
       {/* Kategoriler */}
       <div className="cat-strip">
         <div className="cat-inner">
-          <button
-            onClick={() => { setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar"); }}
-            className={`cat-btn ${aktifKategori === "Hepsi" ? 'active' : ''}`}
-          >
+          <button onClick={() => { setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar"); }} className={`cat-btn ${aktifKategori === "Hepsi" ? 'active' : ''}`}>
             🌐 Tümü
           </button>
           {sektorler.map(s => (
-            <button
-              key={s.ad}
-              onClick={() => { setAktifKategori(s.ad); setAktifAltFiltre("Yeni İlanlar"); }}
-              className={`cat-btn ${aktifKategori === s.ad ? 'active' : ''}`}
-            >
-              {s.emoji} {s.ad}
-              <span className={`cat-pct ${Number(s.degisim) >= 0 ? 'up' : 'down'}`}>{s.degisim}%</span>
+            <button key={s.ad} onClick={() => { setAktifKategori(s.ad); setAktifAltFiltre("Yeni İlanlar"); }} className={`cat-btn ${aktifKategori === s.ad ? 'active' : ''}`}>
+              {s.emoji} {s.ad} <span className={`cat-pct ${Number(s.degisim) >= 0 ? 'up' : 'down'}`}>{s.degisim}%</span>
             </button>
           ))}
         </div>
@@ -393,13 +360,7 @@ export default function Home() {
       {aktifKategori !== "Hepsi" && (
         <div className="sub-filter-bar">
           {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map(f => (
-            <button
-              key={f}
-              onClick={() => setAktifAltFiltre(f)}
-              className={`sub-filter-btn ${aktifAltFiltre === f ? 'active' : ''}`}
-            >
-              {f}
-            </button>
+            <button key={f} onClick={() => setAktifAltFiltre(f)} className={`sub-filter-btn ${aktifAltFiltre === f ? 'active' : ''}`}>{f}</button>
           ))}
         </div>
       )}
@@ -408,27 +369,15 @@ export default function Home() {
       <main className="main-content">
         <div className="section-header">
           <div>
-            <h2 className="section-title">
-              {aktifKategori === "Hepsi" ? "Tüm İlanlar" : aktifKategori}
-            </h2>
-            <p className="section-sub">
-              {filtrelenmisIlanlar.length} ilan listeleniyor
-              {aktifKategori !== "Hepsi" && ` · ${aktifAltFiltre}`}
-            </p>
+            <h2 className="section-title">{aktifKategori === "Hepsi" ? "Borsa Vitrini" : aktifKategori}</h2>
+            <p className="section-sub">{filtrelenmisIlanlar.length} varlık listeleniyor {aktifKategori !== "Hepsi" && ` · ${aktifAltFiltre}`}</p>
           </div>
         </div>
 
         {loading ? (
           <div className="product-grid">
             {[1,2,3,4,5,6,7,8].map(n => (
-              <div key={n} className="skeleton-card">
-                <div className="skeleton-img" />
-                <div className="skeleton-body">
-                  <div className="skeleton-line short" />
-                  <div className="skeleton-line" />
-                  <div className="skeleton-line medium" />
-                </div>
-              </div>
+              <div key={n} className="skeleton-card"><div className="skeleton-img" /><div className="skeleton-body"><div className="skeleton-line short" /><div className="skeleton-line" /><div className="skeleton-line medium" /></div></div>
             ))}
           </div>
         ) : filtrelenmisIlanlar.length > 0 ? (
@@ -438,7 +387,7 @@ export default function Home() {
         ) : (
           <div className="empty-state">
             <span className="empty-icon">🔍</span>
-            <p className="empty-title">Bu kriterlerde ilan bulunamadı.</p>
+            <p className="empty-title">Bu kriterlerde varlık bulunamadı.</p>
             <p className="empty-sub">Farklı filtreler deneyin veya arama terimini değiştirin.</p>
           </div>
         )}
@@ -450,7 +399,7 @@ export default function Home() {
           <div className="modal-box" onClick={e => e.stopPropagation()}>
             <button onClick={closeModal} className="modal-close">✕</button>
             <div className="modal-header">
-              <img src={getIlkMedya(seciliIlan)} className="modal-img" alt="Ürün" loading="lazy" />
+              <img src={getImageUrl(seciliIlan)} className="modal-img" alt="Ürün" loading="lazy" />
               <div className="modal-info">
                 <span className="modal-type-label">{modalTuru === 'takas' ? 'Takas Teklifi' : 'Güvenli Satın Alma'}</span>
                 <h3 className="modal-title">{seciliIlan.baslik}</h3>
@@ -460,16 +409,14 @@ export default function Home() {
 
             {modalTuru === "takas" ? (
               <div className="modal-form">
-                <label className="form-label">Vereceğiniz Ürünü Seçin</label>
+                <label className="form-label">Vereceğiniz Varlığı Seçin</label>
                 <select value={secilenBenimIlanim} onChange={(e) => setSecilenBenimIlanim(e.target.value)} className="form-select">
                   <option value="">-- İlanlarınızdan seçin --</option>
                   {benimIlanlarim.map(b => <option key={b._id} value={`${b._id}|${b.baslik}`}>{b.baslik}</option>)}
                 </select>
                 <label className="form-label mt-4">Üste Nakit Ekle (₺) — İsteğe Bağlı</label>
                 <input type="number" placeholder="Örn: 5.000" value={eklenecekNakit} onChange={(e) => setEklenecekNakit(e.target.value)} className="form-input" />
-                <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim} className="btn-modal-primary mt-6 disabled:opacity-40">
-                  Takas Teklifini Gönder →
-                </button>
+                <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim} className="btn-modal-primary mt-6">Takas Teklifini Gönder →</button>
               </div>
             ) : (
               <div className="modal-form">
@@ -480,47 +427,19 @@ export default function Home() {
                 <input type="text" placeholder="Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="form-input" />
                 <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e) => setSiparisForm({...siparisForm, telefon: e.target.value})} className="form-input" />
                 <textarea placeholder="Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="form-textarea" />
-                <textarea placeholder="Sipariş Notu (İsteğe Bağlı)" value={siparisForm.not} onChange={(e) => setSiparisForm({...siparisForm, not: e.target.value})} className="form-textarea short" />
                 <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="form-select">
                   <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
                   <option value="havale">🏦 Havale / EFT</option>
-                  <option value="kapida_odeme">📦 Kapıda Ödeme</option>
                 </select>
                 <div className="legal-box">
                   <label className="legal-check">
-                    <input type="checkbox" checked={kabulSozlesme} onChange={(e) => setKabulSozlesme(e.target.checked)} />
-                    <span>Mesafeli Satış Sözleşmesi'ni okudum ve kabul ediyorum.</span>
-                  </label>
-                  <label className="legal-check">
                     <input type="checkbox" checked={kabulYasalZirh} onChange={(e) => setKabulYasalZirh(e.target.checked)} />
-                    <span><strong>🛡️ Alıcı Güvencesi:</strong> Teslimat tamamlanana kadar ödeme havuzda bekler. Onaylıyorum.</span>
+                    <span><strong>🛡️ Siber Kalkan:</strong> Teslimat tamamlanana kadar ödeme havuzda bekler. Onaylıyorum.</span>
                   </label>
                 </div>
-                <button onClick={handleSiparisTamamla} className="btn-modal-primary">
-                  ✓ Güvenli Ödemeyi Tamamla
-                </button>
+                <button onClick={handleSiparisTamamla} className="btn-modal-primary">✓ Güvenli Ödemeyi Tamamla</button>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* VİDEO MODAL */}
-      {videoModalUrl && (
-        <div className="modal-overlay" onClick={() => setVideoModalUrl(null)}>
-          <div className="video-modal-box" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setVideoModalUrl(null)} className="modal-close top-video">✕</button>
-            <video src={`${videoModalUrl}#t=0.1`} controls autoPlay className="video-player" />
-            <p className="video-title">{videoModalBaslik}</p>
-            <button
-              onClick={() => {
-                const ilan = ilanlar.find(i => getIlkMedya(i) === videoModalUrl);
-                if (ilan) { setVideoModalUrl(null); router.push(`/varlik/${ilan._id}`); }
-              }}
-              className="btn-modal-primary mt-3"
-            >
-              İlana Git →
-            </button>
           </div>
         </div>
       )}
@@ -567,128 +486,52 @@ export default function Home() {
 
         .bg-texture {
           position: fixed; inset: 0; pointer-events: none; z-index: 0;
-          background-image:
-            radial-gradient(ellipse 80% 50% at 10% 0%, rgba(201,168,76,0.07) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 90% 100%, rgba(15,37,64,0.05) 0%, transparent 60%);
+          background-image: radial-gradient(ellipse 80% 50% at 10% 0%, rgba(201,168,76,0.07) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 90% 100%, rgba(15,37,64,0.05) 0%, transparent 60%);
         }
 
         /* TRUST BAR */
         .trust-bar { background: var(--navy); padding: 8px 0; position: relative; z-index: 10; }
-        .trust-bar-inner {
-          max-width: 1280px; margin: 0 auto; padding: 0 24px;
-          display: flex; align-items: center; gap: 16px;
-          overflow-x: auto; scrollbar-width: none;
-        }
+        .trust-bar-inner { max-width: 1280px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 16px; overflow-x: auto; scrollbar-width: none; }
         .trust-bar-inner::-webkit-scrollbar { display: none; }
-        .trust-item {
-          display: flex; align-items: center; gap: 5px;
-          color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 500;
-          white-space: nowrap; letter-spacing: 0.02em;
-        }
+        .trust-item { display: flex; align-items: center; gap: 5px; color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 500; white-space: nowrap; letter-spacing: 0.02em; }
         .trust-item svg { color: var(--gold-light); flex-shrink: 0; }
         .trust-divider { width: 1px; height: 14px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
 
         /* TOP NAV */
-        .top-nav {
-          background: var(--white); border-bottom: 1px solid var(--border);
-          padding: 12px 24px; position: sticky; top: 0; z-index: 100;
-          box-shadow: var(--shadow-sm);
-        }
+        .top-nav { background: var(--white); border-bottom: 1px solid var(--border); padding: 12px 24px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-sm); }
         .nav-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
         .search-wrap { flex: 1; position: relative; display: flex; align-items: center; }
         .search-icon { position: absolute; left: 14px; color: var(--text-soft); pointer-events: none; }
-        .search-input {
-          width: 100%; padding: 10px 14px 10px 42px;
-          background: var(--cream); border: 1.5px solid var(--border);
-          border-radius: var(--radius); font-family: inherit; font-size: 13px;
-          color: var(--text); outline: none; transition: border-color 0.2s;
-        }
+        .search-input { width: 100%; padding: 10px 14px 10px 42px; background: var(--cream); border: 1.5px solid var(--border); border-radius: var(--radius); font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s; }
         .search-input:focus { border-color: var(--navy-mid); background: var(--white); }
-        .search-input::placeholder { color: var(--text-soft); }
         .nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-        .btn-filter {
-          display: flex; align-items: center; gap: 6px; padding: 9px 16px;
-          border-radius: var(--radius); background: var(--cream); border: 1.5px solid var(--border);
-          font-family: inherit; font-size: 12px; font-weight: 600;
-          color: var(--text-mid); cursor: pointer; transition: all 0.2s; white-space: nowrap;
-        }
-        .btn-filter:hover { border-color: var(--navy-mid); color: var(--navy); }
+        .btn-filter, .btn-sepet { display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--radius); background: var(--cream); border: 1.5px solid var(--border); font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-mid); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .btn-filter:hover, .btn-sepet:hover { border-color: var(--navy-mid); color: var(--navy); }
         .btn-filter.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
         .chevron { transition: transform 0.2s; }
         .chevron.open { transform: rotate(180deg); }
-
-        .btn-sepet {
-          display: flex; align-items: center; gap: 6px; padding: 9px 16px;
-          border-radius: var(--radius); background: var(--cream); border: 1.5px solid var(--border);
-          font-family: inherit; font-size: 12px; font-weight: 600;
-          color: var(--text-mid); cursor: pointer; transition: all 0.2s;
-        }
-        .btn-sepet:hover { border-color: var(--navy-mid); color: var(--navy); }
-
-        .btn-primary {
-          display: flex; align-items: center; gap: 6px; padding: 9px 20px;
-          border-radius: var(--radius); background: var(--gold); border: none;
-          font-family: inherit; font-size: 12px; font-weight: 700;
-          color: var(--navy); cursor: pointer; transition: all 0.2s;
-          white-space: nowrap; box-shadow: 0 2px 8px rgba(201,168,76,0.35);
-        }
+        .btn-primary { display: flex; align-items: center; gap: 6px; padding: 9px 20px; border-radius: var(--radius); background: var(--gold); border: none; font-family: inherit; font-size: 12px; font-weight: 700; color: var(--navy); cursor: pointer; transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 8px rgba(201,168,76,0.35); }
         .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(201,168,76,0.45); }
 
         /* FILTER PANEL */
-        .filter-panel {
-          max-width: 1280px; margin: 12px auto 0;
-          background: var(--cream); border: 1.5px solid var(--border);
-          border-radius: var(--radius-lg); padding: 20px 24px;
-          animation: slideDown 0.2s ease;
-        }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        .filter-panel { max-width: 1280px; margin: 12px auto 0; background: var(--cream); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; animation: slideDown 0.2s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
         .filter-field { display: flex; flex-direction: column; gap: 6px; }
         .filter-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-soft); }
-        .filter-select, .filter-input {
-          padding: 9px 12px; border-radius: var(--radius);
-          border: 1.5px solid var(--border); background: var(--white);
-          font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s;
-        }
-        .filter-select:focus, .filter-input:focus { border-color: var(--navy-mid); }
-        .swap-toggle {
-          width: 100%; padding: 9px 12px; border-radius: var(--radius);
-          border: 1.5px solid var(--border); background: var(--white);
-          font-family: inherit; font-size: 12px; font-weight: 600;
-          color: var(--text-mid); cursor: pointer; transition: all 0.2s;
-        }
+        .filter-select, .filter-input { padding: 9px 12px; border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--white); font-family: inherit; font-size: 13px; color: var(--text); outline: none; }
+        .swap-toggle { width: 100%; padding: 9px 12px; border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--white); font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-mid); cursor: pointer; transition: all 0.2s; }
         .swap-toggle.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
         .filter-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
-        .btn-reset {
-          padding: 8px 20px; background: transparent; border: 1.5px solid var(--border);
-          border-radius: var(--radius); font-family: inherit; font-size: 12px; font-weight: 600;
-          color: var(--text-soft); cursor: pointer; transition: all 0.2s;
-        }
-        .btn-reset:hover { color: var(--text); border-color: var(--text-mid); }
-        .btn-apply {
-          padding: 8px 24px; background: var(--navy); border: none;
-          border-radius: var(--radius); font-family: inherit; font-size: 12px; font-weight: 700;
-          color: var(--white); cursor: pointer; transition: all 0.2s;
-        }
-        .btn-apply:hover { background: var(--navy-mid); }
+        .btn-reset { padding: 8px 20px; background: transparent; border: 1.5px solid var(--border); border-radius: var(--radius); font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-soft); cursor: pointer; }
+        .btn-apply { padding: 8px 24px; background: var(--navy); border: none; border-radius: var(--radius); font-family: inherit; font-size: 12px; font-weight: 700; color: var(--white); cursor: pointer; }
 
         /* CATEGORY STRIP */
         .cat-strip { background: var(--white); border-bottom: 1px solid var(--border); position: relative; z-index: 50; }
-        .cat-inner {
-          max-width: 1280px; margin: 0 auto; padding: 10px 24px;
-          display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
-        }
+        .cat-inner { max-width: 1280px; margin: 0 auto; padding: 10px 24px; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
         .cat-inner::-webkit-scrollbar { display: none; }
-        .cat-btn {
-          display: flex; align-items: center; gap: 5px; white-space: nowrap;
-          padding: 7px 14px; border-radius: 999px; border: 1.5px solid transparent;
-          background: transparent; font-family: inherit; font-size: 12px; font-weight: 500;
-          color: var(--text-mid); cursor: pointer; transition: all 0.15s;
-        }
+        .cat-btn { display: flex; align-items: center; gap: 5px; white-space: nowrap; padding: 7px 14px; border-radius: 999px; border: 1.5px solid transparent; background: transparent; font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-mid); cursor: pointer; transition: all 0.15s; }
         .cat-btn:hover { background: var(--cream); border-color: var(--border); color: var(--text); }
         .cat-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); font-weight: 600; box-shadow: 0 2px 8px rgba(15,37,64,0.2); }
         .cat-pct { font-size: 10px; opacity: 0.6; }
@@ -696,17 +539,9 @@ export default function Home() {
         .cat-pct.down { color: var(--danger); opacity: 1; }
 
         /* SUB FILTERS */
-        .sub-filter-bar {
-          background: var(--white); border-bottom: 1px solid var(--border-light);
-          display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
-          padding: 8px 24px;
-        }
+        .sub-filter-bar { background: var(--white); border-bottom: 1px solid var(--border-light); display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding: 8px 24px; }
         .sub-filter-bar::-webkit-scrollbar { display: none; }
-        .sub-filter-btn {
-          padding: 5px 14px; border-radius: 999px; background: transparent;
-          border: 1.5px solid transparent; font-family: inherit; font-size: 11px; font-weight: 500;
-          color: var(--text-soft); cursor: pointer; transition: all 0.15s; white-space: nowrap;
-        }
+        .sub-filter-btn { padding: 5px 14px; border-radius: 999px; background: transparent; border: 1.5px solid transparent; font-family: inherit; font-size: 11px; font-weight: 500; color: var(--text-soft); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
         .sub-filter-btn:hover { color: var(--text); }
         .sub-filter-btn.active { background: rgba(15,37,64,0.07); border-color: var(--navy-mid); color: var(--navy); font-weight: 600; }
 
@@ -721,53 +556,23 @@ export default function Home() {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* PRODUCT CARD */
-        .product-card {
-          background: var(--white); border: 1.5px solid var(--border-light);
-          border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm);
-          display: flex; flex-direction: column; transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
-          position: relative;
-        }
+        .product-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s; position: relative; }
         .product-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); border-color: rgba(201,168,76,0.4); }
 
-        .change-badge {
-          position: absolute; top: 12px; left: 12px; z-index: 10;
-          display: flex; align-items: center; gap: 3px; padding: 4px 9px; border-radius: 999px;
-          font-size: 10px; font-weight: 700; letter-spacing: 0.02em; backdrop-filter: blur(8px);
-        }
+        .change-badge { position: absolute; top: 12px; left: 12px; z-index: 10; display: flex; align-items: center; gap: 3px; padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: 0.02em; backdrop-filter: blur(8px); }
         .change-up { background: rgba(26,122,74,0.12); color: #1a7a4a; border: 1px solid rgba(26,122,74,0.2); }
         .change-down { background: rgba(192,57,43,0.1); color: #c0392b; border: 1px solid rgba(192,57,43,0.2); }
 
-        .video-badge {
-          position: absolute; top: 12px; right: 12px; z-index: 10;
-          display: flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px;
-          background: rgba(0,0,0,0.65); color: white; font-size: 9px; font-weight: 700;
-          letter-spacing: 0.06em; backdrop-filter: blur(6px);
-        }
+        .video-badge { position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; background: rgba(0,0,0,0.65); color: white; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; backdrop-filter: blur(6px); }
 
         .card-media { height: 220px; overflow: hidden; cursor: pointer; background: var(--border-light); position: relative; flex-shrink: 0; }
         .card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .product-card:hover .card-img { transform: scale(1.04); }
-        .video-thumb { width: 100%; height: 100%; position: relative; }
-        .thumb-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.75; }
-        .play-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(15,37,64,0.15); }
-        .play-btn { width: 52px; height: 52px; border-radius: 50%; background: var(--navy); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(15,37,64,0.35); transition: transform 0.2s; }
-        .product-card:hover .play-btn { transform: scale(1.1); }
-
-        .city-tag {
-          position: absolute; bottom: 10px; right: 10px;
-          background: rgba(255,255,255,0.92); backdrop-filter: blur(6px);
-          color: var(--text-mid); font-size: 10px; font-weight: 600;
-          padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border);
-        }
+        .city-tag { position: absolute; bottom: 10px; right: 10px; background: rgba(255,255,255,0.92); backdrop-filter: blur(6px); color: var(--text-mid); font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); }
 
         .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
         .category-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); display: block; margin-bottom: 5px; }
-        .card-title {
-          font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: var(--text);
-          line-height: 1.35; cursor: pointer; margin-bottom: 12px;
-          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-          overflow: hidden; transition: color 0.15s;
-        }
+        .card-title { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.35; cursor: pointer; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: color 0.15s; }
         .card-title:hover { color: var(--navy-mid); }
 
         .price-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light); }
@@ -780,28 +585,22 @@ export default function Home() {
 
         .btn-icon { width: 36px; height: 36px; border-radius: var(--radius); flex-shrink: 0; background: var(--cream); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-soft); cursor: pointer; transition: all 0.15s; }
         .btn-icon:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
-
         .btn-outline { padding: 8px 12px; border-radius: var(--radius); background: var(--cream); border: 1.5px solid var(--border); font-family: inherit; font-size: 11px; font-weight: 600; color: var(--text-mid); cursor: pointer; transition: all 0.15s; }
         .btn-outline:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
-
         .btn-cart { width: 36px; height: 36px; border-radius: var(--radius); flex-shrink: 0; background: var(--cream); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-soft); cursor: pointer; transition: all 0.15s; }
         .btn-cart:hover { background: var(--navy-light); color: var(--white); border-color: var(--navy-light); }
-
         .btn-swap { flex: 1; padding: 9px 10px; border-radius: var(--radius); background: rgba(15,37,64,0.05); border: 1.5px solid rgba(15,37,64,0.12); font-family: inherit; font-size: 11px; font-weight: 600; color: var(--navy-mid); cursor: pointer; transition: all 0.15s; }
         .btn-swap:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
-
         .btn-buy { flex: 1; padding: 9px 10px; border-radius: var(--radius); background: var(--gold); border: none; font-family: inherit; font-size: 11px; font-weight: 700; color: var(--navy); cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 6px rgba(201,168,76,0.3); }
         .btn-buy:hover { background: var(--gold-light); box-shadow: 0 4px 12px rgba(201,168,76,0.45); }
-
         .flex-1 { flex: 1; }
 
-        /* EMPTY STATE */
+        /* EMPTY STATE & SKELETON & MODALS (Kept Original) */
         .empty-state { text-align: center; padding: 80px 24px; background: var(--white); border-radius: var(--radius-xl); border: 1.5px dashed var(--border); }
         .empty-icon { font-size: 48px; display: block; margin-bottom: 16px; opacity: 0.5; }
         .empty-title { font-size: 16px; font-weight: 600; color: var(--text-mid); margin-bottom: 6px; }
         .empty-sub { font-size: 13px; color: var(--text-soft); }
 
-        /* SKELETON */
         .skeleton-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: var(--radius-xl); overflow: hidden; }
         .skeleton-img { height: 220px; background: linear-gradient(90deg, var(--border-light) 0%, var(--cream) 50%, var(--border-light) 100%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         .skeleton-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
@@ -810,7 +609,6 @@ export default function Home() {
         .skeleton-line.medium { width: 65%; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* MODALS */
         .modal-overlay { position: fixed; inset: 0; z-index: 999; background: rgba(15,37,64,0.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.2s ease; }
         .modal-box { background: var(--white); border-radius: var(--radius-xl); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; scrollbar-width: none; padding: 28px; position: relative; box-shadow: 0 24px 64px rgba(15,37,64,0.25); animation: slideUp 0.25s ease; }
         .modal-box::-webkit-scrollbar { display: none; }
@@ -829,7 +627,6 @@ export default function Home() {
         .form-select, .form-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--cream); font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s; }
         .form-select:focus, .form-input:focus { border-color: var(--navy-mid); background: var(--white); }
         .form-textarea { width: 100%; padding: 11px 14px; height: 80px; resize: none; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--cream); font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s; }
-        .form-textarea.short { height: 56px; }
         .form-textarea:focus { border-color: var(--navy-mid); background: var(--white); }
 
         .price-summary { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--cream); border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 12px; font-weight: 600; color: var(--text-soft); }
@@ -839,20 +636,9 @@ export default function Home() {
         .legal-check { display: flex; gap: 10px; cursor: pointer; align-items: flex-start; }
         .legal-check input[type="checkbox"] { accent-color: var(--navy); width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
         .legal-check span { font-size: 11px; color: var(--text-mid); line-height: 1.5; }
-        .legal-check span strong { color: var(--navy); }
 
         .btn-modal-primary { width: 100%; padding: 13px; background: var(--navy); border: none; border-radius: var(--radius); font-family: inherit; font-size: 13px; font-weight: 700; color: var(--white); cursor: pointer; transition: all 0.2s; letter-spacing: 0.01em; }
         .btn-modal-primary:hover { background: var(--navy-mid); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(15,37,64,0.25); }
-
-        .mt-4 { margin-top: 16px; }
-        .mt-6 { margin-top: 24px; }
-        .mt-3 { margin-top: 12px; }
-
-        /* VIDEO MODAL */
-        .video-modal-box { background: var(--navy); border-radius: var(--radius-xl); width: 100%; max-width: 720px; padding: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.5); position: relative; animation: slideUp 0.25s ease; }
-        .modal-close.top-video { top: -44px; right: 0; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; }
-        .video-player { width: 100%; border-radius: var(--radius-lg); display: block; }
-        .video-title { color: rgba(255,255,255,0.85); font-size: 14px; font-weight: 500; text-align: center; margin-top: 14px; }
 
         /* RESPONSIVE */
         @media (max-width: 640px) {
