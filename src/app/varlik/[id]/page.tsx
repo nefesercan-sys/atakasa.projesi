@@ -3,12 +3,11 @@ import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Zap, MessageCircle, Play } from "lucide-react";
+import { ShieldCheck, Zap, MessageCircle, Play, Star, ChevronLeft, ArrowRightLeft, ShoppingCart, Info, MapPin, Tag } from "lucide-react";
 
-// 🚀 İŞTE SİBER KİLİT! Vercel'in önbelleğini iptal eder, veriyi her seferinde canlı çeker.
 export const dynamic = "force-dynamic";
 
-export default function SiberVarlikTerminali({ params }: { params: any }) {
+export default function ProfesyonelVarlikDetay({ params }: { params: any }) {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,12 +60,9 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
     } catch (err) { console.error("Öneri motoru koptu."); }
   };
 
-  // 🚀 SİBER HAMLE: Bozuk detay API'sini çöpe attık! %100 çalışan Ana API'ye bağlıyoruz!
   const fetchIlanDetay = async () => {
     try {
-      const res = await fetch(`/api/varliklar?id=${resolvedParams.id}&t=${Date.now()}`, {
-        cache: 'no-store'
-      });
+      const res = await fetch(`/api/varliklar?id=${resolvedParams.id}&t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         const ilanVerisi = Array.isArray(data) ? data[0] : data;
@@ -110,18 +106,17 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   };
 
   const handleYorumGonder = async () => {
-    if (!yeniYorumMetni.trim()) return alert("Boş sinyal gönderilemez!");
+    if (!yeniYorumMetni.trim()) return alert("Değerlendirme metni boş olamaz.");
     try {
       const saticiMail = ilan.satici?.email || ilan.sellerEmail || ilan.userId;
       const res = await fetch("/api/yorumlar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ saticiEmail: saticiMail, ilanId: ilan._id, puan: yeniPuan, icerik: yeniYorumMetni })
       });
       const result = await res.json();
-      if (res.ok) { alert("⚡ YILDIZLAR MÜHÜRLENDİ!"); setYeniYorumMetni(""); fetchSaticiYorumlari(saticiMail); }
-      else { alert(`❌ Siber Kalkan: ${result.error}`); }
-    } catch { alert("Yorum motoru yanıt vermiyor."); }
+      if (res.ok) { alert("✅ Değerlendirmeniz başarıyla kaydedildi."); setYeniYorumMetni(""); fetchSaticiYorumlari(saticiMail); }
+      else { alert(`❌ Hata: ${result.error}`); }
+    } catch { alert("Yorum sistemi şu an yanıt vermiyor."); }
   };
 
   const iletisimBilgisiIceriyorMu = (metin: string) => {
@@ -131,74 +126,71 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   };
 
   const handleTakasGonder = async () => {
-    if (!secilenBenimIlanim) return alert("Lütfen vereceğiniz varlığı seçin!");
-    if (iletisimBilgisiIceriyorMu(takasMesaji)) return alert("🚨 SİBER İHLAL: İletişim bilgisi paylaşılamaz!");
+    if (!secilenBenimIlanim) return alert("Lütfen vereceğiniz varlığı seçin.");
+    if (iletisimBilgisiIceriyorMu(takasMesaji)) return alert("🚨 Güvenlik İhlali: Mesajınızda iletişim bilgisi paylaşılamaz.");
     const [teklifIlanId, teklifIlanBaslik] = secilenBenimIlanim.split("|");
     try {
       const res = await fetch("/api/takas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           aliciEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId,
-          hedefIlanId: ilan._id,
-          hedefIlanBaslik: ilan.baslik,
-          hedefIlanFiyat: ilan.fiyat || 0,
-          teklifEdilenIlanId: teklifIlanId,
-          teklifEdilenIlanBaslik: teklifIlanBaslik,
-          eklenenNakit: eklenecekNakit || 0,
+          hedefIlanId: ilan._id, hedefIlanBaslik: ilan.baslik, hedefIlanFiyat: ilan.fiyat || 0,
+          teklifEdilenIlanId: teklifIlanId, teklifEdilenIlanBaslik: teklifIlanBaslik, eklenenNakit: eklenecekNakit || 0,
         })
       });
-      if (res.ok) { alert("⚡ SİBER TEKLİF İLETİLDİ!"); router.push("/panel"); }
+      if (res.ok) { alert("✅ Takas teklifiniz başarıyla satıcıya iletildi."); router.push("/panel"); }
       else { const err = await res.json(); alert(`Hata: ${err.error}`); }
-    } catch { alert("Takas motoru yanıt vermiyor."); }
+    } catch { alert("İşlem gerçekleştirilemedi."); }
   };
 
   const handleSiparisTamamla = async () => {
-    if (!siparisForm.adSoyad || !siparisForm.telefon || !siparisForm.adres) return alert("Lütfen teslimat bilgilerini eksiksiz doldurun!");
-    if (!siparisForm.sozlesmeOnay) return alert("Mesafeli Satış Sözleşmesini onaylamanız gerekmektedir!");
+    if (!siparisForm.adSoyad || !siparisForm.telefon || !siparisForm.adres) return alert("Lütfen teslimat bilgilerini eksiksiz doldurun.");
+    if (!siparisForm.sozlesmeOnay) return alert("Devam etmek için Mesafeli Satış Sözleşmesini onaylamanız gerekmektedir.");
     try {
       const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          listingId: ilan._id,
-          sellerEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId,
-          adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon,
-          adres: siparisForm.adres, siparisNotu: siparisForm.siparisNotu,
+          listingId: ilan._id, sellerEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId,
+          adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon, adres: siparisForm.adres, siparisNotu: siparisForm.siparisNotu,
           odemeYontemi: siparisForm.odemeYontemi, fiyat: ilan.fiyat
         })
       });
-      if (res.ok) { alert("📦 SİPARİŞ ONAYLANDI!"); router.push("/panel"); }
+      if (res.ok) { alert("📦 Siparişiniz başarıyla alındı."); router.push("/panel"); }
       else { alert("Sipariş oluşturulamadı."); }
-    } catch { alert("Sipariş ağına ulaşılamadı."); }
+    } catch { alert("Sistem yanıt vermiyor."); }
   };
 
-  const isVideo = (url: string) =>
-    !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video'));
+  const isVideo = (url: string) => !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video'));
 
   const getTumMedya = (ilan: any): string[] => {
     return ilan?.resimler?.length ? ilan.resimler :
       ilan?.images?.length ? ilan.images :
       ilan?.image ? [ilan.image] :
-      ["https://placehold.co/600x400/030712/00f260?text=GORSEL+YOK"];
+      ["https://placehold.co/600x400/f3f4f6/4f46e5?text=Görsel+Yok"];
   };
 
-  const renderYildizlar = (puan: number) =>
-    "⭐".repeat(Math.round(puan)) + "☆".repeat(5 - Math.round(puan));
+  const renderYildizlar = (puan: number) => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star key={star} size={14} className={star <= Math.round(puan) ? "fill-amber-400 text-amber-400" : "text-gray-300"} />
+        ))}
+      </div>
+    );
+  };
 
-  const ilaninSahibiyim = session?.user?.email?.toLowerCase() ===
-    (ilan?.satici?.email || ilan?.sellerEmail || ilan?.userId)?.toLowerCase();
+  const ilaninSahibiyim = session?.user?.email?.toLowerCase() === (ilan?.satici?.email || ilan?.sellerEmail || ilan?.userId)?.toLowerCase();
 
   if (loading) return (
-    <div className="min-h-screen bg-[#020202] flex flex-col items-center justify-center text-[#00f260] font-black tracking-widest animate-pulse">
-      <Zap size={40} className="mb-4" /> VARLIK ÇÖZÜMLENİYOR...
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-indigo-600 font-bold tracking-wide animate-pulse">
+      <Zap size={40} className="mb-4" /> İlan Bilgileri Yükleniyor...
     </div>
   );
 
   if (!ilan) return (
-    <div className="min-h-screen bg-[#020202] flex flex-col items-center justify-center gap-6">
-      <p className="text-red-500 font-black tracking-widest text-lg">VARLIK BULUNAMADI.</p>
-      <button onClick={() => router.push("/")} className="bg-[#00f260] text-black px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-sm">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-6">
+      <p className="text-gray-500 font-semibold text-lg">Bu ilan yayından kaldırılmış veya bulunamıyor.</p>
+      <button onClick={() => router.push("/")} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-colors">
         Ana Sayfaya Dön
       </button>
     </div>
@@ -209,68 +201,52 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
   const aktifMedyaVideo = isVideo(aktifMedya);
 
   return (
-    <div className="min-h-screen bg-[#020202] py-8 md:py-24 px-4 text-white font-sans selection:bg-[#00f260] selection:text-black">
+    <div className="min-h-screen bg-gray-50 py-8 md:py-16 px-4 font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900">
 
-      {ilan && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org/",
-              "@type": "Product",
-              "name": ilan.baslik || "İsimsiz Varlık",
-              "image": tumMedya[0] || "https://atakasa.com/logo.png",
-              "description": ilan.aciklama || "Atakasa platformunda takas ilanı",
-              "brand": { "@type": "Brand", "name": ilan.kategori || "Atakasa" },
-              "offers": {
-                "@type": "Offer",
-                "url": `https://atakasa.com/varlik/${ilan._id}`,
-                "priceCurrency": "TRY",
-                "price": ilan.fiyat || ilan.price || "0",
-                "availability": ilan.durum === "pasif" ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-                "itemCondition": "https://schema.org/UsedCondition"
-              }
-            })
-          }}
-        />
-      )}
+      {/* SEO Zırhı */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org/", "@type": "Product",
+          "name": ilan.baslik || "İsimsiz İlan", "image": tumMedya[0],
+          "description": ilan.aciklama || "Atakasa platformunda bir ilan",
+          "offers": { "@type": "Offer", "priceCurrency": "TRY", "price": ilan.fiyat || "0" }
+        })
+      }} />
 
-      <div className="max-w-6xl mx-auto bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row relative z-10">
+      <div className="max-w-6xl mx-auto mb-6">
+        <button onClick={() => router.push('/')} className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 font-semibold text-sm transition-colors w-fit">
+          <ChevronLeft size={16} /> Geri Dön
+        </button>
+      </div>
 
-        {/* SOL PANEL */}
-        <div className="w-full lg:w-1/2 bg-[#030712] border-r border-white/5 p-6 md:p-8 flex flex-col relative">
+      <div className="max-w-6xl mx-auto bg-white border border-gray-200 rounded-[2rem] shadow-sm overflow-hidden flex flex-col lg:flex-row relative z-10">
 
-          <div
-            className="relative group rounded-3xl overflow-hidden shadow-2xl mb-4 bg-zinc-950 cursor-pointer"
-            onClick={() => aktifMedyaVideo && setVideoAcik(true)}
-          >
+        {/* 📸 SOL PANEL (GÖRSELLER VE YORUMLAR) */}
+        <div className="w-full lg:w-1/2 bg-gray-50/50 border-r border-gray-100 p-6 md:p-8 flex flex-col">
+
+          {/* Ana Görsel Kutusu */}
+          <div className="relative group rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 mb-4 cursor-pointer aspect-video md:aspect-[4/3] flex items-center justify-center shadow-inner" onClick={() => aktifMedyaVideo && setVideoAcik(true)}>
             {aktifMedyaVideo ? (
-              <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-                <video src={`${aktifMedya}#t=0.001`} className="w-full h-full object-cover opacity-60" muted playsInline preload="metadata" />
+              <div className="relative w-full h-full bg-black flex items-center justify-center">
+                <video src={`${aktifMedya}#t=0.001`} className="w-full h-full object-cover opacity-70" muted playsInline preload="metadata" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-20 h-20 bg-[#00f260] rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(0,242,96,0.6)] group-hover:scale-110 transition-transform duration-300">
-                    <Play size={32} className="text-black ml-1" fill="black" />
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform duration-300">
+                    <Play size={28} className="text-white ml-1" fill="white" />
                   </div>
-                </div>
-                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-1.5 z-10">
-                  <Play size={10} className="text-[#00f260]" fill="#00f260" />
-                  <span className="text-white text-[9px] font-black uppercase tracking-widest">VİDEO</span>
                 </div>
               </div>
             ) : (
-              <img src={aktifMedya} alt={ilan.baslik} className="w-full h-auto max-h-[450px] object-cover opacity-90 group-hover:scale-105 transition-transform duration-700" />
+              <img src={aktifMedya} alt={ilan.baslik} className="w-full h-full object-contain" />
             )}
           </div>
 
+          {/* Küçük Görseller (Thumbnail) */}
           {tumMedya.length > 1 && (
-            <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
+            <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar pb-2">
               {tumMedya.map((medya, idx) => (
-                <div key={idx} onClick={() => setAktifMedyaIndex(idx)}
-                  className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${aktifMedyaIndex === idx ? 'border-[#00f260] shadow-[0_0_10px_rgba(0,242,96,0.4)]' : 'border-white/10 hover:border-white/30'}`}>
+                <div key={idx} onClick={() => setAktifMedyaIndex(idx)} className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${aktifMedyaIndex === idx ? 'border-indigo-600 shadow-md' : 'border-gray-200 hover:border-gray-300'}`}>
                   {isVideo(medya) ? (
-                    <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
-                      <Play size={20} className="text-[#00f260]" fill="#00f260" />
-                    </div>
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center"><Play size={18} className="text-gray-400" fill="currentColor" /></div>
                   ) : (
                     <img src={medya} alt="" className="w-full h-full object-cover" />
                   )}
@@ -279,195 +255,193 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
             </div>
           )}
 
-          <div className="mt-auto bg-white/5 p-6 rounded-3xl border border-white/5 max-h-96 overflow-y-auto">
-            <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
-              <h3 className="text-cyan-400 font-black text-[10px] uppercase tracking-widest">Satıcı Güven Puanı</h3>
-              <span className="text-amber-400 text-lg font-black tracking-widest">
-                {ortalamaPuan > 0 ? renderYildizlar(ortalamaPuan) : "YENİ"}
-              </span>
+          {/* Satıcı Güven Kartı ve Yorumlar */}
+          <div className="mt-auto bg-white p-6 rounded-2xl border border-gray-200 shadow-sm max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+              <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2"><ShieldCheck size={16} className="text-indigo-600"/> Satıcı Güven Puanı</h3>
+              <div className="flex items-center gap-2">
+                {ortalamaPuan > 0 ? renderYildizlar(ortalamaPuan) : <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">YENİ ÜYE</span>}
+              </div>
             </div>
+            
             <div className="space-y-4 mb-6">
               {yorumlar.length === 0 ? (
-                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest text-center py-4 bg-black/40 rounded-xl">Henüz değerlendirme yok.</p>
+                <p className="text-gray-400 text-xs font-medium text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">Satıcı için henüz bir değerlendirme yapılmamış.</p>
               ) : (
                 yorumlar.map((yorum: any, idx: number) => (
-                  <div key={idx} className="bg-black/40 p-4 rounded-2xl border border-white/5">
+                  <div key={idx} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-amber-400 text-xs">{renderYildizlar(yorum.puan)}</span>
-                      <span className="text-slate-500 text-[9px] font-bold">{new Date(yorum.createdAt).toLocaleDateString("tr-TR")}</span>
+                      {renderYildizlar(yorum.puan)}
+                      <span className="text-gray-400 text-[10px] font-semibold">{new Date(yorum.createdAt).toLocaleDateString("tr-TR")}</span>
                     </div>
-                    <p className="text-zinc-300 text-xs font-medium mb-2 leading-relaxed">"{yorum.icerik}"</p>
-                    <p className="text-cyan-400/50 text-[9px] font-black uppercase tracking-widest">- {yorum.gonderenAd}</p>
+                    <p className="text-gray-700 text-sm mb-2">"{yorum.icerik}"</p>
+                    <p className="text-gray-400 text-[10px] font-bold uppercase">- {yorum.gonderenAd}</p>
                   </div>
                 ))
               )}
             </div>
+
             {session?.user && !ilaninSahibiyim && (
-              <div className="bg-[#000000] p-5 rounded-2xl border border-cyan-500/20">
-                <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-3">Satıcıyı Değerlendir</p>
-                <div className="flex gap-2 mb-4">
+              <div className="bg-indigo-50/50 p-5 rounded-xl border border-indigo-100">
+                <p className="text-indigo-900 text-xs font-bold mb-3">Bu satıcıyla işlem yaptınız mı?</p>
+                <div className="flex gap-2 mb-3">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} onClick={() => setYeniPuan(star)}
-                      className={`text-3xl transition-all ${yeniPuan >= star ? 'text-amber-400 scale-110' : 'text-zinc-700 hover:text-amber-400/50'}`}>★</button>
+                    <button key={star} onClick={() => setYeniPuan(star)} className={`transition-all ${yeniPuan >= star ? 'text-amber-400' : 'text-gray-300 hover:text-amber-200'}`}><Star size={20} className={yeniPuan >= star ? "fill-amber-400" : ""} /></button>
                   ))}
                 </div>
-                <textarea value={yeniYorumMetni} onChange={(e) => setYeniYorumMetni(e.target.value)}
-                  placeholder="İşlem nasıldı? Güvenilir miydi?"
-                  className="w-full bg-[#050505] text-white text-xs p-4 rounded-xl border border-white/10 focus:border-cyan-500 transition-colors h-20 resize-none mb-3 outline-none" />
-                <button onClick={handleYorumGonder} className="w-full bg-cyan-900/30 border border-cyan-800/50 text-cyan-400 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-900/50 transition-all">
-                  YORUMU GÖNDER
-                </button>
+                <textarea value={yeniYorumMetni} onChange={(e) => setYeniYorumMetni(e.target.value)} placeholder="Deneyiminizi kısaca paylaşın..." className="w-full bg-white text-gray-900 text-sm p-3 rounded-lg border border-gray-200 focus:border-indigo-500 transition-colors h-20 resize-none mb-3 outline-none" />
+                <button onClick={handleYorumGonder} className="w-full bg-indigo-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm">Değerlendirmeyi Gönder</button>
               </div>
             )}
           </div>
         </div>
 
-        {/* SAĞ PANEL */}
-        <div className="w-full lg:w-1/2 p-6 md:p-8 flex flex-col">
+        {/* 📝 SAĞ PANEL (İLAN BİLGİLERİ VE AKSİYONLAR) */}
+        <div className="w-full lg:w-1/2 p-6 md:p-10 flex flex-col">
 
-          <div className="flex bg-[#000000] p-1.5 rounded-2xl mb-8 border border-white/5 shadow-inner">
-            <button onClick={() => setAktifSekme("incele")} className={`flex-1 py-4 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${aktifSekme === "incele" ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}>
-              🔍 İncele
+          {/* Aksiyon Sekmeleri */}
+          <div className="flex bg-gray-100 p-1.5 rounded-xl mb-8 border border-gray-200">
+            <button onClick={() => setAktifSekme("incele")} className={`flex-1 py-3 rounded-lg font-bold text-[11px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${aktifSekme === "incele" ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              <Info size={14}/> İncele
             </button>
             {!ilaninSahibiyim && (
               <>
-                <button onClick={() => setAktifSekme("takas")} className={`flex-1 py-4 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${aktifSekme === "takas" ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}>
-                  🔄 Takas
+                <button onClick={() => setAktifSekme("takas")} className={`flex-1 py-3 rounded-lg font-bold text-[11px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${aktifSekme === "takas" ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                  <ArrowRightLeft size={14}/> Takas Et
                 </button>
-                <button onClick={() => setAktifSekme("satinal")} className={`flex-1 py-4 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${aktifSekme === "satinal" ? 'bg-[#00f260] text-black shadow-[0_0_15px_rgba(0,242,96,0.3)]' : 'text-slate-500 hover:text-white'}`}>
-                  💳 Satın Al
+                <button onClick={() => setAktifSekme("satinal")} className={`flex-1 py-3 rounded-lg font-bold text-[11px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${aktifSekme === "satinal" ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>
+                  <ShoppingCart size={14}/> Satın Al
                 </button>
               </>
             )}
           </div>
 
+          {/* 🔍 SEKME: İNCELE */}
           {aktifSekme === "incele" && (
             <div className="flex flex-col h-full">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-[#00f260] text-[9px] font-black uppercase tracking-widest bg-[#00f260]/10 border border-[#00f260]/20 px-3 py-1 rounded-full">
-                  {ilan.kategori || "PİYASA"}
-                </span>
-                {ilan.sehir && (
-                  <span className="text-slate-400 text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-                    📍 {ilan.sehir}
-                  </span>
-                )}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <span className="flex items-center gap-1 text-indigo-700 text-[10px] font-bold uppercase bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-md"><Tag size={12}/> {ilan.kategori || "Genel"}</span>
+                {ilan.sehir && <span className="flex items-center gap-1 text-gray-600 text-[10px] font-bold uppercase bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-md"><MapPin size={12}/> {ilan.sehir}</span>}
               </div>
-              <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-6">{ilan.baslik || "İsimsiz Varlık"}</h1>
-              <div className="text-[#00f260] font-black text-4xl mb-4 border-b border-white/5 pb-6">
-                {Number(ilan.fiyat || 0).toLocaleString()} <span className="text-2xl text-zinc-500 italic">₺</span>
+              
+              <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-snug mb-4">{ilan.baslik || "İlan Başlığı"}</h1>
+              
+              <div className="text-indigo-600 font-black text-4xl mb-6 pb-6 border-b border-gray-100">
+                {Number(ilan.fiyat || 0).toLocaleString()} <span className="text-2xl text-gray-400 font-medium">₺</span>
               </div>
+              
               {ilan.takasIstegi && (
-                <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-4 mb-4">
-                  <p className="text-cyan-400 text-[9px] font-black uppercase tracking-widest mb-1">🔄 Takas İsteği</p>
-                  <p className="text-white text-sm">{ilan.takasIstegi}</p>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 mb-6">
+                  <p className="text-emerald-800 text-xs font-bold uppercase mb-1.5 flex items-center gap-1.5"><ArrowRightLeft size={14}/> Takas Tercihi</p>
+                  <p className="text-emerald-900 text-sm font-medium">{ilan.takasIstegi}</p>
                 </div>
               )}
-              <p className="text-zinc-400 text-sm mb-8 leading-relaxed flex-1 font-medium whitespace-pre-line">
-                {ilan.aciklama || "Açıklama belirtilmemiş."}
-              </p>
+              
+              <div className="mb-8">
+                <h3 className="text-gray-900 font-bold mb-2">Açıklama</h3>
+                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  {ilan.aciklama || "Bu ilan için bir açıklama girilmemiş."}
+                </p>
+              </div>
+
               {!ilaninSahibiyim && (
                 <Link href={`/mesajlar?satici=${ilan.satici?.email || ilan.sellerEmail || ilan.userId}&ilan=${ilan._id}`}
-                  className="w-full bg-white/5 text-white py-5 rounded-2xl border border-white/10 font-black uppercase tracking-widest text-[11px] hover:bg-white/10 transition-all flex justify-center items-center gap-2 mt-auto">
-                  <MessageCircle size={18} /> SATICIYA MESAJ GÖNDER
+                  className="w-full bg-white text-gray-700 py-4 rounded-xl border-2 border-gray-200 font-bold text-[13px] hover:border-indigo-600 hover:text-indigo-600 transition-colors flex justify-center items-center gap-2 mt-auto">
+                  <MessageCircle size={18} /> Satıcıya Soru Sor
                 </Link>
               )}
+              
               {ilaninSahibiyim && (
-                <div className="mt-auto bg-[#00f260]/5 border border-[#00f260]/20 rounded-2xl p-4 text-center">
-                  <p className="text-[#00f260] text-[10px] font-black uppercase tracking-widest">Bu sizin ilanınız</p>
+                <div className="mt-auto bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
+                  <p className="text-blue-700 text-xs font-bold">Bu sizin kendi ilanınızdır.</p>
                 </div>
               )}
             </div>
           )}
 
+          {/* 🔄 SEKME: TAKAS TEKLİFİ */}
           {aktifSekme === "takas" && (
             <div className="flex flex-col h-full">
-              <h3 className="text-xl font-black text-white italic uppercase mb-8 border-b border-white/5 pb-4">
-                SİBER <span className="text-cyan-400">TAKAS</span> KONSOLU
-              </h3>
-              <label className="text-cyan-400 text-[10px] font-black uppercase tracking-widest block mb-2">1. Vereceğiniz Varlığı Seçin:</label>
-              <select onChange={(e) => setSecilenBenimIlanim(e.target.value)}
-                className="w-full bg-[#050505] border border-white/10 text-white text-sm p-5 rounded-2xl outline-none focus:border-cyan-500 transition-colors mb-6 appearance-none">
-                <option value="">-- Kendi İlanlarınızdan Birini Seçin --</option>
-                {benimIlanlarim.map(bIlan => (
-                  <option key={bIlan._id} value={`${bIlan._id}|${bIlan.baslik}`}>{bIlan.baslik}</option>
-                ))}
-              </select>
-              {benimIlanlarim.length === 0 && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4 text-center">
-                  <p className="text-amber-400 text-[10px] font-black uppercase tracking-widest">Takas için önce ilan vermelisiniz</p>
-                  <button onClick={() => router.push('/ilan-ver')} className="mt-2 text-[#00f260] text-[10px] font-black uppercase underline">İlan Ver →</button>
+              <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-xl mb-6">
+                <h3 className="text-lg font-bold text-indigo-900 mb-1">Takas Teklifi Oluştur</h3>
+                <p className="text-indigo-700 text-xs">Satıcıya kendi ürünlerinizden birini teklif edin.</p>
+              </div>
+
+              <div className="space-y-5 flex-1">
+                <div>
+                  <label className="text-gray-700 text-xs font-bold block mb-2">1. Vereceğiniz Ürünü Seçin</label>
+                  <select onChange={(e) => setSecilenBenimIlanim(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow">
+                    <option value="">-- Yayındaki İlanlarınızdan Seçin --</option>
+                    {benimIlanlarim.map(bIlan => <option key={bIlan._id} value={`${bIlan._id}|${bIlan.baslik}`}>{bIlan.baslik}</option>)}
+                  </select>
                 </div>
-              )}
-              <label className="text-[#00f260] text-[10px] font-black uppercase tracking-widest block mb-2">2. Üstüne Eklenecek Nakit (₺) - Opsiyonel:</label>
-              <input type="number" placeholder="Örn: 500" value={eklenecekNakit} onChange={(e) => setEklenecekNakit(e.target.value)}
-                className="w-full bg-[#050505] border border-white/10 text-white text-sm p-5 rounded-2xl outline-none focus:border-[#00f260] transition-colors mb-6" />
-              <label className="text-white text-[10px] font-black uppercase tracking-widest block mb-2">3. Teklif Notu:</label>
-              <textarea value={takasMesaji} onChange={(e) => setTakasMesaji(e.target.value)}
-                placeholder="Ürünüm temizdir. (Telefon/Mail yasaktır)"
-                className="w-full bg-[#050505] border border-white/10 text-white text-sm p-5 rounded-2xl outline-none focus:border-cyan-500 transition-colors mb-auto h-28 resize-none" />
-              <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim || benimIlanlarim.length === 0}
-                className="w-full mt-8 bg-cyan-500 text-black py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] hover:scale-[1.02] transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-                🚀 TAKAS TEKLİFİNİ FIRLAT
+
+                {benimIlanlarim.length === 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                    <p className="text-amber-800 text-xs font-bold mb-2">Takas yapabilmek için önce sisteme bir ürün eklemelisiniz.</p>
+                    <button onClick={() => router.push('/ilan-ver')} className="text-indigo-600 text-xs font-bold underline">Hemen İlan Ver</button>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-gray-700 text-xs font-bold block mb-2">2. Üste Nakit Eklenecek mi? (Opsiyonel)</label>
+                  <div className="relative">
+                    <input type="number" placeholder="0" value={eklenecekNakit} onChange={(e) => setEklenecekNakit(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 pr-10 rounded-xl outline-none focus:border-indigo-500 transition-shadow" />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₺</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-gray-700 text-xs font-bold block mb-2">3. Teklif Notu (Opsiyonel)</label>
+                  <textarea value={takasMesaji} onChange={(e) => setTakasMesaji(e.target.value)} placeholder="Ürünüm temizdir, üste nakit verebilirim. (İletişim bilgisi girmek yasaktır)" className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 transition-shadow h-24 resize-none" />
+                </div>
+              </div>
+
+              <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim || benimIlanlarim.length === 0} className="w-full mt-6 bg-indigo-600 text-white py-4 rounded-xl font-bold text-[13px] hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center gap-2">
+                <ArrowRightLeft size={16}/> Takas Teklifini Gönder
               </button>
             </div>
           )}
 
+          {/* 💳 SEKME: GÜVENLİ SATIN ALMA */}
           {aktifSekme === "satinal" && (
             <div className="flex flex-col h-full">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
-                  {aktifMedyaVideo ? (
-                    <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
-                      <Play size={20} className="text-[#00f260]" fill="#00f260" />
-                    </div>
-                  ) : (
-                    <img src={aktifMedya} className="w-full h-full object-cover" alt="Ürün" />
-                  )}
+              
+              <div className="flex items-center gap-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shrink-0 bg-white">
+                  <img src={aktifMedya} className="w-full h-full object-cover" alt="Ürün" />
                 </div>
                 <div>
-                  <div className="text-[#00f260] text-[9px] font-black uppercase tracking-widest mb-1">GÜVENLİ SATIN ALMA</div>
-                  <h3 className="text-white font-bold text-sm line-clamp-1">{ilan.baslik}</h3>
-                  <div className="text-white font-black text-lg">{Number(ilan.fiyat || 0).toLocaleString()} ₺</div>
+                  <h3 className="text-gray-900 font-bold text-sm line-clamp-1 mb-1">{ilan.baslik}</h3>
+                  <div className="text-indigo-600 font-black text-lg">{Number(ilan.fiyat || 0).toLocaleString()} ₺</div>
                 </div>
               </div>
-              <div className="flex justify-between items-center border border-[#00f260]/30 bg-[#00f260]/5 rounded-2xl p-5 mb-6">
-                <span className="text-[#00f260] font-black text-[11px] uppercase tracking-widest">ÖDENECEK TUTAR</span>
-                <span className="text-3xl font-black text-white">{Number(ilan.fiyat || 0).toLocaleString()} ₺</span>
-              </div>
-              <div className="space-y-4 mb-6">
-                <input type="text" placeholder="Teslim Alacak Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-[#030712] border border-white/5 text-white text-sm p-4 rounded-xl outline-none focus:border-[#00f260] transition-colors" />
-                <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e) => setSiparisForm({...siparisForm, telefon: e.target.value})} className="w-full bg-[#030712] border border-white/5 text-white text-sm p-4 rounded-xl outline-none focus:border-[#00f260] transition-colors" />
-                <textarea placeholder="Açık Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-[#030712] border border-white/5 text-white text-sm p-4 rounded-xl outline-none focus:border-[#00f260] transition-colors h-24 resize-none"></textarea>
-                <input type="text" placeholder="Sipariş Notu (İsteğe Bağlı)" value={siparisForm.siparisNotu} onChange={(e) => setSiparisForm({...siparisForm, siparisNotu: e.target.value})} className="w-full bg-[#030712] border border-white/5 text-white text-sm p-4 rounded-xl outline-none focus:border-[#00f260] transition-colors" />
-                <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-[#030712] border border-white/5 text-white text-sm p-4 rounded-xl outline-none focus:border-[#00f260] transition-colors appearance-none cursor-pointer">
-                  <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
-                  <option value="havale">🏦 Havale / EFT</option>
-                  <option value="kapida_odeme">📦 Kapıda Ödeme</option>
+
+              <div className="space-y-4 flex-1">
+                <input type="text" placeholder="Teslim Alacak Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500" />
+                <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e) => setSiparisForm({...siparisForm, telefon: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500" />
+                <textarea placeholder="Açık Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 h-20 resize-none"></textarea>
+                <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 cursor-pointer">
+                  <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz Ödemesi)</option>
+                  <option value="havale">🏦 Havale / EFT ile Ödeme</option>
                 </select>
               </div>
-              <div className="space-y-4 mb-8 mt-auto border border-white/5 bg-[#030712] p-5 rounded-2xl">
+
+              <div className="mt-6 bg-gray-50 border border-gray-200 p-5 rounded-xl space-y-3">
                 <label className="flex items-start gap-3 cursor-pointer group">
-                  <div className="relative flex items-center justify-center mt-0.5 shrink-0">
-                    <input type="checkbox" checked={siparisForm.sozlesmeOnay} onChange={(e) => setSiparisForm({...siparisForm, sozlesmeOnay: e.target.checked})} className="peer appearance-none w-5 h-5 border-2 border-white/20 rounded-md checked:bg-white checked:border-white transition-colors cursor-pointer" />
-                    <ShieldCheck size={12} className="absolute text-black opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
-                  </div>
-                  <p className="text-[9px] text-zinc-500 leading-relaxed uppercase font-black tracking-widest group-hover:text-zinc-300 transition-colors">
-                    MESAFELİ SATIŞ SÖZLEŞMESİ'Nİ OKUDUM VE KABUL EDİYORUM.
-                  </p>
+                  <input type="checkbox" checked={siparisForm.sozlesmeOnay} onChange={(e) => setSiparisForm({...siparisForm, sozlesmeOnay: e.target.checked})} className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer" />
+                  <p className="text-xs text-gray-600 font-medium">Mesafeli Satış Sözleşmesi'ni ve Ön Bilgilendirme Formu'nu okudum, onaylıyorum.</p>
                 </label>
-                <label className="flex items-start gap-3">
-                  <div className="relative flex items-center justify-center mt-0.5 shrink-0">
-                    <input type="checkbox" checked={true} readOnly className="appearance-none w-5 h-5 border-2 border-white bg-white rounded-md" />
-                    <ShieldCheck size={12} className="absolute text-black pointer-events-none" />
-                  </div>
-                  <p className="text-[9px] text-zinc-500 leading-relaxed uppercase font-black tracking-widest">
-                    <span className="text-[#00f260]">🛡️ YASAL ZIRH:</span> TESLİMAT TAMAMLANANA KADAR PARA HAVUZA AKTARILIR.
+                <div className="flex items-start gap-3 pt-3 border-t border-gray-200">
+                  <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-gray-600 font-medium">
+                    <strong className="text-gray-900">Alıcı Koruması:</strong> Ürün size ulaşıp onay verene kadar ödemeniz güvenli havuz hesabımızda tutulur. Satıcıya aktarılmaz.
                   </p>
-                </label>
+                </div>
               </div>
-              <button onClick={handleSiparisTamamla} className="w-full bg-[#00f260] text-black py-4 rounded-xl font-black uppercase tracking-[0.1em] text-[11px] hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
-                ✅ GÜVENLİ ÖDEMEYİ TAMAMLA
+
+              <button onClick={handleSiparisTamamla} className="w-full mt-6 bg-emerald-600 text-white py-4 rounded-xl font-bold text-[14px] hover:bg-emerald-700 transition-colors shadow-sm flex items-center justify-center gap-2">
+                <ShieldCheck size={18}/> Güvenli Ödemeye Geç
               </button>
             </div>
           )}
@@ -476,45 +450,34 @@ export default function SiberVarlikTerminali({ params }: { params: any }) {
 
       {/* VİDEO MODAL */}
       {videoAcik && aktifMedyaVideo && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setVideoAcik(false)}>
-          <div className="relative w-full max-w-3xl" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setVideoAcik(false)} className="absolute -top-14 right-0 text-white bg-white/10 hover:bg-red-500 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg transition-all z-10">✕</button>
-            <video src={`${aktifMedya}#t=0.001`} controls autoPlay className="w-full rounded-3xl border border-[#00f260]/30 shadow-[0_0_50px_rgba(0,242,96,0.2)]" />
-            <p className="text-white font-bold text-center mt-4 text-sm">{ilan.baslik}</p>
+        <div className="fixed inset-0 z-[9999] bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setVideoAcik(false)}>
+          <div className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setVideoAcik(false)} className="absolute top-4 right-4 text-white bg-black/50 hover:bg-red-600 w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors z-10">✕</button>
+            <video src={`${aktifMedya}#t=0.001`} controls autoPlay className="w-full h-auto max-h-[80vh]" />
           </div>
         </div>
       )}
 
-      {/* ✅ YENİ: BENZER VARLIKLAR */}
+      {/* BENZER İLANLAR */}
       {benzerIlanlar.length > 0 && (
-        <div className="max-w-6xl mx-auto mt-16 px-4 mb-24">
-          <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
-            <h2 className="text-xl font-black italic uppercase tracking-tighter">
-              BUNA BENZER <span className="text-[#00f260]">FIRSATLAR.</span>
-            </h2>
-            <Link href="/" className="text-[10px] font-black uppercase text-slate-500 hover:text-white transition-colors tracking-widest">Tümünü Gör →</Link>
+        <div className="max-w-6xl mx-auto mt-16 mb-24">
+          <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-3">
+            <h2 className="text-xl font-bold text-gray-900">Benzer İlanlar</h2>
+            <Link href="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">Tümünü Gör →</Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {benzerIlanlar.map((bIlan) => (
-              <Link key={bIlan._id} href={`/varlik/${bIlan._id}`}
-                className="group bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden hover:border-[#00f260]/30 transition-all shadow-lg">
-                <div className="aspect-square overflow-hidden bg-zinc-900 relative">
-                  {isVideo(bIlan.resimler?.[0] || bIlan.image || "") ? (
-                    <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
-                      <Play size={28} className="text-[#00f260] opacity-70" fill="#00f260" />
-                    </div>
-                  ) : (
-                    <img
-                      src={bIlan.resimler?.[0] || bIlan.image || "https://placehold.co/200x200/030712/00f260?text=AT"}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                      alt={bIlan.baslik}
-                    />
-                  )}
+              <Link key={bIlan._id} href={`/varlik/${bIlan._id}`} className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all shadow-sm hover:shadow-md flex flex-col">
+                <div className="aspect-square overflow-hidden bg-gray-100 relative">
+                  <img
+                    src={bIlan.resimler?.[0] || bIlan.image || "https://placehold.co/200x200/f3f4f6/4f46e5?text=İlan"}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    alt={bIlan.baslik}
+                  />
                 </div>
-                <div className="p-3">
-                  <h3 className="text-[10px] font-bold text-white truncate uppercase mb-1 leading-tight">{bIlan.baslik}</h3>
-                  <p className="text-[#00f260] text-[11px] font-black">{Number(bIlan.fiyat || 0).toLocaleString()} ₺</p>
-                  {bIlan.sehir && <p className="text-slate-500 text-[9px] font-bold uppercase mt-0.5 truncate">📍 {bIlan.sehir}</p>}
+                <div className="p-3 flex-1 flex flex-col">
+                  <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1 leading-tight">{bIlan.baslik}</h3>
+                  <p className="text-indigo-600 text-sm font-extrabold mt-auto">{Number(bIlan.fiyat || 0).toLocaleString()} ₺</p>
                 </div>
               </Link>
             ))}
