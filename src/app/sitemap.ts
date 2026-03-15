@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next';
 import { connectMongoDB } from '../lib/mongodb';
 import Varlik from '../models/Varlik';
 
-// 🚀 SİBER KİLİT: Google botları için haritayı canlı tutar
-export const dynamic = "force-dynamic";
-// 🛡️ ZEKİ ÖNBELLEK: Veritabanını yormamak için haritayı 1 saatte bir arka planda yeniler
+// 🛡️ ZEKİ ÖNBELLEK (SİBER ZIRH): 
+// Haritayı hafızaya alır ve botlara saliseler içinde sunar. Veritabanı asla yorulmaz!
+// Her 3600 saniyede (1 saat) bir arka planda sessizce yenilenir.
 export const revalidate = 3600; 
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -15,7 +15,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     await connectMongoDB();
 
     // ⚡ Bütün ilanları en hızlı şekilde (sadece ID ve Tarih) çek
-    // SEO için sadece ID ve güncellenme tarihi yeterlidir, bu sayede 100.000 ilan bile saniyesinde çekilir!
     const ilanlar = await Varlik.find({}).select('_id updatedAt createdAt').lean() as any[];
 
     // 1. ANA SAYFALAR (Zirve Önceliği)
@@ -23,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       {
         url: `${baseUrl}`,
         lastModified: new Date(),
-        changeFrequency: 'always', // Google'a "Burayı sürekli tara, ana sayfa akışı hep değişiyor" diyoruz
+        changeFrequency: 'always',
         priority: 1.0, // 🎯 1.0 EN YÜKSEK SEO PUANI
       },
       {
@@ -44,8 +43,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const ilanUrls: MetadataRoute.Sitemap = ilanlar.map((ilan) => ({
       url: `${baseUrl}/varlik/${ilan._id.toString()}`,
       lastModified: ilan.updatedAt || ilan.createdAt || new Date(),
-      changeFrequency: 'daily', // İlan fiyatı veya durumu her an değişebilir
-      priority: 0.9, // 🎯 Ürün sayfaları SEO'nun kalbidir, yüksek puan veriyoruz!
+      changeFrequency: 'daily', 
+      priority: 0.9, 
     }));
 
     // Bütün haritayı birleştir ve Google'ın önüne ser
