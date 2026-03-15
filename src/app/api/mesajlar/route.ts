@@ -1,96 +1,107 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth/next";
+import { connectMongoDB } from "../../../lib/mongodb"; 
 
-// 🛡️ MONGODB BAĞLANTISI
-const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  await mongoose.connect(process.env.MONGODB_URI as string);
-};
-
-// 💬 SİBER MESAJ ŞEMASI
+// 🛡️ SİBER MESAJ ŞEMASI
 const MesajSchema = new mongoose.Schema({
-  gonderenEmail: { type: String, required: true },
-  aliciEmail: { type: String, required: true },
-  icerik: { type: String, required: true, maxlength: 1000 }, // Spam engelleme (Max 1000 karakter)
-  okunduMu: { type: Boolean, default: false },
-  ilanId: { type: String }, // Hangi ilan üzerinden konuşuluyor? (Opsiyonel)
+  gonderen: { type: String, required: true },
+  alici: { type: String, required: true },
+  mesaj: { type: String, required: true },
+  ilanId: { type: String, required: true },
+  ilanBaslik: { type: String, default: "İlan" },
+  okundu: { type: Boolean, default: false }
 }, { timestamps: true });
 
 const Mesaj = mongoose.models.Mesaj || mongoose.model("Mesaj", MesajSchema);
 
-// 🔍 GET: KULLANICININ MESAJLARINI ÇEK
+// 📥 MESAJLARI ÇEKME VE LİSTELEME
 export async function GET(req: Request) {
   try {
-    await connectDB();
+    await connectMongoDB();
     const session = await getServerSession();
-    if (!session?.user?.email) return NextResponse.json({ error: "Oturum yok!" }, { status: 401 });
+    if (!session?.user?.email) return NextResponse.json([], { status: 401 });
 
     const email = session.user.email.toLowerCase();
     const { searchParams } = new URL(req.url);
-    const karsiKullanici = searchParams.get("karsiKullanici");
+    const withUser = searchParams.get("with");
+    const ilanId = searchParams.get("ilanId");
 
-    // Eğer belirli biriyle olan sohbet isteniyorsa:
-    if (karsiKullanici) {
-      const sohbet = await Mesaj.find({
+    // 1. İki kişi arasındaki belirli bir ilanın sohbetini çek
+    if (withUser) {
+      const query: any = {
         $or: [
-          { gonderenEmail: email, aliciEmail: karsiKullanici.toLowerCase() },
-          { gonderenEmail: karsiKullanici.toLowerCase(), aliciEmail: email }
+          { gonderen: email, alici: withUser.toLowerCase() },
+          { gonderen: withUser.toLowerCase(), alici: email }
         ]
-      }).sort({ createdAt: 1 }); // Eskiden yeniye sırala
-      
-      return NextResponse.json(sohbet, { status: 200 });
+      };
+      if (ilanId) query.ilanId = ilanId;
+
+      const mesajlar = await Mesaj.find(query).sort({ createdAt: 1 });
+
+      // Karşıdan gelen mesajları "Okundu" olarak işaretle
+      await Mesaj.updateMany(
+        { gonderen: withUser.toLowerCase(), alici: email, okundu: false },
+        { $set: { okundu: true } }
+      );
+
+      return NextResponse.json(mesajlar);
     }
 
-    // Belirli biri yoksa, kullanıcının dahil olduğu TÜM mesajları son atılandan geriye doğru getir
+    // 2. Panelin sol tarafındaki genel "Sohbetler" listesini çek
     const tumMesajlar = await Mesaj.find({
-      $or: [{ gonderenEmail: email }, { aliciEmail: email }]
+      $or: [{ gonderen: email }, { alici: email }]
     }).sort({ createdAt: -1 });
 
-    return NextResponse.json(tumMesajlar, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: "Siber ağa ulaşılamadı." }, { status: 500 });
-  }
-}
-
-// 🚀 POST: YENİ MESAJ GÖNDER
-export async function POST(req: Request) {
-  try {
-    await connectDB();
-    const session = await getServerSession();
-    if (!session?.user?.email) return NextResponse.json({ error: "Giriş yapmalısınız!" }, { status: 401 });
-
-    const gonderenEmail = session.user.email.toLowerCase();
-    const data = await req.json();
-
-    if (!data.icerik || data.icerik.trim() === "") {
-      return NextResponse.json({ error: "Boş sinyal gönderilemez." }, { status: 400 });
-    }
-
-    if (gonderenEmail === data.aliciEmail.toLowerCase()) {
-      return NextResponse.json({ error: "Kendinize mesaj gönderemezsiniz." }, { status: 400 });
-    }
-
-    // 🛡️ ZIRH: SPAM / DoS KALKANI (Son 3 saniye içinde mesaj atmış mı?)
-    const sonMesaj = await Mesaj.findOne({ gonderenEmail }).sort({ createdAt: -1 });
-    
-    if (sonMesaj) {
-      const gecenSure = Date.now() - new Date(sonMesaj.createdAt).getTime();
-      if (gecenSure < 3000) { // 3000 milisaniye = 3 saniye
-        return NextResponse.json({ error: "Sinyal çok hızlı! Lütfen 3 saniye bekleyin." }, { status: 429 });
+    const map = new Map();
+    for (const m of tumMesajlar) {
+      const karsiTaraf = m.gonderen === email ? m.alici : m.gonderen;
+      const key = `${karsiTaraf}_${m.ilanId}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          _id: key,
+          karsiTaraf,
+          ilanId: m.ilanId,
+          ilanBaslik: m.ilanBaslik,
+          sonMesaj: m.mesaj,
+          okunmamis: m.alici === email && !m.okundu ? 1 : 0,
+          createdAt: m.createdAt
+        });
+      } else {
+        if (m.alici === email && !m.okundu) map.get(key).okunmamis++;
       }
     }
 
-    // Her şey güvenliyse mesajı mühürle
+    return NextResponse.json(Array.from(map.values()));
+  } catch (err) {
+    console.error("Mesaj Get Hata:", err);
+    return NextResponse.json({ error: "Siber mesaj ağına ulaşılamadı" }, { status: 500 });
+  }
+}
+
+// 📤 YENİ MESAJ GÖNDERME
+export async function POST(req: Request) {
+  try {
+    await connectMongoDB();
+    const session = await getServerSession();
+    if (!session?.user?.email) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+
+    const body = await req.json();
+    
+    // Mesajı Veritabanına Yaz
     const yeniMesaj = await Mesaj.create({
-      gonderenEmail,
-      aliciEmail: data.aliciEmail.toLowerCase(),
-      icerik: String(data.icerik).substring(0, 1000), // Hack koruması
-      ilanId: data.ilanId || null
+      gonderen: session.user.email.toLowerCase(),
+      alici: body.alici.toLowerCase(),
+      mesaj: body.mesaj,
+      ilanId: body.ilanId,
+      ilanBaslik: body.ilanBaslik || "İlan Görüşmesi",
+      okundu: false
     });
 
-    return NextResponse.json({ message: "Sinyal iletildi!", mesaj: yeniMesaj }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: "Mesaj iletilemedi." }, { status: 500 });
+    return NextResponse.json({ success: true, mesaj: yeniMesaj });
+  } catch (err) {
+    console.error("Mesaj Post Hata:", err);
+    return NextResponse.json({ error: "Mesaj gönderilemedi" }, { status: 500 });
   }
 }
