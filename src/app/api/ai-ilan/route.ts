@@ -1,18 +1,41 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 // 🚨 SİBER ZIRH: @/ kısayolu yerine en garanti yöntem olan geriye doğru klasör sayma eklendi!
 import { connectMongoDB } from '../../../lib/mongodb';
 import Varlik from '../../../models/Varlik';
 import mongoose from 'mongoose';
 
-// Atakasa Kategorileri DB'deki Tam İsimlerle Eşleştirildi
-const KATEGORI_BILGI: Record<string, { ad: string; ornekler: string[]; resimKelimeleri: string; dbKategori: string }> = {
-  vasita: { ad: 'Vasıta & Araç', ornekler: ['otomobil', 'motosiklet'], resimKelimeleri: 'car,vehicle', dbKategori: 'Vasıta - Otomobil' },
-  elektronik: { ad: 'Elektronik', ornekler: ['akıllı telefon', 'laptop'], resimKelimeleri: 'smartphone,laptop', dbKategori: 'Elektronik - Telefon' },
-  emlak: { ad: 'Emlak', ornekler: ['daire', 'arsa'], resimKelimeleri: 'house,apartment', dbKategori: 'Emlak - Konut' },
-  giyim: { ad: 'Saat & Giyim', ornekler: ['akıllı saat', 'marka çanta'], resimKelimeleri: 'watch,sneakers', dbKategori: 'Moda - Saat & Takı' },
-  mobilya: { ad: 'Mobilya', ornekler: ['koltuk takımı', 'yemek masası'], resimKelimeleri: 'furniture,sofa', dbKategori: 'Ev - Mobilya & Tekstil' },
-  hobi: { ad: 'Hobi & Müzik', ornekler: ['elektro gitar', 'bisiklet'], resimKelimeleri: 'guitar,bicycle', dbKategori: 'Hobi - Oyuncak & Kitap' },
-  diger: { ad: 'Diğer Her Şey', ornekler: ['spor aleti', 'koleksiyon'], resimKelimeleri: 'collection,gym', dbKategori: 'Diğer' }
+// 📸 Kırık resim hatasını önlemek için NEXT.CONFIG ile uyumlu Unsplash Havuzu
+const KATEGORI_BILGI: Record<string, { ad: string; ornekler: string[]; dbKategori: string; resimler: string[] }> = {
+  vasita: { 
+    ad: 'Vasıta & Araç', ornekler: ['otomobil', 'motosiklet'], dbKategori: 'Vasıta - Otomobil',
+    resimler: ['https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=800&q=80']
+  },
+  elektronik: { 
+    ad: 'Elektronik', ornekler: ['akıllı telefon', 'laptop'], dbKategori: 'Elektronik - Telefon',
+    resimler: ['https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80']
+  },
+  emlak: { 
+    ad: 'Emlak', ornekler: ['daire', 'arsa'], dbKategori: 'Emlak - Konut',
+    resimler: ['https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80']
+  },
+  giyim: { 
+    ad: 'Saat & Giyim', ornekler: ['akıllı saat', 'marka çanta'], dbKategori: 'Moda - Saat & Takı',
+    resimler: ['https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80']
+  },
+  mobilya: { 
+    ad: 'Mobilya', ornekler: ['koltuk takımı', 'yemek masası'], dbKategori: 'Ev - Mobilya & Tekstil',
+    resimler: ['https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80']
+  },
+  hobi: { 
+    ad: 'Hobi & Müzik', ornekler: ['elektro gitar', 'bisiklet'], dbKategori: 'Hobi - Oyuncak & Kitap',
+    resimler: ['https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=800&q=80']
+  },
+  diger: { 
+    ad: 'Diğer Her Şey', ornekler: ['spor aleti', 'koleksiyon'], dbKategori: 'Diğer',
+    resimler: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80']
+  }
 };
 
 const SEHIRLER = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Konya', 'Gaziantep', 'Mersin', 'Kayseri'];
@@ -43,14 +66,17 @@ Her ilan için şu JSON formatını kullan:
 {
   "baslik": "kısa, dikkat çekici başlık (örn: 'Takaslık temiz iPhone 13')",
   "aciklama": "elindeki ürünün durumu, neden takaslamak istediği ve ne beklediği (100-150 kelime)",
-  "tahminiDeger": sayı (sadece TL değeri, yazısız rakam),
+  "tahminiDeger": sayı (sadece TL değeri, yazısız rakam, örn: 15000),
   "takasTalebi": "ne tür şeylerle takas olur (örn: Sadece otomatik araçlarla)",
   "sehir": "${hedefSehir}",
   "ilce": "rastgele gerçek ilçe adı"
 }
 
 SADECE JSON array döndür:
-[{...}, {...}]`;
+[
+  {...},
+  {...}
+]`;
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -60,7 +86,7 @@ SADECE JSON array döndür:
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', // Amiral Gemisi
+        model: 'claude-3-haiku-20240307', // 🚨 DÜZELTME: Uydurma model yerine gerçek ve hızlı model eklendi!
         max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -104,21 +130,22 @@ SADECE JSON array döndür:
     }
 
     // ATAKASA "VARLIK" ŞEMASINA GÖRE VERİLERİ HARMANLA
-    const kayitlar = uretilen.map((ilan: any, index: number) => {
-      const randomId = Math.floor(Math.random() * 10000) + index;
-      const dinamikResimUrl = `https://loremflickr.com/800/600/${kategori.resimKelimeleri}?lock=${randomId}`;
+    const kayitlar = uretilen.map((ilan: any) => {
+      // 🚨 DÜZELTME: loremflickr yerine güvenli Unsplash havuzundan resim çekiliyor
+      const havuz = kategori.resimler;
+      const guvenliResimUrl = havuz[Math.floor(Math.random() * havuz.length)];
 
       return {
         baslik: ilan.baslik,
-        fiyat: ilan.tahminiDeger || 0,
+        fiyat: Number(ilan.tahminiDeger) || 0,
         eskiFiyat: 0,
         kategori: kategori.dbKategori, 
         ulke: 'Türkiye',
         sehir: ilan.sehir,
-        ilce: ilan.ilce,
+        ilce: ilan.ilce || '',
         aciklama: ilan.aciklama,
-        takasIstegi: ilan.takasTalebi,
-        resimler: [dinamikResimUrl], 
+        takasIstegi: ilan.takasTalebi || 'Tekliflere açık',
+        resimler: [guvenliResimUrl], 
         satici: saticiId, 
         aktif: true,
         goruntulenmeSayisi: Math.floor(Math.random() * 200) + 20,
