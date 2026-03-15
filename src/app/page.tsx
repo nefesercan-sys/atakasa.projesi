@@ -86,28 +86,39 @@ export default function Home() {
   const isVideo = useCallback((url: string) =>
     !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video')), []);
 
-  // 🚨 KUSURSUZ GÖRSEL MOTORU: AI İlanlarının Resimlerini %100 Bulur!
   const getImageUrl = useCallback((ilan: any) => {
     if (!ilan) return "https://placehold.co/600x400/1e3a5f/c9a84c?text=A-TAKASA";
-    
     const checkArray = (arr: any) => Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
     const img = checkArray(ilan.resimler) || checkArray(ilan.medyalar) || checkArray(ilan.images);
     if (img && typeof img === 'string') return img;
-
     if (typeof ilan.resimler === 'string' && ilan.resimler.length > 5) return ilan.resimler;
     if (typeof ilan.medyalar === 'string' && ilan.medyalar.length > 5) return ilan.medyalar;
     if (typeof ilan.images === 'string' && ilan.images.length > 5) return ilan.images;
-
     return "https://placehold.co/600x400/1e3a5f/c9a84c?text=A-TAKASA";
   }, []);
 
+  // 🚨 SİBER ÇÖZÜM 1: AKILLI KATEGORİ EŞLEŞTİRME MOTORU
   const filtrelenmisIlanlar = useMemo(() => {
     let liste = [...ilanlar];
     if (searchTerm) liste = liste.filter(i =>
       (i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (i.aciklama || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
-    if (aktifKategori !== "Hepsi") liste = liste.filter(i => i.kategori === aktifKategori);
+    if (aktifKategori !== "Hepsi") {
+      liste = liste.filter(i => {
+        const kat = (i.kategori || i.sektorId || "").toLowerCase();
+        const aranan = aktifKategori.toLowerCase();
+        if (kat.includes(aranan)) return true;
+        // Zeki Eşleştirme Kuralları
+        if (aranan === "araç" && kat.includes("vasıta")) return true;
+        if (aranan === "tekstil" && (kat.includes("giyim") || kat.includes("moda"))) return true;
+        if (aranan === "oyun/konsol" && kat.includes("oyun")) return true;
+        if (aranan === "elektronik" && kat.includes("telefon")) return true;
+        if (aranan === "emlak" && kat.includes("konut")) return true;
+        if (aranan === "mobilya" && kat.includes("ev")) return true;
+        return false;
+      });
+    }
     if (aktifSehir !== "Tüm Şehirler") liste = liste.filter(i => (i.sehir || "").toUpperCase() === aktifSehir.toUpperCase());
     if (minFiyat) liste = liste.filter(i => Number(i.fiyat) >= Number(minFiyat));
     if (maxFiyat) liste = liste.filter(i => Number(i.fiyat) <= Number(maxFiyat));
