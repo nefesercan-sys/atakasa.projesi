@@ -26,9 +26,12 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
   const [eklenecekNakit, setEklenecekNakit] = useState("");
   const [takasMesaji, setTakasMesaji] = useState("");
 
+  // 🚨 DÜZELTME 1: Sözleşme Onayları İkiye Ayrıldı!
   const [siparisForm, setSiparisForm] = useState({
     adSoyad: "", telefon: "", adres: "",
-    siparisNotu: "", odemeYontemi: "kredi_karti", sozlesmeOnay: false
+    siparisNotu: "", odemeYontemi: "kredi_karti", 
+    sozlesmeOnay1: false, // Mesafeli Satış
+    sozlesmeOnay2: false  // Ön Bilgilendirme
   });
 
   const [yorumlar, setYorumlar] = useState<any[]>([]);
@@ -71,7 +74,8 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
         const ilanVerisi = Array.isArray(data) ? data[0] : data;
         if (ilanVerisi) {
           setIlan(ilanVerisi);
-          const saticiMail = ilanVerisi.satici?.email || ilanVerisi.sellerEmail || ilanVerisi.userId;
+          // 🚨 YORUM DÜZELTMESİ: E-posta bulunamazsa "sistem" olarak ata
+          const saticiMail = ilanVerisi.satici?.email || ilanVerisi.sellerEmail || ilanVerisi.userId || "sistem@atakasa.com";
           fetchSaticiYorumlari(saticiMail);
           if (ilanVerisi.kategori) fetchBenzerIlanlar(ilanVerisi.kategori, ilanVerisi._id);
         } else {
@@ -111,7 +115,8 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
   const handleYorumGonder = async () => {
     if (!yeniYorumMetni.trim()) return alert("Değerlendirme metni boş olamaz!");
     try {
-      const saticiMail = ilan.satici?.email || ilan.sellerEmail || ilan.userId;
+      // 🚨 YORUM DÜZELTMESİ: E-posta koruması
+      const saticiMail = ilan.satici?.email || ilan.sellerEmail || ilan.userId || "sistem@atakasa.com";
       const res = await fetch("/api/yorumlar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,7 +143,7 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          aliciEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId,
+          aliciEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId || "sistem@atakasa.com",
           hedefIlanId: ilan._id,
           hedefIlanBaslik: ilan.baslik,
           hedefIlanFiyat: ilan.fiyat || 0,
@@ -154,14 +159,15 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
 
   const handleSiparisTamamla = async () => {
     if (!siparisForm.adSoyad || !siparisForm.telefon || !siparisForm.adres) return alert("Lütfen teslimat bilgilerini eksiksiz doldurun!");
-    if (!siparisForm.sozlesmeOnay) return alert("Mesafeli Satış Sözleşmesini onaylamanız gerekmektedir!");
+    // 🚨 DÜZELTME: İki sözleşme de kontrol ediliyor
+    if (!siparisForm.sozlesmeOnay1 || !siparisForm.sozlesmeOnay2) return alert("Lütfen her iki sözleşmeyi de (Mesafeli Satış ve Ön Bilgilendirme) onaylayın!");
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listingId: ilan._id,
-          sellerEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId,
+          sellerEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId || "sistem@atakasa.com",
           adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon,
           adres: siparisForm.adres, siparisNotu: siparisForm.siparisNotu,
           odemeYontemi: siparisForm.odemeYontemi, fiyat: ilan.fiyat
@@ -360,9 +366,10 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
               </div>
 
               {!ilaninSahibiyim && (
-                <Link href={`/mesajlar?satici=${ilan.satici?.email || ilan.sellerEmail || ilan.userId}&ilan=${ilan._id}`}
-                  className="w-full bg-white text-gray-700 py-4 rounded-xl border-2 border-gray-200 font-bold text-[13px] hover:border-indigo-600 hover:text-indigo-600 transition-colors flex justify-center items-center gap-2 mt-auto">
-                  <MessageCircle size={18} /> Satıcıya Soru Sor
+                // 🚨 DÜZELTME 4: Mesaj gönderme URL'si paneldeki mesajlaşma odasına doğrudan entegre edildi!
+                <Link href={`/panel?tab=mesajlar&yeniSohbet=${ilan._id}`}
+                  className="w-full bg-white text-gray-700 py-4 rounded-xl border-2 border-gray-200 font-bold text-[13px] hover:border-indigo-600 hover:text-indigo-600 transition-colors flex justify-center items-center gap-2 mt-auto shadow-sm">
+                  <MessageCircle size={18} /> 💬 Satıcıya Mesaj Gönder
                 </Link>
               )}
               
@@ -436,17 +443,26 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
                 <input type="text" placeholder="Teslim Alacak Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500" />
                 <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e) => setSiparisForm({...siparisForm, telefon: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500" />
                 <textarea placeholder="Açık Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 h-20 resize-none"></textarea>
-                <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 cursor-pointer">
+                
+                {/* 🚨 DÜZELTME 2: KAPIDA ÖDEME SEÇENEĞİ EKLENDİ */}
+                <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 cursor-pointer font-semibold text-indigo-900">
                   <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz Ödemesi)</option>
                   <option value="havale">🏦 Havale / EFT ile Ödeme</option>
+                  <option value="kapida_odeme">🚚 Kapıda Ödeme (Nakit / Kredi Kartı)</option>
                 </select>
               </div>
 
               <div className="mt-6 bg-gray-50 border border-gray-200 p-5 rounded-xl space-y-3">
+                {/* 🚨 DÜZELTME 3: İKİ AYRI SÖZLEŞME ONAYI EKLENDİ */}
                 <label className="flex items-start gap-3 cursor-pointer group">
-                  <input type="checkbox" checked={siparisForm.sozlesmeOnay} onChange={(e) => setSiparisForm({...siparisForm, sozlesmeOnay: e.target.checked})} className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer" />
-                  <p className="text-xs text-gray-600 font-medium">Mesafeli Satış Sözleşmesi'ni ve Ön Bilgilendirme Formu'nu okudum, onaylıyorum.</p>
+                  <input type="checkbox" checked={siparisForm.sozlesmeOnay1} onChange={(e) => setSiparisForm({...siparisForm, sozlesmeOnay1: e.target.checked})} className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer" />
+                  <p className="text-xs text-gray-600 font-medium">Mesafeli Satış Sözleşmesi'ni okudum, onaylıyorum.</p>
                 </label>
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input type="checkbox" checked={siparisForm.sozlesmeOnay2} onChange={(e) => setSiparisForm({...siparisForm, sozlesmeOnay2: e.target.checked})} className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer" />
+                  <p className="text-xs text-gray-600 font-medium">Ön Bilgilendirme Formu'nu okudum, onaylıyorum.</p>
+                </label>
+
                 <div className="flex items-start gap-3 pt-3 border-t border-gray-200">
                   <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
                   <p className="text-xs text-gray-600 font-medium">
