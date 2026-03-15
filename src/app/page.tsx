@@ -283,6 +283,25 @@ export default function Home() {
 
   return (
     <div className="at-root">
+      {/* 🤖 SİBER TURBO: Google Zengin Sonuçlar (Rich Snippets) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Atakasa",
+            "url": "https://atakasa.com",
+            "description": "Küresel B2B Barter ve Takas Platformu",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://atakasa.com/ilanlar?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }),
+        }}
+      />
+      
       <div className="bg-texture" aria-hidden />
 
       {/* Trust banner */}
