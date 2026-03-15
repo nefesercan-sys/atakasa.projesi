@@ -31,7 +31,6 @@ export async function GET(req) {
 
     const yorumlar = await Yorum.find({ saticiEmail: saticiEmail.toLowerCase() }).sort({ createdAt: -1 });
 
-    // 🧠 SİBER MATEMATİK: Puan Ortalamasını Hesapla
     const ortalama = yorumlar.length > 0 
       ? (yorumlar.reduce((acc, y) => acc + y.puan, 0) / yorumlar.length).toFixed(1) 
       : 0;
@@ -60,12 +59,15 @@ export async function POST(req) {
     const gonderenEmail = session.user.email.toLowerCase();
     const data = await req.json();
 
-    // 🛡️ ZIRH 1: Kendi kendine puan veremez
-    if (gonderenEmail === data.saticiEmail.toLowerCase()) {
+    // 🚨 SİBER ZIRH: Eğer e-posta boş gelirse çökmeyi (toLowerCase hatasını) engellemek için varsayılan ata
+    const saticiEmail = data.saticiEmail ? data.saticiEmail.toLowerCase() : "sistem@atakasa.com";
+
+    // ZIRH 1: Kendi kendine puan veremez
+    if (gonderenEmail === saticiEmail) {
       return NextResponse.json({ error: "Kendi kendinize puan veremezsiniz!" }, { status: 400 });
     }
 
-    // 🛡️ ZIRH 2: Spam Koruması (Aynı takas/ilan için sadece 1 yorum yapılabilir)
+    // ZIRH 2: Spam Koruması (Aynı takas/ilan için sadece 1 yorum yapılabilir)
     const oncekiYorum = await Yorum.findOne({ gonderenEmail, ilanId: data.ilanId });
     if (oncekiYorum) {
       return NextResponse.json({ error: "Bu işlem için zaten değerlendirme yaptınız!" }, { status: 400 });
@@ -73,11 +75,11 @@ export async function POST(req) {
 
     const yeniYorum = await Yorum.create({
       gonderenEmail,
-      gonderenAd: session.user.name || session.user.email.split("@")[0], // İsim yoksa mailin başını al
-      saticiEmail: data.saticiEmail.toLowerCase(),
+      gonderenAd: session.user.name || session.user.email.split("@")[0], 
+      saticiEmail: saticiEmail,
       ilanId: data.ilanId,
       puan: Number(data.puan),
-      icerik: String(data.icerik).substring(0, 500) // Siber hack koruması: Çok uzun metin girilmesini engelle
+      icerik: String(data.icerik).substring(0, 500)
     });
 
     return NextResponse.json({ message: "Yıldızlar ve yorum başarıyla mühürlendi!", yorum: yeniYorum }, { status: 201 });
