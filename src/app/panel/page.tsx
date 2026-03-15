@@ -53,14 +53,13 @@ export default function ProfesyonelKullaniciPaneli() {
   const [islemLoading, setIslemLoading] = useState(false);
   const [topluSilLoading, setTopluSilLoading] = useState(false);
 
-  // 🤖 AI MOTORU KONTROLLERİ
   const [aiKategori, setAiKategori] = useState('vasita');
   const [aiSehir, setAiSehir] = useState('İstanbul');
   const [aiAdet, setAiAdet] = useState(5);
   const [aiYukleniyor, setAiYukleniyor] = useState(false);
   const [aiSonuc, setAiSonuc] = useState('');
 
-  // 💬 MESAJLAŞMA KONTROLLERİ (YENİ)
+  // 💬 MESAJLAŞMA KONTROLLERİ
   const [konusmalar, setKonusmalar] = useState<any[]>([]);
   const [aktifKonusma, setAktifKonusma] = useState<any>(null);
   const [sohbetGecmisi, setSohbetGecmisi] = useState<any[]>([]);
@@ -97,23 +96,59 @@ export default function ProfesyonelKullaniciPaneli() {
     } catch (e) { return "https://placehold.co/400x300/f3f4f6/ef4444?text=Hata"; }
   };
 
-  // 🚨 SİBER ÇÖZÜM 2: YENİ SOHBETİ YAKALA VE MESAJLAŞMAYI YÖNET
-  const yeniSohbetId = searchParams.get("yeniSohbet");
+  // 🚨 SİBER ÇÖZÜM: YENİ SOHBET KİLİDİ AÇILIYOR
+  const yeniSohbetId = searchParams?.get("yeniSohbet");
 
+  // API'den gelen mesaj odaları listesi ile anlık açılan gecici odaları birleştir
   useEffect(() => {
-    if (mesajlarListData && Array.isArray(mesajlarListData)) setKonusmalar(mesajlarListData);
+    if (mesajlarListData && Array.isArray(mesajlarListData)) {
+       setKonusmalar(eski => {
+          const gercekOdalar = [...mesajlarListData];
+          const geciciOdalar = eski.filter(k => String(k._id).startsWith("gecici_") && !gercekOdalar.find(g => g.ilanId === k.ilanId));
+          return [...geciciOdalar, ...gercekOdalar].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+       });
+    }
   }, [mesajlarListData]);
 
+  // Yeni bir sohbete tıklandıysa anında sanal odayı kur
   useEffect(() => {
-    if (yeniSohbetId && aktifSekme !== "mesajlar") {
-       setAktifSekme("mesajlar");
-       fetch(`/api/mesajlar?yeniSohbet=${yeniSohbetId}`).then(res => res.json()).then(data => {
-          if (Array.isArray(data)) {
-             setKonusmalar(data);
-             const sohbet = data.find(d => d.ilanId === yeniSohbetId);
-             if (sohbet) setAktifKonusma(sohbet);
-          }
-       });
+    if (yeniSohbetId) {
+      if (aktifSekme !== "mesajlar") setAktifSekme("mesajlar");
+      
+      setKonusmalar(prev => {
+         const mevcutOda = prev.find(k => k.ilanId === yeniSohbetId);
+         if (mevcutOda) {
+            if (aktifKonusma?._id !== mevcutOda._id) setAktifKonusma(mevcutOda);
+            return prev;
+         }
+
+         fetch(`/api/varliklar?id=${yeniSohbetId}`)
+           .then(res => res.json())
+           .then(data => {
+             const ilan = Array.isArray(data) ? data[0] : data;
+             if (ilan) {
+                const satici = ilan.satici?.email || ilan.sellerEmail || ilan.satici || "sistem@atakasa.com";
+                if (satici.toLowerCase() === aktifEmail) return; 
+                
+                const yeniOda = {
+                   _id: `gecici_${yeniSohbetId}`,
+                   karsiTaraf: satici,
+                   ilanId: yeniSohbetId,
+                   ilanBaslik: ilan.baslik || "İlan",
+                   sonMesaj: "Sohbeti başlatmak için yazın...",
+                   okunmamis: 0,
+                   createdAt: new Date().toISOString()
+                };
+                
+                setKonusmalar(eski => {
+                   if (eski.find(k => k.ilanId === yeniSohbetId)) return eski;
+                   setAktifKonusma(yeniOda);
+                   return [yeniOda, ...eski];
+                });
+             }
+           });
+         return prev;
+      });
     }
   }, [yeniSohbetId]);
 
@@ -130,10 +165,12 @@ export default function ProfesyonelKullaniciPaneli() {
   };
 
   useEffect(() => {
-    if (aktifKonusma) {
+    if (aktifKonusma && !String(aktifKonusma._id).startsWith("gecici_")) {
       sohbetGetir(aktifKonusma.karsiTaraf, aktifKonusma.ilanId);
       const interval = setInterval(() => sohbetGetir(aktifKonusma.karsiTaraf, aktifKonusma.ilanId), 3000);
       return () => clearInterval(interval);
+    } else if (String(aktifKonusma?._id).startsWith("gecici_")) {
+      setSohbetGecmisi([]); // Geçici odada geçmiş yotur
     }
   }, [aktifKonusma]);
 
@@ -144,8 +181,15 @@ export default function ProfesyonelKullaniciPaneli() {
     try {
       await fetch("/api/mesajlar", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alici: aktifKonusma.karsiTaraf, mesaj: msg, ilanId: aktifKonusma.ilanId })
+        body: JSON.stringify({ 
+          alici: aktifKonusma.karsiTaraf, 
+          mesaj: msg, 
+          ilanId: aktifKonusma.ilanId,
+          ilanBaslik: aktifKonusma.ilanBaslik 
+        })
       });
+      // Mesaj gidince geçici odayı gerçek odaya çevirmek için listeyi tazele
+      mutateMesajlarList();
       sohbetGetir(aktifKonusma.karsiTaraf, aktifKonusma.ilanId);
     } catch(e) {}
   };
@@ -180,18 +224,14 @@ export default function ProfesyonelKullaniciPaneli() {
   const handleTopluSil = async () => {
     if (ilanlarim.length === 0) return alert("Silinecek ilan bulunamadı.");
     if (!confirm(`⚠️ DİKKAT: Yayındaki TÜM (${ilanlarim.length} adet) ilanınız kalıcı olarak silinecektir. Bu işlem geri alınamaz. Onaylıyor musunuz?`)) return;
-    
     setTopluSilLoading(true);
     try {
       await Promise.all(ilanlarim.map((ilan: any) => fetch(`/api/varliklar/${ilan._id}`, { method: "DELETE" })));
       alert("✅ Bütün ilanlar başarıyla temizlendi!");
       setAiSonuc("✅ Sistemdeki tüm ilanlar başarıyla silindi.");
       mutateListings();
-    } catch (err) {
-      alert("❌ Toplu silme sırasında bir sorun oluştu.");
-    } finally {
-      setTopluSilLoading(false);
-    }
+    } catch (err) { alert("❌ Toplu silme sırasında bir sorun oluştu."); } 
+    finally { setTopluSilLoading(false); }
   };
 
   const handleIlanDurumDegistir = async (ilan: any) => {
