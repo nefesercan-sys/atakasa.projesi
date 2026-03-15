@@ -1,9 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react"; 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
-import { LogOut, Edit, Trash2, Power, LayoutDashboard, Package, ArrowLeftRight, ShoppingCart, Truck, Sparkles, Image as ImageIcon } from "lucide-react";
+import { LogOut, Edit, Trash2, Power, LayoutDashboard, Package, ArrowLeftRight, ShoppingCart, Truck, Sparkles, Image as ImageIcon, MessageCircle, Send } from "lucide-react";
 
 // 📡 SWR VERİ ÇEKME MOTORU
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -20,7 +20,7 @@ const SEHIRLER = [
   "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
 ];
 
-// 📦 AI MOTORU İÇİN TAM 16 SEKTÖR (Arka planın anlayacağı güvenli "id" yapısı)
+// 📦 AI MOTORU İÇİN KATEGORİLER
 const AI_KATEGORILER = [
   { id: "emlak", ad: "Emlak", icon: "🏠" }, 
   { id: "vasita", ad: "Vasıta", icon: "🚗" }, 
@@ -37,15 +37,16 @@ const AI_KATEGORILER = [
   { id: "oyun", ad: "Oyun & Konsol", icon: "🎮" }, 
   { id: "temizlik", ad: "Temizlik Hizmetleri", icon: "🧹" }, 
   { id: "ikinci_el", ad: "2. El Eşya", icon: "♻️" },         
-  { id: "diger", ad: "Diğer", icon: "📦" }               
+  { id: "diger", ad: "Diğer", icon: "📦" }                
 ];
 
 export default function ProfesyonelKullaniciPaneli() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const aktifEmail = session?.user?.email?.toLowerCase() || "";
 
-  const [aktifSekme, setAktifSekme] = useState("ai_ilan"); // Açılışta direkt AI sekmesi gelsin diye ayarladım
+  const [aktifSekme, setAktifSekme] = useState("ai_ilan"); 
   const [altFiltre, setAltFiltre] = useState("hepsi");
   const [kargoKoduForm, setKargoKoduForm] = useState("");
   const [duzenleModal, setDuzenleModal] = useState<any>(null);
@@ -53,16 +54,24 @@ export default function ProfesyonelKullaniciPaneli() {
   const [topluSilLoading, setTopluSilLoading] = useState(false);
 
   // 🤖 AI MOTORU KONTROLLERİ
-  const [aiKategori, setAiKategori] = useState('vasita'); // Güvenli başlangıç değeri
+  const [aiKategori, setAiKategori] = useState('vasita');
   const [aiSehir, setAiSehir] = useState('İstanbul');
   const [aiAdet, setAiAdet] = useState(5);
   const [aiYukleniyor, setAiYukleniyor] = useState(false);
   const [aiSonuc, setAiSonuc] = useState('');
 
+  // 💬 MESAJLAŞMA KONTROLLERİ (YENİ)
+  const [konusmalar, setKonusmalar] = useState<any[]>([]);
+  const [aktifKonusma, setAktifKonusma] = useState<any>(null);
+  const [sohbetGecmisi, setSohbetGecmisi] = useState<any[]>([]);
+  const [yeniMesaj, setYeniMesaj] = useState("");
+  const mesajSonuRef = useRef<HTMLDivElement>(null);
+
   const { data: walletData } = useSWR(aktifEmail ? `/api/wallet?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
   const { data: listingsData, mutate: mutateListings } = useSWR(aktifEmail ? `/api/listings?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
   const { data: takasData, mutate: mutateTakas } = useSWR(aktifEmail ? `/api/takas?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
   const { data: ordersData, mutate: mutateOrders } = useSWR(aktifEmail ? `/api/orders?email=${aktifEmail}` : null, fetcher, { refreshInterval: 3000 });
+  const { data: mesajlarListData, mutate: mutateMesajlarList } = useSWR(aktifEmail ? `/api/mesajlar` : null, fetcher, { refreshInterval: 5000 });
 
   const safeOrders = Array.isArray(ordersData) ? ordersData : (ordersData?.orders || ordersData?.data || []);
   const safeTakas = Array.isArray(takasData) ? takasData : (takasData?.takaslar || takasData?.data || []);
@@ -75,7 +84,6 @@ export default function ProfesyonelKullaniciPaneli() {
   const gelenSiparisler = safeOrders.filter((o: any) => String(o?.sellerEmail || o?.saticiEmail || "").toLowerCase() === aktifEmail);
   const gidenSiparisler = safeOrders.filter((o: any) => String(o?.buyerEmail || o?.aliciEmail || "").toLowerCase() === aktifEmail);
 
-  // 📸 SİBER GÖRSEL DEDEKTÖRÜ (HATA KORUMALI)
   const getImageUrl = (ilan: any) => {
     try {
       if (!ilan) return "https://placehold.co/400x300/f3f4f6/4f46e5?text=Görsel+Yok";
@@ -89,6 +97,60 @@ export default function ProfesyonelKullaniciPaneli() {
     } catch (e) { return "https://placehold.co/400x300/f3f4f6/ef4444?text=Hata"; }
   };
 
+  // 🚨 SİBER ÇÖZÜM 2: YENİ SOHBETİ YAKALA VE MESAJLAŞMAYI YÖNET
+  const yeniSohbetId = searchParams.get("yeniSohbet");
+
+  useEffect(() => {
+    if (mesajlarListData && Array.isArray(mesajlarListData)) setKonusmalar(mesajlarListData);
+  }, [mesajlarListData]);
+
+  useEffect(() => {
+    if (yeniSohbetId && aktifSekme !== "mesajlar") {
+       setAktifSekme("mesajlar");
+       fetch(`/api/mesajlar?yeniSohbet=${yeniSohbetId}`).then(res => res.json()).then(data => {
+          if (Array.isArray(data)) {
+             setKonusmalar(data);
+             const sohbet = data.find(d => d.ilanId === yeniSohbetId);
+             if (sohbet) setAktifKonusma(sohbet);
+          }
+       });
+    }
+  }, [yeniSohbetId]);
+
+  const sohbetGetir = async (karsiTaraf: string, ilanId: string) => {
+    try {
+      const res = await fetch(`/api/mesajlar?with=${karsiTaraf}&ilanId=${ilanId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSohbetGecmisi(Array.isArray(data) ? data : []);
+        setTimeout(() => mesajSonuRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        mutateMesajlarList(); 
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    if (aktifKonusma) {
+      sohbetGetir(aktifKonusma.karsiTaraf, aktifKonusma.ilanId);
+      const interval = setInterval(() => sohbetGetir(aktifKonusma.karsiTaraf, aktifKonusma.ilanId), 3000);
+      return () => clearInterval(interval);
+    }
+  }, [aktifKonusma]);
+
+  const handleMesajGonder = async () => {
+    if (!yeniMesaj.trim() || !aktifKonusma) return;
+    const msg = yeniMesaj;
+    setYeniMesaj("");
+    try {
+      await fetch("/api/mesajlar", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alici: aktifKonusma.karsiTaraf, mesaj: msg, ilanId: aktifKonusma.ilanId })
+      });
+      sohbetGetir(aktifKonusma.karsiTaraf, aktifKonusma.ilanId);
+    } catch(e) {}
+  };
+
+  // DİĞER FONKSİYONLAR...
   const handleDurumGuncelle = async (takasId: string, yeniDurum: string) => {
     if (!confirm(`İşlem durumunu '${yeniDurum}' olarak güncelliyorsunuz. Emin misiniz?`)) return;
     try {
@@ -107,7 +169,6 @@ export default function ProfesyonelKullaniciPaneli() {
     } catch (error) { alert("Ağ arızası."); }
   };
 
-  // 🚀 TEKLİ SİLME MOTORU
   const handleIlanSil = async (id: string) => {
     if (!confirm("⚠️ Bu ilanı kalıcı olarak silmek istediğinize emin misiniz?")) return;
     try {
@@ -116,14 +177,12 @@ export default function ProfesyonelKullaniciPaneli() {
     } catch (err) { alert("Bağlantı hatası."); }
   };
 
-  // 🚀 MUHTEŞEM TOPLU SİLME MOTORU
   const handleTopluSil = async () => {
     if (ilanlarim.length === 0) return alert("Silinecek ilan bulunamadı.");
     if (!confirm(`⚠️ DİKKAT: Yayındaki TÜM (${ilanlarim.length} adet) ilanınız kalıcı olarak silinecektir. Bu işlem geri alınamaz. Onaylıyor musunuz?`)) return;
     
     setTopluSilLoading(true);
     try {
-      // Bütün ilanlara paralel (aynı anda) silme isteği atar
       await Promise.all(ilanlarim.map((ilan: any) => fetch(`/api/varliklar/${ilan._id}`, { method: "DELETE" })));
       alert("✅ Bütün ilanlar başarıyla temizlendi!");
       setAiSonuc("✅ Sistemdeki tüm ilanlar başarıyla silindi.");
@@ -224,6 +283,7 @@ export default function ProfesyonelKullaniciPaneli() {
             { id: "giden_siparisler", icon: <Truck size={18}/>, ad: "Aldıklarım", bildirim: aktifAldiklarim },
             { id: "gelen_teklifler", icon: <ArrowLeftRight size={18}/>, ad: "Gelen Takaslar", bildirim: bekleyenTakas },
             { id: "giden_teklifler", icon: <ArrowLeftRight size={18}/>, ad: "Yaptığım Takaslar" },
+            { id: "mesajlar", icon: <MessageCircle size={18}/>, ad: "Mesajlarım", bildirim: konusmalar.reduce((acc, k) => acc + (k.okunmamis || 0), 0) }, 
             { id: "ai_ilan", icon: <Sparkles size={18} className="text-indigo-600"/>, ad: "Akıllı İlan Motoru" }, 
           ].map((menu) => (
             <button key={menu.id} onClick={() => {setAktifSekme(menu.id); setAltFiltre("hepsi");}} className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-[13px] transition-all whitespace-nowrap ${aktifSekme === menu.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
@@ -257,6 +317,69 @@ export default function ProfesyonelKullaniciPaneli() {
                 <p className="text-gray-500 text-[12px] font-bold uppercase tracking-wide mb-2">Bekleyen Aksiyonlar</p>
                 <div className="flex items-center gap-4"><p className="text-4xl font-extrabold text-indigo-600">{bekleyenSatis + bekleyenTakas}</p></div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 💬 SİBER ÇÖZÜM: MESAJLARIM SEKME ARAYÜZÜ */}
+        {aktifSekme === "mesajlar" && (
+          <div className="animate-in fade-in duration-300 h-[calc(100vh-120px)] flex flex-col md:flex-row gap-6">
+            {/* Sol: Konuşma Listesi */}
+            <div className="w-full md:w-1/3 bg-white border border-gray-200 rounded-2xl flex flex-col overflow-hidden shadow-sm">
+               <div className="p-4 border-b border-gray-100 bg-gray-50"><h3 className="font-bold text-gray-900">Sohbetler</h3></div>
+               <div className="flex-1 overflow-y-auto">
+                 {konusmalar.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500 text-xs">Henüz mesajınız yok.</div>
+                 ) : konusmalar.map(k => (
+                    <div key={k._id} onClick={() => setAktifKonusma(k)} className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${aktifKonusma?._id === k._id ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                       <div className="flex justify-between items-center mb-1">
+                          <span className="font-bold text-sm text-gray-900 truncate">{k.karsiTaraf.split('@')[0]}</span>
+                          {k.okunmamis > 0 && <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full">{k.okunmamis}</span>}
+                       </div>
+                       <p className="text-[11px] text-indigo-600 font-semibold truncate mb-1">📋 {k.ilanBaslik}</p>
+                       <p className="text-xs text-gray-500 truncate">{k.sonMesaj}</p>
+                    </div>
+                 ))}
+               </div>
+            </div>
+            
+            {/* Sağ: Mesaj Penceresi */}
+            <div className="w-full md:w-2/3 bg-white border border-gray-200 rounded-2xl flex flex-col overflow-hidden shadow-sm">
+              {!aktifKonusma ? (
+                 <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                    <MessageCircle size={48} className="mb-4 opacity-20" />
+                    <p>Sohbeti görüntülemek için soldan bir kişi seçin.</p>
+                 </div>
+              ) : (
+                 <>
+                   <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                     <div>
+                       <h3 className="font-bold text-gray-900">{aktifKonusma.karsiTaraf.split('@')[0]}</h3>
+                       <p className="text-[11px] text-gray-500">{aktifKonusma.ilanBaslik}</p>
+                     </div>
+                   </div>
+                   <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+                      {sohbetGecmisi.length === 0 ? (
+                         <div className="text-center text-gray-400 text-xs mt-10">Sohbeti başlatmak için ilk mesajı gönderin.</div>
+                      ) : sohbetGecmisi.map(msg => {
+                         const benimMi = msg.gonderen.toLowerCase() === aktifEmail;
+                         return (
+                            <div key={msg._id} className={`flex ${benimMi ? 'justify-end' : 'justify-start'}`}>
+                               <div className={`max-w-[75%] p-3 rounded-2xl text-[13px] ${benimMi ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'}`}>
+                                  {msg.mesaj}
+                                  <div className={`text-[9px] mt-1 text-right ${benimMi ? 'text-indigo-200' : 'text-gray-400'}`}>{new Date(msg.createdAt).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</div>
+                               </div>
+                            </div>
+                         )
+                      })}
+                      <div ref={mesajSonuRef} />
+                   </div>
+                   <div className="p-4 border-t border-gray-100 bg-white flex gap-2">
+                     <input type="text" value={yeniMesaj} onChange={e=>setYeniMesaj(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleMesajGonder()} placeholder="Mesajınızı yazın..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:bg-white transition-colors" />
+                     <button onClick={handleMesajGonder} disabled={!yeniMesaj.trim()} className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"><Send size={20} /></button>
+                   </div>
+                 </>
+              )}
             </div>
           </div>
         )}
@@ -481,7 +604,6 @@ export default function ProfesyonelKullaniciPaneli() {
                   {aiYukleniyor ? <><Sparkles size={18} className="animate-spin"/> AI İlanları Hazırlıyor...</> : <><Sparkles size={18}/> Yapay İlanları Yayına Al</>}
                 </button>
 
-                {/* 🚨 YAPAY İLANLARIN HEMEN ALTINDAKİ DEASA SİLME BUTONU */}
                 {ilanlarim.length > 0 && (
                   <button onClick={handleTopluSil} disabled={topluSilLoading} className={`w-full py-4 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 border ${topluSilLoading ? 'bg-red-50 text-red-400 border-red-200 cursor-wait' : 'bg-white text-red-600 border-red-200 hover:bg-red-600 hover:text-white shadow-sm'}`}>
                     <Trash2 size={18} />
