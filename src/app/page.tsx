@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Play, Share2, Search, SlidersHorizontal, ShoppingCart, Zap, ChevronDown, Star, Shield, TrendingUp, TrendingDown } from "lucide-react";
 
