@@ -13,7 +13,6 @@ export default function Home() {
   const [aktifKategori, setAktifKategori] = useState("Hepsi");
   const [aktifAltFiltre, setAktifAltFiltre] = useState("Yeni İlanlar");
   const [aktifSehir, setAktifSehir] = useState("Tüm Şehirler");
-  const [minFiyat, setMinFiyat] = useState("");
   const [maxFiyat, setMaxFiyat] = useState("");
   const [sadeceTakaslik, setSadeceTakaslik] = useState(false);
   const [filtreMenusuAcik, setFiltreMenusuAcik] = useState(false);
