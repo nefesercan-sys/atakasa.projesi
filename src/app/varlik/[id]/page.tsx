@@ -3,12 +3,12 @@ import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Zap, MessageCircle, Play, Star, ChevronLeft, ArrowRightLeft, ShoppingCart, Info, MapPin, Tag } from "lucide-react";
+import {
+  ShieldCheck, Zap, MessageCircle, Play, Star,
+  ChevronLeft, ArrowRightLeft, ShoppingCart, Info, MapPin, Tag,
+} from "lucide-react";
 
-// 🚀 İŞTE SİBER KİLİT! Vercel'in önbelleğini iptal eder, veriyi her seferinde canlı çeker.
-export const dynamic = "force-dynamic";
-
-export default function ProfesyonelVarlikTerminali({ params }: { params: any }) {
+export default function VarlikDetay({ params }: { params: any }) {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,71 +19,62 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
   const [aktifSekme, setAktifSekme] = useState(baslangicSekmesi);
   const [aktifMedyaIndex, setAktifMedyaIndex] = useState(0);
   const [videoAcik, setVideoAcik] = useState(false);
-
   const [benzerIlanlar, setBenzerIlanlar] = useState<any[]>([]);
   const [benimIlanlarim, setBenimIlanlarim] = useState<any[]>([]);
   const [secilenBenimIlanim, setSecilenBenimIlanim] = useState("");
   const [eklenecekNakit, setEklenecekNakit] = useState("");
   const [takasMesaji, setTakasMesaji] = useState("");
-
-  // 🚨 DÜZELTME 1: Sözleşme Onayları İkiye Ayrıldı!
   const [siparisForm, setSiparisForm] = useState({
-    adSoyad: "", telefon: "", adres: "",
-    siparisNotu: "", odemeYontemi: "kredi_karti", 
-    sozlesmeOnay1: false, // Mesafeli Satış
-    sozlesmeOnay2: false  // Ön Bilgilendirme
+    adSoyad: "", telefon: "", adres: "", siparisNotu: "",
+    odemeYontemi: "kredi_karti", sozlesmeOnay1: false, sozlesmeOnay2: false,
   });
-
   const [yorumlar, setYorumlar] = useState<any[]>([]);
   const [ortalamaPuan, setOrtalamaPuan] = useState(0);
   const [yeniPuan, setYeniPuan] = useState(5);
   const [yeniYorumMetni, setYeniYorumMetni] = useState("");
-  const [resolvedParams, setResolvedParams] = useState<any>(null);
+  const [ilanId, setIlanId] = useState<string>("");
 
   useEffect(() => {
-    const unwrapParams = async () => { const p = await params; setResolvedParams(p); };
-    unwrapParams();
+    const unwrap = async () => {
+      const p = await params;
+      setIlanId(p.id);
+    };
+    unwrap();
   }, [params]);
 
   useEffect(() => {
-    if (resolvedParams?.id) {
+    if (ilanId) {
       fetchIlanDetay();
       if (session?.user?.email) fetchBenimIlanlarim();
     }
-  }, [resolvedParams, session]);
+  }, [ilanId, session]);
+
+  const fetchIlanDetay = async () => {
+    try {
+      const res = await fetch(`/api/varliklar?id=${ilanId}`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        const v = Array.isArray(data) ? data[0] : data;
+        if (v) {
+          setIlan(v);
+          const saticiMail = v.satici?.email || v.sellerEmail || v.userId || "sistem@atakasa.com";
+          fetchSaticiYorumlari(saticiMail);
+          if (v.kategori) fetchBenzerIlanlar(v.kategori, v._id);
+        } else setIlan(null);
+      } else setIlan(null);
+    } catch { setIlan(null); }
+    setLoading(false);
+  };
 
   const fetchBenzerIlanlar = async (kategori: string, suankiId: string) => {
     try {
       const res = await fetch(`/api/varliklar?kategori=${encodeURIComponent(kategori)}`);
       if (res.ok) {
         const data = await res.json();
-        const liste = Array.isArray(data) ? data : data.data || data.ilanlar || [];
-        const filtrelenmis = liste.filter((i: any) => i._id !== suankiId).slice(0, 6);
-        setBenzerIlanlar(filtrelenmis);
+        const liste = Array.isArray(data) ? data : [];
+        setBenzerIlanlar(liste.filter((i: any) => i._id !== suankiId).slice(0, 6));
       }
-    } catch (err) { console.error("Öneri motoru koptu."); }
-  };
-
-  const fetchIlanDetay = async () => {
-    try {
-      const res = await fetch(`/api/varliklar?id=${resolvedParams.id}&t=${Date.now()}`, {
-        cache: 'no-store'
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const ilanVerisi = Array.isArray(data) ? data[0] : data;
-        if (ilanVerisi) {
-          setIlan(ilanVerisi);
-          // 🚨 YORUM DÜZELTMESİ: E-posta bulunamazsa "sistem" olarak ata
-          const saticiMail = ilanVerisi.satici?.email || ilanVerisi.sellerEmail || ilanVerisi.userId || "sistem@atakasa.com";
-          fetchSaticiYorumlari(saticiMail);
-          if (ilanVerisi.kategori) fetchBenzerIlanlar(ilanVerisi.kategori, ilanVerisi._id);
-        } else {
-          setIlan(null);
-        }
-      } else { setIlan(null); }
-    } catch (error) { console.error("Varlık çekilemedi:", error); setIlan(null); }
-    setLoading(false);
+    } catch {}
   };
 
   const fetchBenimIlanlarim = async () => {
@@ -91,14 +82,13 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
       const res = await fetch(`/api/varliklar`);
       if (res.ok) {
         const data = await res.json();
-        const liste = Array.isArray(data) ? data : data.data || data.ilanlar || [];
-        const benimkiler = liste.filter((i: any) => {
-          const sEmail = (i.satici?.email || i.satici || "").toString().toLowerCase();
-          return sEmail === session?.user?.email?.toLowerCase();
-        });
-        setBenimIlanlarim(benimkiler);
+        const liste = Array.isArray(data) ? data : [];
+        setBenimIlanlarim(liste.filter((i: any) =>
+          (i.satici?.email || i.satici || "").toString().toLowerCase() ===
+          session?.user?.email?.toLowerCase()
+        ));
       }
-    } catch { console.error("Varlıklar çekilemedi."); }
+    } catch {}
   };
 
   const fetchSaticiYorumlari = async (saticiEmail: string) => {
@@ -109,109 +99,125 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
         setYorumlar(data.yorumlar || []);
         setOrtalamaPuan(data.ortalama || 0);
       }
-    } catch { console.error("Yorum radarı koptu."); }
+    } catch {}
   };
 
   const handleYorumGonder = async () => {
     if (!yeniYorumMetni.trim()) return alert("Değerlendirme metni boş olamaz!");
+    const saticiMail = ilan.satici?.email || ilan.sellerEmail || "sistem@atakasa.com";
     try {
-      // 🚨 YORUM DÜZELTMESİ: E-posta koruması
-      const saticiMail = ilan.satici?.email || ilan.sellerEmail || ilan.userId || "sistem@atakasa.com";
       const res = await fetch("/api/yorumlar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ saticiEmail: saticiMail, ilanId: ilan._id, puan: yeniPuan, icerik: yeniYorumMetni })
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ saticiEmail: saticiMail, ilanId: ilan._id, puan: yeniPuan, icerik: yeniYorumMetni }),
       });
-      const result = await res.json();
       if (res.ok) { alert("✅ Değerlendirmeniz kaydedildi."); setYeniYorumMetni(""); fetchSaticiYorumlari(saticiMail); }
-      else { alert(`❌ Hata: ${result.error}`); }
-    } catch { alert("Yorum motoru yanıt vermiyor."); }
-  };
-
-  const iletisimBilgisiIceriyorMu = (metin: string) => {
-    const telefonRegex = /(\b(05|5)\d{2}[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}\b)/;
-    const mailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/;
-    return telefonRegex.test(metin) || mailRegex.test(metin);
+      else { const err = await res.json(); alert(`❌ ${err.error}`); }
+    } catch { alert("Bağlantı hatası."); }
   };
 
   const handleTakasGonder = async () => {
     if (!secilenBenimIlanim) return alert("Lütfen vereceğiniz ilanı seçin!");
-    if (iletisimBilgisiIceriyorMu(takasMesaji)) return alert("🚨 Güvenlik İhlali: İletişim bilgisi paylaşılamaz!");
     const [teklifIlanId, teklifIlanBaslik] = secilenBenimIlanim.split("|");
     try {
       const res = await fetch("/api/takas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          aliciEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId || "sistem@atakasa.com",
-          hedefIlanId: ilan._id,
-          hedefIlanBaslik: ilan.baslik,
-          hedefIlanFiyat: ilan.fiyat || 0,
-          teklifEdilenIlanId: teklifIlanId,
-          teklifEdilenIlanBaslik: teklifIlanBaslik,
+          aliciEmail: ilan.satici?.email || ilan.sellerEmail || "sistem@atakasa.com",
+          hedefIlanId: ilan._id, hedefIlanBaslik: ilan.baslik, hedefIlanFiyat: ilan.fiyat || 0,
+          teklifEdilenIlanId: teklifIlanId, teklifEdilenIlanBaslik: teklifIlanBaslik,
           eklenenNakit: eklenecekNakit || 0,
-        })
+        }),
       });
-      if (res.ok) { alert("✅ Takas teklifiniz satıcıya iletildi!"); router.push("/panel"); }
+      if (res.ok) { alert("✅ Takas teklifiniz iletildi!"); router.push("/panel"); }
       else { const err = await res.json(); alert(`Hata: ${err.error}`); }
-    } catch { alert("Takas motoru yanıt vermiyor."); }
+    } catch { alert("Bağlantı hatası."); }
   };
 
   const handleSiparisTamamla = async () => {
-    if (!siparisForm.adSoyad || !siparisForm.telefon || !siparisForm.adres) return alert("Lütfen teslimat bilgilerini eksiksiz doldurun!");
-    // 🚨 DÜZELTME: İki sözleşme de kontrol ediliyor
-    if (!siparisForm.sozlesmeOnay1 || !siparisForm.sozlesmeOnay2) return alert("Lütfen her iki sözleşmeyi de (Mesafeli Satış ve Ön Bilgilendirme) onaylayın!");
+    if (!siparisForm.adSoyad || !siparisForm.telefon || !siparisForm.adres)
+      return alert("Lütfen teslimat bilgilerini eksiksiz doldurun!");
+    if (!siparisForm.sozlesmeOnay1 || !siparisForm.sozlesmeOnay2)
+      return alert("Lütfen her iki sözleşmeyi de onaylayın!");
     try {
       const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          listingId: ilan._id,
-          sellerEmail: ilan.satici?.email || ilan.sellerEmail || ilan.userId || "sistem@atakasa.com",
-          adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon,
-          adres: siparisForm.adres, siparisNotu: siparisForm.siparisNotu,
-          odemeYontemi: siparisForm.odemeYontemi, fiyat: ilan.fiyat
-        })
+          listingId: ilan._id, sellerEmail: ilan.satici?.email || ilan.sellerEmail || "sistem@atakasa.com",
+          adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon, adres: siparisForm.adres,
+          siparisNotu: siparisForm.siparisNotu, odemeYontemi: siparisForm.odemeYontemi, fiyat: ilan.fiyat,
+        }),
       });
-      if (res.ok) { alert("📦 Siparişiniz başarıyla oluşturuldu!"); router.push("/panel"); }
+      if (res.ok) { alert("📦 Siparişiniz oluşturuldu!"); router.push("/panel"); }
       else { alert("Sipariş oluşturulamadı."); }
-    } catch { alert("Sipariş ağına ulaşılamadı."); }
+    } catch { alert("Bağlantı hatası."); }
   };
 
   const isVideo = (url: string) =>
-    !!url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('video'));
+    !!url && (url.includes(".mp4") || url.includes(".mov") || url.includes(".webm") || url.includes("video"));
 
-  // 🚀 KUSURSUZ GÖRSEL DEDEKTÖRÜ (Beyaz Tema İçin Uyarlandı)
-  const getTumMedya = (ilan: any): string[] => {
-    return ilan?.resimler?.length ? ilan.resimler :
-      ilan?.images?.length ? ilan.images :
-      ilan?.image ? [ilan.image] :
-      ["https://placehold.co/600x400/f3f4f6/4f46e5?text=Görsel+Yok"];
+  const getTumMedya = (v: any): string[] => {
+    if (v?.resimler?.length) return v.resimler;
+    if (v?.images?.length) return v.images;
+    if (v?.image) return [v.image];
+    return ["https://placehold.co/600x400/0f2540/c9a84c?text=A-TAKASA"];
   };
 
-  const renderYildizlar = (puan: number) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star key={star} size={14} className={star <= Math.round(puan) ? "fill-amber-400 text-amber-400" : "text-gray-300"} />
-        ))}
-      </div>
-    );
-  };
-
-  const ilaninSahibiyim = session?.user?.email?.toLowerCase() ===
-    (ilan?.satici?.email || ilan?.sellerEmail || ilan?.userId)?.toLowerCase();
-
-  if (loading) return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-indigo-600 font-bold tracking-wide animate-pulse">
-      <Zap size={40} className="mb-4" /> İlan Yükleniyor...
+  const renderYildizlar = (puan: number, interactive = false, onClick?: (n: number) => void) => (
+    <div style={{ display: "flex", gap: 4 }}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star
+          key={s} size={interactive ? 20 : 14}
+          onClick={() => interactive && onClick?.(s)}
+          style={{
+            cursor: interactive ? "pointer" : "default",
+            color: s <= Math.round(puan) ? "#f59e0b" : "#d1d5db",
+            fill: s <= Math.round(puan) ? "#f59e0b" : "none",
+          }}
+        />
+      ))}
     </div>
   );
 
+  const ilaninSahibiyim = session?.user?.email?.toLowerCase() ===
+    (ilan?.satici?.email || ilan?.sellerEmail || ilan?.userId || "")?.toLowerCase();
+
+  // Loading
+  if (loading) return (
+    <div style={{
+      minHeight: "100vh", background: "var(--cream, #faf8f4)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", color: "var(--navy, #0f2540)",
+      fontFamily: "var(--font-sans, DM Sans, sans-serif)",
+    }}>
+      <div style={{
+        width: 40, height: 40, border: "3px solid rgba(15,37,64,0.1)",
+        borderTopColor: "var(--navy, #0f2540)", borderRadius: "50%",
+        animation: "spin 0.8s linear infinite", marginBottom: 16,
+      }} />
+      <p style={{ fontSize: 14, fontWeight: 600, color: "#8097b1" }}>İlan yükleniyor...</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  // 404
   if (!ilan) return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-6">
-      <p className="text-gray-500 font-semibold text-lg">İlan yayından kaldırılmış veya bulunamıyor.</p>
-      <button onClick={() => router.push("/")} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-colors">
+    <div style={{
+      minHeight: "100vh", background: "var(--cream, #faf8f4)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", gap: 20, padding: 24,
+      fontFamily: "var(--font-sans, DM Sans, sans-serif)",
+    }}>
+      <p style={{ fontSize: 16, fontWeight: 600, color: "#8097b1" }}>
+        İlan yayından kaldırılmış veya bulunamıyor.
+      </p>
+      <button
+        onClick={() => router.push("/")}
+        style={{
+          background: "var(--navy, #0f2540)", color: "#fff",
+          padding: "12px 32px", borderRadius: 12, border: "none",
+          fontWeight: 700, fontSize: 14, cursor: "pointer",
+        }}
+      >
         Ana Sayfaya Dön
       </button>
     </div>
@@ -221,294 +227,635 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
   const aktifMedya = tumMedya[aktifMedyaIndex];
   const aktifMedyaVideo = isVideo(aktifMedya);
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 md:py-16 px-4 font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900">
+  // Renkler
+  const navy = "var(--navy, #0f2540)";
+  const gold = "var(--gold, #c9a84c)";
+  const cream = "var(--cream, #faf8f4)";
+  const border = "var(--border, #dce6f0)";
+  const textSoft = "var(--text-soft, #8097b1)";
 
-      {/* SEO Zırhı */}
+  return (
+    <div style={{
+      minHeight: "100vh", background: cream,
+      fontFamily: "var(--font-sans, 'DM Sans', sans-serif)",
+      color: "var(--text, #1a2740)",
+      padding: "32px 16px 64px",
+    }}>
+      {/* SEO */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
         __html: JSON.stringify({
           "@context": "https://schema.org/", "@type": "Product",
-          "name": ilan.baslik || "İsimsiz İlan", "image": tumMedya[0],
-          "description": ilan.aciklama || "Atakasa platformunda bir ilan",
-          "offers": { "@type": "Offer", "priceCurrency": "TRY", "price": ilan.fiyat || "0" }
-        })
+          name: ilan.baslik, image: tumMedya[0],
+          description: ilan.aciklama || "Atakasa platformunda bir ilan",
+          offers: { "@type": "Offer", priceCurrency: "TRY", price: ilan.fiyat || "0" },
+        }),
       }} />
 
-      <div className="max-w-6xl mx-auto mb-6">
-        <button onClick={() => router.push('/')} className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 font-semibold text-sm transition-colors w-fit">
+      {/* Geri Butonu */}
+      <div style={{ maxWidth: 1152, margin: "0 auto 20px" }}>
+        <button
+          onClick={() => router.push("/")}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 13, fontWeight: 600, color: textSoft,
+            fontFamily: "inherit", padding: 0,
+          }}
+        >
           <ChevronLeft size={16} /> Vitrine Dön
         </button>
       </div>
 
-      <div className="max-w-6xl mx-auto bg-white border border-gray-200 rounded-[2rem] shadow-sm overflow-hidden flex flex-col lg:flex-row relative z-10">
+      {/* Ana Kart */}
+      <div style={{
+        maxWidth: 1152, margin: "0 auto",
+        background: "#fff", border: `1px solid ${border}`,
+        borderRadius: 28, overflow: "hidden",
+        display: "flex", flexDirection: "column",
+        boxShadow: "0 4px 24px rgba(15,37,64,0.08)",
+      }} className="varlik-flex">
 
-        {/* 📸 SOL PANEL (GÖRSELLER VE YORUMLAR) */}
-        <div className="w-full lg:w-1/2 bg-gray-50/50 border-r border-gray-100 p-6 md:p-8 flex flex-col">
-
+        {/* SOL PANEL */}
+        <div style={{
+          flex: 1, background: "#f9fafb",
+          borderRight: `1px solid ${border}`,
+          padding: "28px 28px",
+          display: "flex", flexDirection: "column",
+        }}>
           {/* Ana Görsel */}
-          <div className="relative group rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 mb-4 cursor-pointer aspect-video md:aspect-[4/3] flex items-center justify-center shadow-inner" onClick={() => aktifMedyaVideo && setVideoAcik(true)}>
+          <div
+            onClick={() => aktifMedyaVideo && setVideoAcik(true)}
+            style={{
+              borderRadius: 16, overflow: "hidden",
+              background: "#f3f4f6", border: `1px solid ${border}`,
+              marginBottom: 14, cursor: aktifMedyaVideo ? "pointer" : "default",
+              aspectRatio: "4/3", display: "flex", alignItems: "center",
+              justifyContent: "center", position: "relative",
+            }}
+          >
             {aktifMedyaVideo ? (
-              <div className="relative w-full h-full bg-black flex items-center justify-center">
-                <video src={`${aktifMedya}#t=0.001`} className="w-full h-full object-cover opacity-70" muted playsInline preload="metadata" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform duration-300">
-                    <Play size={28} className="text-white ml-1" fill="white" />
+              <>
+                <video
+                  src={`${aktifMedya}#t=0.001`}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.7 }}
+                  muted playsInline preload="metadata"
+                />
+                <div style={{
+                  position: "absolute", inset: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <div style={{
+                    width: 60, height: 60, background: "rgba(255,255,255,0.2)",
+                    backdropFilter: "blur(8px)", borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    border: "1px solid rgba(255,255,255,0.3)",
+                  }}>
+                    <Play size={26} color="#fff" fill="#fff" />
                   </div>
                 </div>
-              </div>
+              </>
             ) : (
-              <img src={aktifMedya} alt={ilan.baslik} className="w-full h-full object-contain mix-blend-multiply" />
+              <img
+                src={aktifMedya}
+                alt={ilan.baslik}
+                fetchPriority="high"
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/600x400/0f2540/c9a84c?text=A-TAKASA"; }}
+              />
             )}
           </div>
 
-          {/* Küçük Görseller (Thumbnail) */}
+          {/* Thumbnails */}
           {tumMedya.length > 1 && (
-            <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar pb-2">
-              {tumMedya.map((medya, idx) => (
-                <div key={idx} onClick={() => setAktifMedyaIndex(idx)} className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${aktifMedyaIndex === idx ? 'border-indigo-600 shadow-md' : 'border-gray-200 hover:border-gray-300'}`}>
-                  {isVideo(medya) ? (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center"><Play size={18} className="text-gray-400" fill="currentColor" /></div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 24, overflowX: "auto" }}>
+              {tumMedya.map((m, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setAktifMedyaIndex(idx)}
+                  style={{
+                    width: 60, height: 60, borderRadius: 10, overflow: "hidden",
+                    cursor: "pointer", flexShrink: 0,
+                    border: `2px solid ${aktifMedyaIndex === idx ? navy : border}`,
+                    transition: "border-color 0.15s",
+                  }}
+                >
+                  {isVideo(m) ? (
+                    <div style={{ width: "100%", height: "100%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Play size={16} color="#9ca3af" fill="#9ca3af" />
+                    </div>
                   ) : (
-                    <img src={medya} alt="" className="w-full h-full object-cover" />
+                    <img src={m} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   )}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Satıcı Güven Kartı ve Yorumlar */}
-          <div className="mt-auto bg-white p-6 rounded-2xl border border-gray-200 shadow-sm max-h-96 overflow-y-auto">
-            <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-              <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2"><ShieldCheck size={16} className="text-indigo-600"/> Satıcı Güven Puanı</h3>
-              <div className="flex items-center gap-2">
-                {ortalamaPuan > 0 ? renderYildizlar(ortalamaPuan) : <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">YENİ ÜYE</span>}
+          {/* Satıcı Güven Kartı */}
+          <div style={{
+            background: "#fff", border: `1px solid ${border}`,
+            borderRadius: 16, padding: "20px 20px",
+            maxHeight: 380, overflowY: "auto",
+          }}>
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              marginBottom: 16, paddingBottom: 14, borderBottom: `1px solid ${border}`,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: navy }}>
+                <ShieldCheck size={15} color="#4f46e5" /> Satıcı Güven Puanı
               </div>
-            </div>
-            
-            <div className="space-y-4 mb-6">
-              {yorumlar.length === 0 ? (
-                <p className="text-gray-400 text-xs font-medium text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">Satıcı için henüz bir değerlendirme yapılmamış.</p>
-              ) : (
-                yorumlar.map((yorum: any, idx: number) => (
-                  <div key={idx} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div className="flex justify-between items-center mb-2">
-                      {renderYildizlar(yorum.puan)}
-                      <span className="text-gray-400 text-[10px] font-semibold">{new Date(yorum.createdAt).toLocaleDateString("tr-TR")}</span>
-                    </div>
-                    <p className="text-gray-700 text-sm mb-2">"{yorum.icerik}"</p>
-                    <p className="text-gray-400 text-[10px] font-bold uppercase">- {yorum.gonderenAd}</p>
-                  </div>
-                ))
+              {ortalamaPuan > 0 ? renderYildizlar(ortalamaPuan) : (
+                <span style={{
+                  fontSize: 10, fontWeight: 700, color: textSoft,
+                  background: "#f3f4f6", padding: "3px 8px", borderRadius: 6,
+                }}>YENİ ÜYE</span>
               )}
             </div>
 
-            {session?.user && !ilaninSahibiyim && (
-              <div className="bg-indigo-50/50 p-5 rounded-xl border border-indigo-100">
-                <p className="text-indigo-900 text-xs font-bold mb-3">Bu satıcıyla işlem yaptınız mı?</p>
-                <div className="flex gap-2 mb-3">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} onClick={() => setYeniPuan(star)} className={`transition-all ${yeniPuan >= star ? 'text-amber-400' : 'text-gray-300 hover:text-amber-200'}`}><Star size={20} className={yeniPuan >= star ? "fill-amber-400" : ""} /></button>
-                  ))}
+            {/* Yorumlar */}
+            {yorumlar.length === 0 ? (
+              <p style={{ fontSize: 12, color: textSoft, textAlign: "center", padding: "20px 0" }}>
+                Henüz değerlendirme yapılmamış.
+              </p>
+            ) : yorumlar.map((y: any, i: number) => (
+              <div key={i} style={{
+                background: "#f9fafb", border: `1px solid ${border}`,
+                borderRadius: 12, padding: "12px 14px", marginBottom: 10,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  {renderYildizlar(y.puan)}
+                  <span style={{ fontSize: 10, color: textSoft }}>
+                    {new Date(y.createdAt).toLocaleDateString("tr-TR")}
+                  </span>
                 </div>
-                <textarea value={yeniYorumMetni} onChange={(e) => setYeniYorumMetni(e.target.value)} placeholder="Deneyiminizi kısaca paylaşın..." className="w-full bg-white text-gray-900 text-sm p-3 rounded-lg border border-gray-200 focus:border-indigo-500 transition-colors h-20 resize-none mb-3 outline-none" />
-                <button onClick={handleYorumGonder} className="w-full bg-indigo-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm">Değerlendirmeyi Gönder</button>
+                <p style={{ fontSize: 13, color: "#374151", marginBottom: 4 }}>"{y.icerik}"</p>
+                <p style={{ fontSize: 10, color: textSoft, fontWeight: 700 }}>— {y.gonderenAd}</p>
+              </div>
+            ))}
+
+            {/* Yorum Yaz */}
+            {session?.user && !ilaninSahibiyim && (
+              <div style={{
+                background: "#eef2ff", border: "1px solid #c7d2fe",
+                borderRadius: 12, padding: "16px",
+                marginTop: 12,
+              }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: navy, marginBottom: 10 }}>
+                  Bu satıcıyla işlem yaptınız mı?
+                </p>
+                {renderYildizlar(yeniPuan, true, setYeniPuan)}
+                <textarea
+                  value={yeniYorumMetni}
+                  onChange={(e) => setYeniYorumMetni(e.target.value)}
+                  placeholder="Deneyiminizi kısaca paylaşın..."
+                  style={{
+                    width: "100%", marginTop: 10, padding: "10px 12px",
+                    background: "#fff", border: `1px solid ${border}`,
+                    borderRadius: 10, fontSize: 13, color: navy,
+                    resize: "none", height: 72, outline: "none",
+                    fontFamily: "inherit", boxSizing: "border-box",
+                  }}
+                />
+                <button
+                  onClick={handleYorumGonder}
+                  style={{
+                    width: "100%", marginTop: 8, padding: "10px",
+                    background: navy, color: "#fff", border: "none",
+                    borderRadius: 10, fontSize: 12, fontWeight: 700,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  Değerlendirmeyi Gönder
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* 📝 SAĞ PANEL (İLAN BİLGİLERİ VE AKSİYONLAR) */}
-        <div className="w-full lg:w-1/2 p-6 md:p-10 flex flex-col">
+        {/* SAĞ PANEL */}
+        <div style={{ flex: 1, padding: "28px 32px", display: "flex", flexDirection: "column" }}>
 
-          {/* Aksiyon Sekmeleri */}
-          <div className="flex bg-gray-100 p-1.5 rounded-xl mb-8 border border-gray-200">
-            <button onClick={() => setAktifSekme("incele")} className={`flex-1 py-3 rounded-lg font-bold text-[11px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${aktifSekme === "incele" ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              <Info size={14}/> İncele
-            </button>
-            {!ilaninSahibiyim && (
-              <>
-                <button onClick={() => setAktifSekme("takas")} className={`flex-1 py-3 rounded-lg font-bold text-[11px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${aktifSekme === "takas" ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                  <ArrowRightLeft size={14}/> Takas Et
-                </button>
-                <button onClick={() => setAktifSekme("satinal")} className={`flex-1 py-3 rounded-lg font-bold text-[11px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${aktifSekme === "satinal" ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>
-                  <ShoppingCart size={14}/> Satın Al
-                </button>
-              </>
-            )}
+          {/* Sekmeler */}
+          <div style={{
+            display: "flex", background: "#f3f4f6", padding: 6,
+            borderRadius: 14, marginBottom: 28, border: `1px solid ${border}`,
+            gap: 4,
+          }}>
+            {[
+              { id: "incele", icon: <Info size={13} />, label: "İncele" },
+              ...(!ilaninSahibiyim ? [
+                { id: "takas", icon: <ArrowRightLeft size={13} />, label: "Takas Et" },
+                { id: "satinal", icon: <ShoppingCart size={13} />, label: "Satın Al" },
+              ] : []),
+            ].map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setAktifSekme(s.id)}
+                style={{
+                  flex: 1, padding: "10px 8px", borderRadius: 10,
+                  border: "none", cursor: "pointer", fontFamily: "inherit",
+                  fontSize: 11, fontWeight: 700,
+                  textTransform: "uppercase", letterSpacing: "0.05em",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  transition: "all 0.15s",
+                  background: aktifSekme === s.id
+                    ? (s.id === "satinal" ? navy : "#fff")
+                    : "transparent",
+                  color: aktifSekme === s.id
+                    ? (s.id === "satinal" ? "#fff" : navy)
+                    : textSoft,
+                  boxShadow: aktifSekme === s.id ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+                }}
+              >
+                {s.icon} {s.label}
+              </button>
+            ))}
           </div>
 
-          {/* 🔍 SEKME: İNCELE */}
+          {/* SEKME: İNCELE */}
           {aktifSekme === "incele" && (
-            <div className="flex flex-col h-full">
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <span className="flex items-center gap-1 text-indigo-700 text-[10px] font-bold uppercase bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-md"><Tag size={12}/> {ilan.kategori || "Genel"}</span>
-                {ilan.sehir && <span className="flex items-center gap-1 text-gray-600 text-[10px] font-bold uppercase bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-md"><MapPin size={12}/> {ilan.sehir}</span>}
+            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                <span style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                  background: "#eef2ff", color: "#4338ca",
+                  border: "1px solid #c7d2fe", padding: "5px 12px", borderRadius: 8,
+                }}>
+                  <Tag size={11} /> {ilan.kategori || "Genel"}
+                </span>
+                {ilan.sehir && (
+                  <span style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                    background: "#f3f4f6", color: "#374151",
+                    border: `1px solid ${border}`, padding: "5px 12px", borderRadius: 8,
+                  }}>
+                    <MapPin size={11} /> {ilan.sehir}
+                  </span>
+                )}
               </div>
-              
-              <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-snug mb-4">{ilan.baslik || "İlan Başlığı"}</h1>
-              
-              <div className="text-indigo-600 font-black text-4xl mb-6 pb-6 border-b border-gray-100">
-                {Number(ilan.fiyat || 0).toLocaleString()} <span className="text-2xl text-gray-400 font-medium">₺</span>
+
+              <h1 style={{
+                fontSize: 26, fontWeight: 800, color: navy,
+                letterSpacing: "-0.02em", lineHeight: 1.3, marginBottom: 16,
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              }}>
+                {ilan.baslik}
+              </h1>
+
+              <div style={{
+                fontSize: 36, fontWeight: 800, color: navy,
+                letterSpacing: "-0.03em", marginBottom: 24,
+                paddingBottom: 20, borderBottom: `1px solid ${border}`,
+              }}>
+                {Number(ilan.fiyat || 0).toLocaleString("tr-TR")}
+                <span style={{ fontSize: 20, color: gold, marginLeft: 6 }}>₺</span>
               </div>
-              
+
               {ilan.takasIstegi && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 mb-6">
-                  <p className="text-emerald-800 text-xs font-bold uppercase mb-1.5 flex items-center gap-1.5"><ArrowRightLeft size={14}/> Takas Tercihi</p>
-                  <p className="text-emerald-900 text-sm font-medium">{ilan.takasIstegi}</p>
+                <div style={{
+                  background: "#f0fdf4", border: "1px solid #bbf7d0",
+                  borderRadius: 14, padding: "14px 16px", marginBottom: 20,
+                }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "#166534", textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                    <ArrowRightLeft size={12} /> Takas Tercihi
+                  </p>
+                  <p style={{ fontSize: 13, color: "#14532d" }}>{ilan.takasIstegi}</p>
                 </div>
               )}
-              
-              <div className="mb-8">
-                <h3 className="text-gray-900 font-bold mb-2">Açıklama</h3>
-                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  {ilan.aciklama || "Bu ilan için bir açıklama girilmemiş."}
+
+              <div style={{ marginBottom: 24 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: navy, marginBottom: 8 }}>Açıklama</p>
+                <p style={{
+                  fontSize: 13, color: "#4b5563", lineHeight: 1.7,
+                  whiteSpace: "pre-line", background: "#f9fafb",
+                  border: `1px solid ${border}`, borderRadius: 12,
+                  padding: "14px 16px",
+                }}>
+                  {ilan.aciklama || "Bu ilan için açıklama girilmemiş."}
                 </p>
               </div>
 
               {!ilaninSahibiyim && (
-                // 🚨 DÜZELTME 4: Mesaj gönderme URL'si paneldeki mesajlaşma odasına doğrudan entegre edildi!
-                <Link href={`/panel?tab=mesajlar&yeniSohbet=${ilan._id}`}
-                  className="w-full bg-white text-gray-700 py-4 rounded-xl border-2 border-gray-200 font-bold text-[13px] hover:border-indigo-600 hover:text-indigo-600 transition-colors flex justify-center items-center gap-2 mt-auto shadow-sm">
-                  <MessageCircle size={18} /> 💬 Satıcıya Mesaj Gönder
+                <Link
+                  href={`/panel?tab=mesajlar&yeniSohbet=${ilan._id}`}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    padding: "14px", background: "#fff",
+                    border: `2px solid ${border}`, borderRadius: 14,
+                    fontSize: 13, fontWeight: 700, color: navy,
+                    textDecoration: "none", marginTop: "auto",
+                    transition: "border-color 0.15s",
+                  }}
+                >
+                  <MessageCircle size={17} /> 💬 Satıcıya Mesaj Gönder
                 </Link>
               )}
-              
+
               {ilaninSahibiyim && (
-                <div className="mt-auto bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
-                  <p className="text-blue-700 text-xs font-bold">Bu sizin kendi ilanınızdır.</p>
+                <div style={{
+                  background: "#eff6ff", border: "1px solid #bfdbfe",
+                  borderRadius: 12, padding: "14px", textAlign: "center", marginTop: "auto",
+                }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "#1d4ed8" }}>
+                    Bu sizin kendi ilanınızdır.
+                  </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* 🔄 SEKME: TAKAS TEKLİFİ */}
+          {/* SEKME: TAKAS */}
           {aktifSekme === "takas" && (
-            <div className="flex flex-col h-full">
-              <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-xl mb-6">
-                <h3 className="text-lg font-bold text-indigo-900 mb-1">Takas Teklifi Oluştur</h3>
-                <p className="text-indigo-700 text-xs">Satıcıya kendi ürünlerinizden birini teklif edin.</p>
+            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+              <div style={{
+                background: "#eef2ff", border: "1px solid #c7d2fe",
+                borderRadius: 14, padding: "16px 18px", marginBottom: 24,
+              }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: navy, marginBottom: 4 }}>
+                  Takas Teklifi Oluştur
+                </h3>
+                <p style={{ fontSize: 12, color: "#4338ca" }}>
+                  Kendi ürünlerinizden birini teklif edin.
+                </p>
               </div>
 
-              <div className="space-y-5 flex-1">
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
                 <div>
-                  <label className="text-gray-700 text-xs font-bold block mb-2">1. Vereceğiniz Ürünü Seçin</label>
-                  <select onChange={(e) => setSecilenBenimIlanim(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow">
-                    <option value="">-- Yayındaki İlanlarınızdan Seçin --</option>
-                    {benimIlanlarim.map(bIlan => <option key={bIlan._id} value={`${bIlan._id}|${bIlan.baslik}`}>{bIlan.baslik}</option>)}
+                  <label style={{ fontSize: 11, fontWeight: 700, color: navy, display: "block", marginBottom: 6, textTransform: "uppercase" }}>
+                    1. Vereceğiniz Ürünü Seçin
+                  </label>
+                  <select
+                    onChange={(e) => setSecilenBenimIlanim(e.target.value)}
+                    style={{
+                      width: "100%", padding: "12px 14px", background: "#fff",
+                      border: `1.5px solid ${border}`, borderRadius: 12,
+                      fontSize: 13, color: navy, outline: "none",
+                      fontFamily: "inherit", cursor: "pointer",
+                    }}
+                  >
+                    <option value="">— Yayındaki ilanlarınızdan seçin —</option>
+                    {benimIlanlarim.map(b => (
+                      <option key={b._id} value={`${b._id}|${b.baslik}`}>{b.baslik}</option>
+                    ))}
                   </select>
+                  {benimIlanlarim.length === 0 && (
+                    <div style={{
+                      background: "#fffbeb", border: "1px solid #fde68a",
+                      borderRadius: 10, padding: "12px 14px", marginTop: 8, textAlign: "center",
+                    }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 6 }}>
+                        Takas için önce ilan eklemelisiniz.
+                      </p>
+                      <button
+                        onClick={() => router.push("/ilan-ver")}
+                        style={{ fontSize: 12, fontWeight: 700, color: "#4f46e5", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                      >
+                        Hemen İlan Ver
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                {benimIlanlarim.length === 0 && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                    <p className="text-amber-800 text-xs font-bold mb-2">Takas yapabilmek için önce sisteme bir ürün eklemelisiniz.</p>
-                    <button onClick={() => router.push('/ilan-ver')} className="text-indigo-600 text-xs font-bold underline">Hemen İlan Ver</button>
-                  </div>
-                )}
-
                 <div>
-                  <label className="text-gray-700 text-xs font-bold block mb-2">2. Üste Nakit Eklenecek mi? (Opsiyonel)</label>
-                  <div className="relative">
-                    <input type="number" placeholder="0" value={eklenecekNakit} onChange={(e) => setEklenecekNakit(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 pr-10 rounded-xl outline-none focus:border-indigo-500 transition-shadow" />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₺</span>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: navy, display: "block", marginBottom: 6, textTransform: "uppercase" }}>
+                    2. Üste Nakit (İsteğe Bağlı)
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type="number" placeholder="0" value={eklenecekNakit}
+                      onChange={(e) => setEklenecekNakit(e.target.value)}
+                      style={{
+                        width: "100%", padding: "12px 40px 12px 14px", background: "#fff",
+                        border: `1.5px solid ${border}`, borderRadius: 12,
+                        fontSize: 13, color: navy, outline: "none",
+                        fontFamily: "inherit", boxSizing: "border-box",
+                      }}
+                    />
+                    <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: textSoft, fontWeight: 700 }}>₺</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-gray-700 text-xs font-bold block mb-2">3. Teklif Notu (Opsiyonel)</label>
-                  <textarea value={takasMesaji} onChange={(e) => setTakasMesaji(e.target.value)} placeholder="Ürünüm temizdir, üste nakit verebilirim. (İletişim bilgisi girmek yasaktır)" className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 transition-shadow h-24 resize-none" />
+                  <label style={{ fontSize: 11, fontWeight: 700, color: navy, display: "block", marginBottom: 6, textTransform: "uppercase" }}>
+                    3. Teklif Notu (İsteğe Bağlı)
+                  </label>
+                  <textarea
+                    value={takasMesaji}
+                    onChange={(e) => setTakasMesaji(e.target.value)}
+                    placeholder="Ürününüz hakkında kısa bir not..."
+                    style={{
+                      width: "100%", padding: "12px 14px", background: "#fff",
+                      border: `1.5px solid ${border}`, borderRadius: 12,
+                      fontSize: 13, color: navy, outline: "none",
+                      fontFamily: "inherit", resize: "none", height: 88,
+                      boxSizing: "border-box",
+                    }}
+                  />
                 </div>
               </div>
 
-              <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim || benimIlanlarim.length === 0} className="w-full mt-6 bg-indigo-600 text-white py-4 rounded-xl font-bold text-[13px] hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center gap-2">
-                <ArrowRightLeft size={16}/> Takas Teklifini Gönder
+              <button
+                onClick={handleTakasGonder}
+                disabled={!secilenBenimIlanim}
+                style={{
+                  width: "100%", marginTop: 20, padding: "14px",
+                  background: secilenBenimIlanim ? navy : "#9ca3af",
+                  border: "none", borderRadius: 14, color: "#fff",
+                  fontSize: 13, fontWeight: 700, cursor: secilenBenimIlanim ? "pointer" : "not-allowed",
+                  fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}
+              >
+                <ArrowRightLeft size={16} /> Takas Teklifini Gönder
               </button>
             </div>
           )}
 
-          {/* 💳 SEKME: GÜVENLİ SATIN ALMA */}
+          {/* SEKME: SATIN AL */}
           {aktifSekme === "satinal" && (
-            <div className="flex flex-col h-full">
-              
-              <div className="flex items-center gap-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shrink-0 bg-white">
-                  <img src={aktifMedya} className="w-full h-full object-cover" alt="Ürün" />
+            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+              {/* Ürün özeti */}
+              <div style={{
+                display: "flex", gap: 14, alignItems: "center",
+                background: "#f9fafb", border: `1px solid ${border}`,
+                borderRadius: 14, padding: "14px 16px", marginBottom: 20,
+              }}>
+                <div style={{ width: 60, height: 60, borderRadius: 10, overflow: "hidden", border: `1px solid ${border}`, flexShrink: 0 }}>
+                  <img src={aktifMedya} alt="Ürün" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <div>
-                  <h3 className="text-gray-900 font-bold text-sm line-clamp-1 mb-1">{ilan.baslik}</h3>
-                  <div className="text-indigo-600 font-black text-lg">{Number(ilan.fiyat || 0).toLocaleString()} ₺</div>
-                </div>
-              </div>
-
-              <div className="space-y-4 flex-1">
-                <input type="text" placeholder="Teslim Alacak Ad Soyad" value={siparisForm.adSoyad} onChange={(e) => setSiparisForm({...siparisForm, adSoyad: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500" />
-                <input type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon} onChange={(e) => setSiparisForm({...siparisForm, telefon: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500" />
-                <textarea placeholder="Açık Teslimat Adresi" value={siparisForm.adres} onChange={(e) => setSiparisForm({...siparisForm, adres: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 h-20 resize-none"></textarea>
-                
-                {/* 🚨 DÜZELTME 2: KAPIDA ÖDEME SEÇENEĞİ EKLENDİ */}
-                <select value={siparisForm.odemeYontemi} onChange={(e) => setSiparisForm({...siparisForm, odemeYontemi: e.target.value})} className="w-full bg-white border border-gray-300 text-gray-900 text-sm p-3.5 rounded-xl outline-none focus:border-indigo-500 cursor-pointer font-semibold text-indigo-900">
-                  <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz Ödemesi)</option>
-                  <option value="havale">🏦 Havale / EFT ile Ödeme</option>
-                  <option value="kapida_odeme">🚚 Kapıda Ödeme (Nakit / Kredi Kartı)</option>
-                </select>
-              </div>
-
-              <div className="mt-6 bg-gray-50 border border-gray-200 p-5 rounded-xl space-y-3">
-                {/* 🚨 DÜZELTME 3: İKİ AYRI SÖZLEŞME ONAYI EKLENDİ */}
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input type="checkbox" checked={siparisForm.sozlesmeOnay1} onChange={(e) => setSiparisForm({...siparisForm, sozlesmeOnay1: e.target.checked})} className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer" />
-                  <p className="text-xs text-gray-600 font-medium">Mesafeli Satış Sözleşmesi'ni okudum, onaylıyorum.</p>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input type="checkbox" checked={siparisForm.sozlesmeOnay2} onChange={(e) => setSiparisForm({...siparisForm, sozlesmeOnay2: e.target.checked})} className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer" />
-                  <p className="text-xs text-gray-600 font-medium">Ön Bilgilendirme Formu'nu okudum, onaylıyorum.</p>
-                </label>
-
-                <div className="flex items-start gap-3 pt-3 border-t border-gray-200">
-                  <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-gray-600 font-medium">
-                    <strong className="text-gray-900">Alıcı Koruması:</strong> Ürün size ulaşıp onay verene kadar ödemeniz güvenli havuz hesabımızda tutulur. Satıcıya aktarılmaz.
+                  <p style={{ fontSize: 13, fontWeight: 700, color: navy, marginBottom: 4 }}>{ilan.baslik}</p>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: navy }}>
+                    {Number(ilan.fiyat || 0).toLocaleString("tr-TR")}
+                    <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>₺</span>
                   </p>
                 </div>
               </div>
 
-              <button onClick={handleSiparisTamamla} className="w-full mt-6 bg-emerald-600 text-white py-4 rounded-xl font-bold text-[14px] hover:bg-emerald-700 transition-colors shadow-sm flex items-center justify-center gap-2">
-                <ShieldCheck size={18}/> Güvenli Ödemeye Geç
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+                {[
+                  { ph: "Teslim Alacak Ad Soyad", val: siparisForm.adSoyad, key: "adSoyad", type: "text" },
+                  { ph: "Telefon Numarası", val: siparisForm.telefon, key: "telefon", type: "tel" },
+                ].map((f) => (
+                  <input
+                    key={f.key} type={f.type} placeholder={f.ph} value={f.val}
+                    onChange={(e) => setSiparisForm({ ...siparisForm, [f.key]: e.target.value })}
+                    style={{
+                      width: "100%", padding: "12px 14px", background: "#fff",
+                      border: `1.5px solid ${border}`, borderRadius: 12,
+                      fontSize: 13, color: navy, outline: "none",
+                      fontFamily: "inherit", boxSizing: "border-box",
+                    }}
+                  />
+                ))}
+                <textarea
+                  placeholder="Açık Teslimat Adresi"
+                  value={siparisForm.adres}
+                  onChange={(e) => setSiparisForm({ ...siparisForm, adres: e.target.value })}
+                  style={{
+                    width: "100%", padding: "12px 14px", background: "#fff",
+                    border: `1.5px solid ${border}`, borderRadius: 12,
+                    fontSize: 13, color: navy, outline: "none",
+                    fontFamily: "inherit", resize: "none", height: 72,
+                    boxSizing: "border-box",
+                  }}
+                />
+                <select
+                  value={siparisForm.odemeYontemi}
+                  onChange={(e) => setSiparisForm({ ...siparisForm, odemeYontemi: e.target.value })}
+                  style={{
+                    width: "100%", padding: "12px 14px", background: "#fff",
+                    border: `1.5px solid ${border}`, borderRadius: 12,
+                    fontSize: 13, color: navy, outline: "none",
+                    fontFamily: "inherit", cursor: "pointer",
+                  }}
+                >
+                  <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
+                  <option value="havale">🏦 Havale / EFT</option>
+                  <option value="kapida_odeme">🚚 Kapıda Ödeme</option>
+                </select>
+              </div>
+
+              {/* Sözleşmeler */}
+              <div style={{
+                marginTop: 16, background: "#f9fafb",
+                border: `1px solid ${border}`, borderRadius: 14, padding: "16px 18px",
+              }}>
+                {[
+                  { key: "sozlesmeOnay1", label: "Mesafeli Satış Sözleşmesi'ni okudum, onaylıyorum." },
+                  { key: "sozlesmeOnay2", label: "Ön Bilgilendirme Formu'nu okudum, onaylıyorum." },
+                ].map((s) => (
+                  <label key={s.key} style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", marginBottom: 10 }}>
+                    <input
+                      type="checkbox"
+                      checked={(siparisForm as any)[s.key]}
+                      onChange={(e) => setSiparisForm({ ...siparisForm, [s.key]: e.target.checked })}
+                      style={{ width: 16, height: 16, accentColor: navy, flexShrink: 0, marginTop: 1 }}
+                    />
+                    <span style={{ fontSize: 12, color: "#374151" }}>{s.label}</span>
+                  </label>
+                ))}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, paddingTop: 12, borderTop: `1px solid ${border}` }}>
+                  <ShieldCheck size={15} color="#16a34a" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <p style={{ fontSize: 12, color: "#374151" }}>
+                    <strong style={{ color: navy }}>Alıcı Koruması:</strong> Ürün size ulaşıp onay verene kadar ödeme havuzda tutulur.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSiparisTamamla}
+                style={{
+                  width: "100%", marginTop: 14, padding: "14px",
+                  background: "#16a34a", border: "none", borderRadius: 14,
+                  color: "#fff", fontSize: 14, fontWeight: 700,
+                  cursor: "pointer", fontFamily: "inherit",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}
+              >
+                <ShieldCheck size={17} /> Güvenli Ödemeye Geç
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* VİDEO MODAL */}
+      {/* Video Modal */}
       {videoAcik && aktifMedyaVideo && (
-        <div className="fixed inset-0 z-[9999] bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setVideoAcik(false)}>
-          <div className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setVideoAcik(false)} className="absolute top-4 right-4 text-white bg-black/50 hover:bg-red-600 w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors z-10">✕</button>
-            <video src={`${aktifMedya}#t=0.001`} controls autoPlay className="w-full h-auto max-h-[80vh]" />
+        <div
+          onClick={() => setVideoAcik(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: "relative", width: "100%", maxWidth: 900, background: "#000", borderRadius: 20, overflow: "hidden" }}
+          >
+            <button
+              onClick={() => setVideoAcik(false)}
+              style={{
+                position: "absolute", top: 12, right: 12, zIndex: 10,
+                width: 36, height: 36, background: "rgba(0,0,0,0.5)",
+                border: "none", borderRadius: "50%", color: "#fff",
+                fontSize: 16, fontWeight: 700, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >✕</button>
+            <video src={aktifMedya} controls autoPlay style={{ width: "100%", maxHeight: "80vh" }} />
           </div>
         </div>
       )}
 
-      {/* BENZER İLANLAR */}
+      {/* Benzer İlanlar */}
       {benzerIlanlar.length > 0 && (
-        <div className="max-w-6xl mx-auto mt-16 mb-24">
-          <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-3">
-            <h2 className="text-xl font-bold text-gray-900">Benzer İlanlar</h2>
-            <Link href="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">Tümünü Gör →</Link>
+        <div style={{ maxWidth: 1152, margin: "48px auto 0" }}>
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            marginBottom: 20, paddingBottom: 12, borderBottom: `1px solid ${border}`,
+          }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: navy, fontFamily: "var(--font-display, serif)" }}>
+              Benzer İlanlar
+            </h2>
+            <Link href="/" style={{ fontSize: 13, fontWeight: 600, color: gold, textDecoration: "none" }}>
+              Tümünü Gör →
+            </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {benzerIlanlar.map((bIlan) => (
-              <Link key={bIlan._id} href={`/varlik/${bIlan._id}`} className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all shadow-sm hover:shadow-md flex flex-col">
-                <div className="aspect-square overflow-hidden bg-gray-100 relative">
-                  <img
-                    src={bIlan.resimler?.[0] || bIlan.image || "https://placehold.co/200x200/f3f4f6/4f46e5?text=İlan"}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 mix-blend-multiply"
-                    alt={bIlan.baslik}
-                  />
-                </div>
-                <div className="p-3 flex-1 flex flex-col">
-                  <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1 leading-tight">{bIlan.baslik}</h3>
-                  <p className="text-indigo-600 text-sm font-extrabold mt-auto">{Number(bIlan.fiyat || 0).toLocaleString()} ₺</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14 }}>
+            {benzerIlanlar.map((b) => (
+              <Link
+                key={b._id} href={`/varlik/${b._id}`}
+                style={{ textDecoration: "none", display: "block" }}
+              >
+                <div style={{
+                  background: "#fff", border: `1px solid ${border}`,
+                  borderRadius: 14, overflow: "hidden",
+                  transition: "box-shadow 0.2s, border-color 0.2s",
+                }}>
+                  <div style={{ aspectRatio: "1/1", overflow: "hidden", background: "#f3f4f6" }}>
+                    <img
+                      src={b.resimler?.[0] || b.image || "https://placehold.co/200x200/0f2540/c9a84c?text=İlan"}
+                      alt={b.baslik}
+                      loading="lazy"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                  <div style={{ padding: "10px 12px" }}>
+                    <p style={{
+                      fontSize: 12, fontWeight: 700, color: navy, lineHeight: 1.35,
+                      marginBottom: 6, display: "-webkit-box",
+                      WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                    }}>
+                      {b.baslik}
+                    </p>
+                    <p style={{ fontSize: 14, fontWeight: 800, color: navy }}>
+                      {Number(b.fiyat || 0).toLocaleString("tr-TR")}
+                      <span style={{ color: gold, marginLeft: 3 }}>₺</span>
+                    </p>
+                  </div>
                 </div>
               </Link>
             ))}
@@ -516,6 +863,15 @@ export default function ProfesyonelVarlikTerminali({ params }: { params: any }) 
         </div>
       )}
 
+      <style>{`
+        @media (min-width: 1024px) {
+          .varlik-flex { flex-direction: row !important; }
+        }
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #dce6f0; border-radius: 2px; }
+      `}</style>
     </div>
   );
 }
