@@ -1,4 +1,3 @@
-// src/app/HomeClient.tsx
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -16,9 +15,8 @@ export default function HomeClient({ ilkIlanlar }: Props) {
   const { data: session } = useSession();
   const router = useRouter();
 
-  // ✅ Server'dan gelen veri ile başla — fetch bekleme yok
   const [ilanlar, setIlanlar] = useState<any[]>(ilkIlanlar);
-  const [loading, setLoading] = useState(false); // ✅ false — veri hazır
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [aktifKategori, setAktifKategori] = useState("Hepsi");
   const [aktifAltFiltre, setAktifAltFiltre] = useState("Yeni İlanlar");
@@ -72,18 +70,16 @@ export default function HomeClient({ ilkIlanlar }: Props) {
     } catch { localStorage.removeItem("atakasa_sepet"); }
   }, []);
 
-  // ✅ Arka planda geri kalan ilanları yükle
   useEffect(() => {
-    const gerisiniYukle = async () => {
-      try {
-        const res = await fetch("/api/varliklar?limit=200&skip=20");
-        const data = await res.json();
-        const liste = Array.isArray(data) ? data : [];
-        if (liste.length > 0) setIlanlar(p => [...p, ...liste]);
-      } catch {}
-    };
     if (ilkIlanlar.length === 20) {
-      setTimeout(gerisiniYukle, 1000);
+      setTimeout(async () => {
+        try {
+          const r = await fetch("/api/varliklar?limit=200&skip=20");
+          const d = await r.json();
+          const l = Array.isArray(d) ? d : [];
+          if (l.length > 0) setIlanlar(p => [...p, ...l]);
+        } catch {}
+      }, 600);
     }
   }, [ilkIlanlar.length]);
 
@@ -364,6 +360,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
       />
       <div className="bg-texture" aria-hidden="true" />
 
+      {/* Trust Bar */}
       <div className="trust-bar" role="banner">
         <div className="trust-bar-inner">
           <span className="trust-item"><Shield size={13} /> Güvenli Takas Havuzu</span>
@@ -374,28 +371,38 @@ export default function HomeClient({ ilkIlanlar }: Props) {
         </div>
       </div>
 
+      {/* Nav */}
       <nav className="top-nav" aria-label="Ana navigasyon">
         <div className="nav-inner">
           <div
             onClick={() => router.push("/")}
-            style={{ cursor: "pointer", marginRight: "16px", display: "flex", alignItems: "center" }}
+            style={{
+              cursor: "pointer", marginRight: "16px",
+              display: "flex", alignItems: "center", flexShrink: 0,
+            }}
             role="link" aria-label="Ana sayfaya git"
           >
             <h1 style={{
-              color: "var(--navy)", fontSize: "24px", fontWeight: "800",
-              fontFamily: "var(--font-display)", letterSpacing: "-0.02em", margin: 0,
+              color: "var(--navy)", fontSize: "22px", fontWeight: "800",
+              fontFamily: "var(--font-display)", letterSpacing: "-0.02em",
+              margin: 0, whiteSpace: "nowrap",
             }}>
               A-TAKASA<span style={{ color: "var(--gold)" }}>.</span>
             </h1>
           </div>
+
           <div className="search-wrap">
             <Search size={17} className="search-icon" aria-hidden="true" />
             <input
-              className="search-input" placeholder="Varlık ara..."
-              value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-              aria-label="Varlık ara" type="search"
+              className="search-input"
+              placeholder="Varlık ara..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Varlık ara"
+              type="search"
             />
           </div>
+
           <div className="nav-actions">
             <button
               onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
@@ -405,9 +412,65 @@ export default function HomeClient({ ilkIlanlar }: Props) {
               <SlidersHorizontal size={15} /> Filtrele
               <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? "open" : ""}`} />
             </button>
+
             <button onClick={() => router.push("/sepet")} className="btn-sepet" aria-label="Sepete git">
               <ShoppingCart size={15} /> Sepet
             </button>
+
+            {/* ✅ Giriş / Profil Butonu */}
+            {session ? (
+              <button
+                onClick={() => router.push("/panel")}
+                style={{
+                  display: "flex", alignItems: "center", gap: 7,
+                  padding: "8px 14px", borderRadius: "var(--radius)",
+                  background: "var(--navy)", border: "none",
+                  fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                  color: "#fff", cursor: "pointer",
+                  whiteSpace: "nowrap", flexShrink: 0,
+                }}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: "50%",
+                  background: "var(--gold)", color: "var(--navy)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 800, flexShrink: 0,
+                }}>
+                  {(session.user?.email?.[0] || "U").toUpperCase()}
+                </div>
+                Panel
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => router.push("/giris")}
+                  style={{
+                    padding: "8px 14px", borderRadius: "var(--radius)",
+                    background: "transparent",
+                    border: "1.5px solid var(--border)",
+                    fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+                    color: "var(--text-mid)", cursor: "pointer",
+                    whiteSpace: "nowrap", flexShrink: 0,
+                  }}
+                >
+                  Giriş Yap
+                </button>
+                <button
+                  onClick={() => router.push("/kayit")}
+                  style={{
+                    padding: "8px 14px", borderRadius: "var(--radius)",
+                    background: "var(--gold)", border: "none",
+                    fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                    color: "var(--navy)", cursor: "pointer",
+                    whiteSpace: "nowrap", flexShrink: 0,
+                    boxShadow: "0 2px 8px rgba(201,168,76,0.3)",
+                  }}
+                >
+                  Üye Ol
+                </button>
+              </>
+            )}
+
             <button
               onClick={() => session ? router.push("/ilan-ver") : router.push("/giris")}
               className="btn-primary"
@@ -424,7 +487,8 @@ export default function HomeClient({ ilkIlanlar }: Props) {
                 <label className="filter-label" htmlFor="sehir-select">Şehir / Bölge</label>
                 <select
                   id="sehir-select" value={aktifSehir}
-                  onChange={e => setAktifSehir(e.target.value)} className="filter-select"
+                  onChange={(e) => setAktifSehir(e.target.value)}
+                  className="filter-select"
                 >
                   {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -433,7 +497,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
                 <label className="filter-label" htmlFor="min-fiyat">Min Fiyat (₺)</label>
                 <input
                   id="min-fiyat" type="number" placeholder="Örn: 1000"
-                  value={minFiyat} onChange={e => setMinFiyat(e.target.value)}
+                  value={minFiyat} onChange={(e) => setMinFiyat(e.target.value)}
                   className="filter-input" min="0"
                 />
               </div>
@@ -441,7 +505,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
                 <label className="filter-label" htmlFor="max-fiyat">Max Fiyat (₺)</label>
                 <input
                   id="max-fiyat" type="number" placeholder="Örn: 50000"
-                  value={maxFiyat} onChange={e => setMaxFiyat(e.target.value)}
+                  value={maxFiyat} onChange={(e) => setMaxFiyat(e.target.value)}
                   className="filter-input" min="0"
                 />
               </div>
@@ -462,13 +526,18 @@ export default function HomeClient({ ilkIlanlar }: Props) {
                   setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false);
                 }}
                 className="btn-reset"
-              >Sıfırla</button>
-              <button onClick={() => setFiltreMenusuAcik(false)} className="btn-apply">Filtrele</button>
+              >
+                Sıfırla
+              </button>
+              <button onClick={() => setFiltreMenusuAcik(false)} className="btn-apply">
+                Filtrele
+              </button>
             </div>
           </div>
         )}
       </nav>
 
+      {/* Kategoriler */}
       <div className="cat-strip" role="navigation" aria-label="Kategori filtresi">
         <div className="cat-inner">
           <button
@@ -494,6 +563,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
         </div>
       </div>
 
+      {/* Alt filtreler */}
       {aktifKategori !== "Hepsi" && (
         <div className="sub-filter-bar" role="navigation" aria-label="Alt filtreler">
           {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map(f => (
@@ -508,6 +578,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
         </div>
       )}
 
+      {/* Ana İçerik */}
       <main className="main-content">
         <div className="section-header">
           <div>
@@ -549,6 +620,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
         )}
       </main>
 
+      {/* Takas / Satın Al Modal */}
       {seciliIlan && modalTuru && (
         <div
           className="modal-overlay" onClick={closeModal}
@@ -560,7 +632,8 @@ export default function HomeClient({ ilkIlanlar }: Props) {
             <div className="modal-header">
               <img
                 src={optimizeImg(getImageUrl(seciliIlan), 80, 80)}
-                className="modal-img" alt={seciliIlan.baslik || "Ürün"}
+                className="modal-img"
+                alt={seciliIlan.baslik || "Ürün"}
                 loading="lazy" width={80} height={80}
               />
               <div className="modal-info">
@@ -571,12 +644,16 @@ export default function HomeClient({ ilkIlanlar }: Props) {
                 <p className="modal-price">{Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺</p>
               </div>
             </div>
+
             {modalTuru === "takas" ? (
               <div className="modal-form">
-                <label className="form-label" htmlFor="takas-secim">Vereceğiniz Varlığı Seçin</label>
+                <label className="form-label" htmlFor="takas-secim">
+                  Vereceğiniz Varlığı Seçin
+                </label>
                 <select
                   id="takas-secim" value={secilenBenimIlanim}
-                  onChange={e => setSecilenBenimIlanim(e.target.value)} className="form-select"
+                  onChange={e => setSecilenBenimIlanim(e.target.value)}
+                  className="form-select"
                 >
                   <option value="">-- İlanlarınızdan seçin --</option>
                   {benimIlanlarim.map(b => (
@@ -602,7 +679,9 @@ export default function HomeClient({ ilkIlanlar }: Props) {
               <div className="modal-form">
                 <div className="price-summary">
                   <span>Ödenecek Tutar</span>
-                  <span className="price-big">{Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺</span>
+                  <span className="price-big">
+                    {Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺
+                  </span>
                 </div>
                 <input
                   type="text" placeholder="Ad Soyad" value={siparisForm.adSoyad}
@@ -617,12 +696,12 @@ export default function HomeClient({ ilkIlanlar }: Props) {
                 <textarea
                   placeholder="Teslimat Adresi" value={siparisForm.adres}
                   onChange={e => setSiparisForm({ ...siparisForm, adres: e.target.value })}
-                  className="form-textarea" aria-label="Adres" autoComplete="street-address"
+                  className="form-textarea" aria-label="Adres"
                 />
                 <select
                   value={siparisForm.odemeYontemi}
                   onChange={e => setSiparisForm({ ...siparisForm, odemeYontemi: e.target.value })}
-                  className="form-select" aria-label="Ödeme yöntemi"
+                  className="form-select"
                 >
                   <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
                   <option value="havale">🏦 Havale / EFT</option>
@@ -648,10 +727,11 @@ export default function HomeClient({ ilkIlanlar }: Props) {
         </div>
       )}
 
+      {/* Video Modal */}
       {videoModalUrl && (
         <div
           className="modal-overlay" onClick={() => setVideoModalUrl(null)}
-          role="dialog" aria-modal="true" aria-label="Video oynatıcı"
+          role="dialog" aria-modal="true" aria-label="Video"
         >
           <div
             className="modal-box" onClick={e => e.stopPropagation()}
