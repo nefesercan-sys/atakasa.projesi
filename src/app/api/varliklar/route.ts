@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "../../../lib/mongodb";
 import Varlik from "../../../models/Varlik";
 
-// ✅ DÜZELTİLDİ: force-dynamic KALDIRILDI — cache çalışsın
-// ESKİ: export const dynamic = "force-dynamic";
-export const revalidate = 30; // 30 saniyede bir yenile
+// ✅ force-dynamic GERİ GELDİ — MongoDB için zorunlu
+// Cache'i header ile yönetiyoruz
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
@@ -12,7 +12,8 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    const kategori = searchParams.get("kategori") || searchParams.get("sektor");
+    const kategori =
+      searchParams.get("kategori") || searchParams.get("sektor");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = parseInt(searchParams.get("skip") || "0");
 
@@ -54,12 +55,7 @@ export async function GET(req: Request) {
     return NextResponse.json(borsaVeriliIlanlar, {
       status: 200,
       headers: {
-        // ✅ Cache — Vercel Edge'de 30sn cache, sonra arka planda yenile
         "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
-        // ✅ CDN cache (Cloudflare varsa)
-        "CDN-Cache-Control": "public, max-age=30",
-        // ✅ Vary header — farklı query string'ler ayrı cache'lenir
-        "Vary": "Accept-Encoding",
       },
     });
   } catch (error) {
@@ -84,13 +80,15 @@ export async function PUT(req: Request) {
       mevcutVarlik.fiyat = Number(data.fiyat);
     }
 
-    const alanlar = ["baslik", "aciklama", "kategori", "sehir", "resimler", "durum", "ilce", "mahalle"];
+    const alanlar = [
+      "baslik", "aciklama", "kategori", "sehir",
+      "resimler", "durum", "ilce", "mahalle",
+    ];
     alanlar.forEach((alan) => {
       if (data[alan] !== undefined) mevcutVarlik[alan] = data[alan];
     });
 
     await mevcutVarlik.save();
-
     return NextResponse.json({ message: "Güncellendi" }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: "Hata" }, { status: 500 });
