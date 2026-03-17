@@ -1,290 +1,424 @@
 "use client";
 import React, { useState, useRef } from "react";
-import { UploadCloud, X, CheckCircle, Loader2, MapPin } from "lucide-react";
-import { useSession } from "next-auth/react"; 
+import { UploadCloud, X, CheckCircle, Loader2, MapPin, Zap } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
-// 🌍 TÜRKİYE'NİN 81 İLİ (Açılır Menü İçin)
 const sehirler = [
-  "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", 
-  "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", 
-  "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", 
-  "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", 
-  "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", 
-  "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", 
-  "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", 
-  "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
+  "Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin","Aydın",
+  "Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale",
+  "Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir",
+  "Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş",
+  "Karabük","Karaman","Kars","Kastamonu","Kayseri","Kırıkkale","Kırklareli","Kırşehir","Kilis","Kocaeli",
+  "Konya","Kütahya","Malatya","Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye",
+  "Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Şanlıurfa","Şırnak","Tekirdağ","Tokat","Trabzon",
+  "Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak",
 ];
 
+const kategoriler = [
+  { grup: "🏢 EMLAK & GAYRİMENKUL", secenekler: [
+    "Emlak - Konut", "Emlak - İşyeri & Mağaza", "Emlak - Arsa & Tarla",
+  ]},
+  { grup: "🚗 VASITA & MOBİLİTE", secenekler: [
+    "Vasıta - Otomobil", "Vasıta - Motosiklet & Bisiklet", "Vasıta - Deniz & Diğer", "Vasıta - Yedek Parça",
+  ]},
+  { grup: "💻 ELEKTRONİK & TEKNOLOJİ", secenekler: [
+    "Elektronik - Telefon", "Elektronik - Bilgisayar", "Elektronik - TV & Görüntü", "Elektronik - Oyun Konsolu",
+  ]},
+  { grup: "🛋️ EV, YAŞAM & BEYAZ EŞYA", secenekler: [
+    "Ev - Mobilya & Tekstil", "Ev - Beyaz Eşya & Isıtıcı", "Ev - Dekorasyon & Banyo",
+  ]},
+  { grup: "⌚ MODA, SAAT & KOZMETİK", secenekler: [
+    "Moda - Giyim & Ayakkabı", "Moda - Saat & Takı", "Kozmetik & Kişisel Bakım",
+  ]},
+  { grup: "🎨 ANTİKA, SANAT & HOBİ", secenekler: [
+    "Sanat - Antika & El Sanatı", "Sanat - Özel Tasarım", "Hobi - Oyuncak & Kitap",
+  ]},
+  { grup: "⚙️ SANAYİ & DİĞER", secenekler: [
+    "Sanayi - Makine & Nalbur", "Evcil Hayvan & Petshop", "Gıda & İçecek", "Diğer",
+  ]},
+];
+
+const CLOUD_NAME = "diuamcnej";
+const UPLOAD_PRESET = "atakasa_hizli";
+
+// CSS değişkenleri
+const navy = "var(--navy, #0f2540)";
+const gold = "var(--gold, #c9a84c)";
+const cream = "var(--cream, #faf8f4)";
+const white = "#ffffff";
+const border = "var(--border, #dce6f0)";
+const textSoft = "var(--text-soft, #8097b1)";
+
+const inputStyle: React.CSSProperties = {
+  width: "100%", padding: "13px 16px",
+  background: "#f5f7fa", border: `1.5px solid ${border}`,
+  borderRadius: 12, fontFamily: "inherit", fontSize: 14,
+  color: navy, outline: "none", boxSizing: "border-box",
+  transition: "border-color 0.2s",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const,
+  letterSpacing: "0.06em", color: textSoft, display: "block",
+  marginBottom: 7,
+};
+
 export default function IlanVer() {
-  const { data: session } = useSession(); 
+  const { data: session } = useSession();
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
-    title: "",
-    deger: "",
-    takasIstegi: "",
-    kategori: "", 
-    ulke: "Türkiye", 
-    sehir: "",
-    ilce: "",
-    mahalle: "",
-    images: [] as string[]
+    title: "", deger: "", takasIstegi: "", kategori: "",
+    ulke: "Türkiye", sehir: "", ilce: "", mahalle: "",
+    images: [] as string[],
   });
-  
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ☁️ CLOUDINARY SİBER BULUT BİLGİLERİ
-  const CLOUD_NAME = "diuamcnej"; 
-  const UPLOAD_PRESET = "atakasa_hizli"; 
-
-  // 🚀 BULUTA YÜKLEME MOTORU
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    
     setIsUploading(true);
     const files = Array.from(e.target.files);
     const uploadedUrls: string[] = [];
-
     try {
       for (const file of files) {
         if (file.size > 100 * 1024 * 1024) {
-          alert(`SİBER ENGEL: ${file.name} 100MB'tan büyük!`);
-          continue;
+          alert(`${file.name} 100MB'tan büyük!`); continue;
         }
-
-        const uploadData = new FormData();
-        uploadData.append("file", file);
-        uploadData.append("upload_preset", UPLOAD_PRESET);
-
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", UPLOAD_PRESET);
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
-          method: "POST",
-          body: uploadData,
+          method: "POST", body: data,
         });
-
-        const data = await res.json();
-        
-        if (data.secure_url) {
-          uploadedUrls.push(data.secure_url); 
-        } else {
-          alert("Bulut Reddi: " + (data.error?.message || "Bilinmeyen Hata"));
-        }
+        const result = await res.json();
+        if (result.secure_url) uploadedUrls.push(result.secure_url);
+        else alert("Yükleme hatası: " + (result.error?.message || "Bilinmeyen"));
       }
-
-      setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
-    } catch (error) {
-      alert("Siber bağlantı koptu.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
+      setFormData(p => ({ ...p, images: [...p.images, ...uploadedUrls] }));
+    } catch { alert("Bağlantı hatası."); }
+    finally { setIsUploading(false); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session?.user?.email) return alert("SİBER ENGEL: İşlem yapmak için giriş yapmalısınız!");
-    if (formData.images.length === 0) return alert("En az bir medya mühürlemelisin!");
-    if (!formData.kategori) return alert("Lütfen bir kategori seçin!");
-    if (!formData.sehir) return alert("Lütfen şehir seçimi yapın!");
-    
+    if (!session?.user?.email) return alert("İşlem için giriş yapmalısınız!");
+    if (formData.images.length === 0) return alert("En az bir görsel/video ekleyin!");
+    if (!formData.kategori) return alert("Lütfen kategori seçin!");
+    if (!formData.sehir) return alert("Lütfen şehir seçin!");
     setLoading(true);
     try {
-      const payload = {
-        baslik: formData.title,
-        fiyat: Number(formData.deger),
-        kategori: formData.kategori,
-        ulke: formData.ulke,
-        sehir: formData.sehir,
-        ilce: formData.ilce,
-        mahalle: formData.mahalle,
-        aciklama: formData.takasIstegi,
-        resimler: formData.images,
-        sellerEmail: session.user.email,
-        satici: session.user.email,
-        saticiEmail: session.user.email
-      };
-
-      const res = await fetch('/api/varlik-ekle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const res = await fetch("/api/varlik-ekle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baslik: formData.title,
+          fiyat: Number(formData.deger),
+          kategori: formData.kategori,
+          ulke: formData.ulke,
+          sehir: formData.sehir,
+          ilce: formData.ilce,
+          mahalle: formData.mahalle,
+          aciklama: formData.takasIstegi,
+          resimler: formData.images,
+          sellerEmail: session.user.email,
+          satici: session.user.email,
+          saticiEmail: session.user.email,
+        }),
       });
-      
       if (res.ok) {
         setSuccess(true);
         setFormData({ title: "", deger: "", takasIstegi: "", kategori: "", ulke: "Türkiye", sehir: "", ilce: "", mahalle: "", images: [] });
       } else {
-         const errorData = await res.json();
-         alert(`Sunucu Hatası: ${errorData.message || errorData.error || "Bilinmeyen hata"}`);
-         console.error("API DETAYI:", errorData);
+        const err = await res.json();
+        alert(`Hata: ${err.message || err.error || "Bilinmeyen"}`);
       }
-    } catch (error) {
-      alert("Sistem bağlantısı koptu.");
-    } finally {
-      setLoading(false);
-    }
+    } catch { alert("Bağlantı hatası."); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-slate-200 font-sans pt-28 pb-24 px-6 relative overflow-hidden">
-      
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] w-[40vw] h-[40vw] bg-[#00f260] opacity-[0.03] blur-[150px] rounded-full"></div>
-      </div>
+    <div style={{
+      minHeight: "100vh", background: cream,
+      fontFamily: "var(--font-sans, 'DM Sans', sans-serif)",
+      color: navy, padding: "40px 16px 80px",
+    }}>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
-      <div className="relative z-10 max-w-3xl mx-auto">
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4 text-white italic">
-            At takasa<span className="text-[#00f260]">.com</span>
-          </h1>
-          <p className="text-[#00f260] text-[10px] font-black tracking-[0.2em] uppercase">Yeni İlan Ekleme Terminali</p>
+        {/* Başlık */}
+        <div style={{ marginBottom: 36, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <h1 style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 28, fontWeight: 800, color: navy,
+              letterSpacing: "-0.02em", marginBottom: 4,
+            }}>
+              İlan Ver<span style={{ color: gold }}>.</span>
+            </h1>
+            <p style={{ fontSize: 13, color: textSoft }}>
+              Varlığınızı platformda yayınlayın
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/")}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "8px 16px", background: white,
+              border: `1px solid ${border}`, borderRadius: 10,
+              fontSize: 12, fontWeight: 600, color: textSoft,
+              cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            ← Vitrine Dön
+          </button>
         </div>
 
-        <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-          
+        {/* Kart */}
+        <div style={{
+          background: white, border: `1px solid ${border}`,
+          borderRadius: 24, padding: "32px 28px",
+          boxShadow: "0 4px 24px rgba(15,37,64,0.08)",
+        }}>
+
           {success ? (
-            <div className="text-center py-16 animate-in zoom-in-95">
-              <CheckCircle className="w-24 h-24 text-[#00f260] mx-auto mb-6 shadow-[0_0_30px_rgba(0,242,96,0.3)]" />
-              <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-4">İlan Başarıyla Yayınlandı!</h2>
-              <button onClick={() => setSuccess(false)} className="bg-white/[0.05] hover:bg-[#00f260] hover:text-black text-white font-bold tracking-widest uppercase px-8 py-4 rounded-xl transition-all mt-4 border border-white/10">
-                Yeni İlan Ekle
-              </button>
+            <div style={{ textAlign: "center", padding: "48px 24px" }}>
+              <CheckCircle size={64} style={{ color: "#16a34a", margin: "0 auto 20px", display: "block" }} />
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: navy, marginBottom: 8 }}>
+                İlan Başarıyla Yayınlandı!
+              </h2>
+              <p style={{ fontSize: 14, color: textSoft, marginBottom: 28 }}>
+                İlanınız Borsa Vitrini'nde görüntülenmeye başladı.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <button
+                  onClick={() => setSuccess(false)}
+                  style={{
+                    padding: "12px 24px", background: white,
+                    border: `1.5px solid ${border}`, borderRadius: 12,
+                    fontSize: 13, fontWeight: 700, color: navy,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  Yeni İlan Ver
+                </button>
+                <button
+                  onClick={() => router.push("/")}
+                  style={{
+                    padding: "12px 24px", background: navy,
+                    border: "none", borderRadius: 12,
+                    fontSize: 13, fontWeight: 700, color: white,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  Vitrine Git →
+                </button>
+              </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-8">
-              
-              {/* ── 1. BAŞLIK ── */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Kategori ve Ürün İsmi</label>
-                <input type="text" required placeholder="Örn: Elektronik - MacBook Pro M3..." className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+
+              {/* Başlık */}
+              <div>
+                <label style={labelStyle}>Kategori ve Ürün İsmi</label>
+                <input
+                  type="text" required
+                  placeholder="Örn: Elektronik - MacBook Pro M3"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = navy}
+                  onBlur={e => e.target.style.borderColor = "var(--border, #dce6f0)"}
+                />
               </div>
 
-              {/* ── 2. FİYAT VE KATEGORİ ── */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                
-                {/* 🚀 SİBER FİYAT ZIRHI BURADA */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Tahmini Fiyat (₺)</label>
-                  <input 
-                    type="text" 
-                    inputMode="numeric"
-                    required 
-                    placeholder="Örn: 8750000 (Noktasız yazın)" 
-                    className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-[#00f260] font-black focus:border-[#00f260]/50 outline-none" 
-                    value={formData.deger} 
-                    onChange={(e) => {
-                      const safRakam = e.target.value.replace(/[^0-9]/g, '');
-                      setFormData({...formData, deger: safRakam});
-                    }} 
+              {/* Fiyat + Kategori */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="ilan-grid">
+                <div>
+                  <label style={labelStyle}>Tahmini Fiyat (₺)</label>
+                  <input
+                    type="text" inputMode="numeric" required
+                    placeholder="Örn: 8750000"
+                    value={formData.deger}
+                    onChange={(e) => setFormData({ ...formData, deger: e.target.value.replace(/[^0-9]/g, "") })}
+                    style={{ ...inputStyle, color: navy, fontWeight: 700 }}
+                    onFocus={e => e.target.style.borderColor = navy}
+                    onBlur={e => e.target.style.borderColor = "var(--border, #dce6f0)"}
                   />
                   {formData.deger && (
-                    <p className="text-[10px] text-slate-400 font-bold ml-2 mt-1 uppercase tracking-widest">
-                      Siber Ağda Görünecek: <span className="text-[#00f260]">{Number(formData.deger).toLocaleString('tr-TR')} ₺</span>
+                    <p style={{ fontSize: 11, color: textSoft, marginTop: 5 }}>
+                      Görünecek: <strong style={{ color: gold }}>
+                        {Number(formData.deger).toLocaleString("tr-TR")} ₺
+                      </strong>
                     </p>
                   )}
                 </div>
-                
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Ürün Kategorisi</label>
-                  <select required className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none font-bold appearance-none cursor-pointer" value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})}>
+                <div>
+                  <label style={labelStyle}>Ürün Kategorisi</label>
+                  <select
+                    required
+                    value={formData.kategori}
+                    onChange={(e) => setFormData({ ...formData, kategori: e.target.value })}
+                    style={{ ...inputStyle, cursor: "pointer", appearance: "none" as any }}
+                    onFocus={e => e.target.style.borderColor = navy}
+                    onBlur={e => e.target.style.borderColor = "var(--border, #dce6f0)"}
+                  >
                     <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
-                    <optgroup label="🏢 EMLAK & GAYRİMENKUL">
-                      <option value="Emlak - Konut">Konut / Ev</option><option value="Emlak - İşyeri & Mağaza">İşyeri / Dükkan / Mağaza / Fabrika</option><option value="Emlak - Arsa & Tarla">Arsa / Tarla</option>
-                    </optgroup>
-                    <optgroup label="🚗 VASITA & MOBİLİTE">
-                      <option value="Vasıta - Otomobil">Otomobil (Araç)</option><option value="Vasıta - Motosiklet & Bisiklet">Motosiklet / Bisiklet / Scooter</option><option value="Vasıta - Deniz & Diğer">Deniz Araçları / Akülü Araçlar</option><option value="Vasıta - Yedek Parça">Yedek Parça & Donanım</option>
-                    </optgroup>
-                    <optgroup label="💻 ELEKTRONİK & TEKNOLOJİ">
-                      <option value="Elektronik - Telefon">Cep Telefonu</option><option value="Elektronik - Bilgisayar">Bilgisayar / Donanım</option><option value="Elektronik - TV & Görüntü">Televizyon / Ses / Görüntü</option><option value="Elektronik - Oyun Konsolu">PlayStation / Oyun Konsolu</option>
-                    </optgroup>
-                    <optgroup label="🛋️ EV, YAŞAM & BEYAZ EŞYA">
-                      <option value="Ev - Mobilya & Tekstil">Mobilya / Halı / Ev Tekstili</option><option value="Ev - Beyaz Eşya & Isıtıcı">Beyaz Eşya / Isıtıcı</option><option value="Ev - Dekorasyon & Banyo">Duş Eşyaları / Dekorasyon</option>
-                    </optgroup>
-                    <optgroup label="⌚ MODA, SAAT & KOZMETİK">
-                      <option value="Moda - Giyim & Ayakkabı">Elbise / Giyim</option><option value="Moda - Saat & Takı">Saat / Takı / Özel Eşya</option><option value="Kozmetik & Kişisel Bakım">Kozmetik / Kişisel Bakım</option>
-                    </optgroup>
-                    <optgroup label="🎨 ANTİKA, SANAT & HOBİ">
-                      <option value="Sanat - Antika & El Sanatı">Antika Eserler / El Sanatları</option><option value="Sanat - Özel Tasarım">Özel Tasarımlar</option><option value="Hobi - Oyuncak & Kitap">Oyuncak / Kitap / Kırtasiye</option>
-                    </optgroup>
-                    <optgroup label="⚙️ SANAYİ & DİĞER">
-                      <option value="Sanayi - Makine & Nalbur">Makine / Nalbur Ürünleri</option><option value="Evcil Hayvan & Petshop">Canlı Hayvan / Petshop</option><option value="Gıda & İçecek">Gıda / Yiyecek / İçecek</option><option value="Diğer">Diğer İlanlar</option>
-                    </optgroup>
+                    {kategoriler.map(g => (
+                      <optgroup key={g.grup} label={g.grup}>
+                        {g.secenekler.map(s => (
+                          <option key={s} value={s}>{s.split(" - ")[1] || s}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              {/* 🌍 3. SİBER KONUM MODÜLÜ */}
-              <div className="bg-white/[0.01] p-6 rounded-3xl border border-white/5 shadow-inner">
-                <div className="flex items-center gap-2 mb-6">
-                  <MapPin className="text-[#00f260]" size={18} />
-                  <h3 className="text-white font-black uppercase tracking-widest text-xs">Ürün Konumu</h3>
+              {/* Konum */}
+              <div style={{
+                background: "#f5f7fa", border: `1px solid ${border}`,
+                borderRadius: 16, padding: "20px 20px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+                  <MapPin size={16} style={{ color: gold }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: navy }}>
+                    Ürün Konumu
+                  </span>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Ülke</label>
-                    <input type="text" readOnly value="Türkiye" className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-4 text-slate-400 font-bold outline-none cursor-not-allowed" />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }} className="ilan-grid">
+                  <div>
+                    <label style={labelStyle}>Ülke</label>
+                    <input
+                      type="text" readOnly value="Türkiye"
+                      style={{ ...inputStyle, color: textSoft, cursor: "not-allowed", background: "#eef3f8" }}
+                    />
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-[#00f260] uppercase tracking-widest ml-2">Şehir *</label>
-                    <select required className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-4 text-white focus:border-[#00f260]/50 outline-none font-bold appearance-none cursor-pointer" value={formData.sehir} onChange={(e) => setFormData({...formData, sehir: e.target.value})}>
+                  <div>
+                    <label style={{ ...labelStyle, color: navy }}>Şehir *</label>
+                    <select
+                      required value={formData.sehir}
+                      onChange={(e) => setFormData({ ...formData, sehir: e.target.value })}
+                      style={{ ...inputStyle, cursor: "pointer", appearance: "none" as any }}
+                      onFocus={e => e.target.style.borderColor = navy}
+                      onBlur={e => e.target.style.borderColor = "var(--border, #dce6f0)"}
+                    >
                       <option value="" disabled>Seçiniz...</option>
-                      {sehirler.map(sehir => <option key={sehir} value={sehir}>{sehir}</option>)}
+                      {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">İlçe *</label>
-                    <input type="text" required placeholder="Örn: Muratpaşa" className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-4 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.ilce} onChange={(e) => setFormData({...formData, ilce: e.target.value})} />
+                  <div>
+                    <label style={labelStyle}>İlçe *</label>
+                    <input
+                      type="text" required placeholder="Örn: Muratpaşa"
+                      value={formData.ilce}
+                      onChange={(e) => setFormData({ ...formData, ilce: e.target.value })}
+                      style={inputStyle}
+                      onFocus={e => e.target.style.borderColor = navy}
+                      onBlur={e => e.target.style.borderColor = "var(--border, #dce6f0)"}
+                    />
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Mahalle / Semt</label>
-                    <input type="text" placeholder="Örn: Şirinyalı Mah." className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-4 text-white focus:border-[#00f260]/50 outline-none font-bold" value={formData.mahalle} onChange={(e) => setFormData({...formData, mahalle: e.target.value})} />
+                  <div>
+                    <label style={labelStyle}>Mahalle / Semt</label>
+                    <input
+                      type="text" placeholder="Örn: Şirinyalı Mah."
+                      value={formData.mahalle}
+                      onChange={(e) => setFormData({ ...formData, mahalle: e.target.value })}
+                      style={inputStyle}
+                      onFocus={e => e.target.style.borderColor = navy}
+                      onBlur={e => e.target.style.borderColor = "var(--border, #dce6f0)"}
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* ── 4. AÇIKLAMA ── */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-[#00f260] uppercase tracking-widest ml-2">Açıklama / Takas Şartları</label>
-                <textarea required placeholder="Araba ile takas olur, elden teslim..." className="w-full bg-white/[0.02] border border-white/[0.05] rounded-2xl px-6 py-5 text-white focus:border-[#00f260]/50 outline-none min-h-[120px] resize-none font-bold" value={formData.takasIstegi} onChange={(e) => setFormData({...formData, takasIstegi: e.target.value})}></textarea>
+              {/* Açıklama */}
+              <div>
+                <label style={labelStyle}>Açıklama / Takas Şartları</label>
+                <textarea
+                  required
+                  placeholder="Ürünüzü detaylıca açıklayın. Takas şartlarınızı belirtin..."
+                  value={formData.takasIstegi}
+                  onChange={(e) => setFormData({ ...formData, takasIstegi: e.target.value })}
+                  style={{
+                    ...inputStyle, height: 120, resize: "none",
+                    lineHeight: 1.6,
+                  }}
+                  onFocus={e => e.target.style.borderColor = navy}
+                  onBlur={e => e.target.style.borderColor = "var(--border, #dce6f0)"}
+                />
               </div>
 
-              {/* ☁️ CLOUDINARY MEDYA YÜKLEME ALANI */}
-              <div className="space-y-4">
-                <input type="file" accept="image/*,video/*" multiple className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                
-                <div onClick={() => !isUploading && fileInputRef.current?.click()} className={`border-2 border-dashed border-white/[0.1] rounded-3xl p-10 text-center transition-colors cursor-pointer group bg-white/[0.01] ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:border-[#00f260]/30'}`}>
-                  <div className="w-16 h-16 bg-white/[0.05] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-[#00f260]/20 transition-colors">
-                    {isUploading ? <Loader2 className="animate-spin text-[#00f260]" /> : <UploadCloud className="text-slate-400 group-hover:text-[#00f260]" />}
+              {/* Medya Yükleme */}
+              <div>
+                <label style={labelStyle}>Fotoğraf / Video</label>
+                <input
+                  type="file" accept="image/*,video/*" multiple
+                  className="hidden" ref={fileInputRef}
+                  onChange={handleFileChange}
+                  style={{ display: "none" }}
+                />
+
+                <div
+                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  style={{
+                    border: `2px dashed ${isUploading ? border : "#dce6f0"}`,
+                    borderRadius: 16, padding: "32px 20px",
+                    textAlign: "center", cursor: isUploading ? "not-allowed" : "pointer",
+                    background: "#f9fafb", transition: "border-color 0.2s",
+                    opacity: isUploading ? 0.6 : 1,
+                  }}
+                  onMouseEnter={e => { if (!isUploading) (e.currentTarget as HTMLElement).style.borderColor = navy; }}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = "#dce6f0"}
+                >
+                  <div style={{
+                    width: 52, height: 52, background: "#eef3f8",
+                    borderRadius: "50%", display: "flex", alignItems: "center",
+                    justifyContent: "center", margin: "0 auto 12px",
+                  }}>
+                    {isUploading
+                      ? <Loader2 size={22} style={{ color: navy, animation: "spin 0.8s linear infinite" }} />
+                      : <UploadCloud size={22} style={{ color: textSoft }} />
+                    }
                   </div>
-                  <p className="text-white font-black tracking-wide mb-1 uppercase text-xs">
-                    {isUploading ? "Buluta Aktarılıyor..." : "Medya Yükle"}
+                  <p style={{ fontSize: 13, fontWeight: 700, color: navy, marginBottom: 4 }}>
+                    {isUploading ? "Yükleniyor..." : "Medya Yükle"}
                   </p>
-                  <p className="text-slate-500 text-[10px] uppercase tracking-widest">Sınırsız Video ve Fotoğraf Desteği</p>
+                  <p style={{ fontSize: 11, color: textSoft }}>
+                    Fotoğraf ve video desteklenir · Maksimum 100MB
+                  </p>
                 </div>
 
-                {/* Yüklenen Medyaların Önizlemesi */}
+                {/* Önizleme */}
                 {formData.images.length > 0 && (
-                  <div className="flex gap-4 overflow-x-auto py-2 custom-scrollbar">
-                    {formData.images.map((url, index) => (
-                      <div key={index} className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-zinc-900 shadow-xl">
-                        {url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') ? (
-                          <video src={url} className="w-full h-full object-cover" muted />
+                  <div style={{ display: "flex", gap: 10, marginTop: 14, overflowX: "auto", paddingBottom: 4 }}>
+                    {formData.images.map((url, i) => (
+                      <div key={i} style={{
+                        position: "relative", width: 84, height: 84,
+                        borderRadius: 12, overflow: "hidden",
+                        border: `1.5px solid ${border}`, flexShrink: 0,
+                        background: "#f3f4f6",
+                      }}>
+                        {url.includes(".mp4") || url.includes(".mov") || url.includes(".webm") ? (
+                          <video src={url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted />
                         ) : (
-                          <img src={url} alt={`Medya ${index}`} className="w-full h-full object-cover" />
+                          <img src={url} alt={`Medya ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         )}
-                        <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 bg-black/80 text-white rounded-full p-1 hover:bg-red-500 transition-colors">
-                          <X size={14} />
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }))}
+                          style={{
+                            position: "absolute", top: 4, right: 4,
+                            width: 20, height: 20, background: "rgba(0,0,0,0.65)",
+                            border: "none", borderRadius: "50%", color: white,
+                            cursor: "pointer", display: "flex",
+                            alignItems: "center", justifyContent: "center",
+                            fontSize: 12, lineHeight: 1,
+                          }}
+                        >
+                          <X size={11} />
                         </button>
                       </div>
                     ))}
@@ -292,14 +426,40 @@ export default function IlanVer() {
                 )}
               </div>
 
-              <button type="submit" disabled={loading || isUploading || formData.images.length === 0} className="w-full bg-[#00f260] text-black font-black uppercase tracking-widest py-6 rounded-2xl hover:scale-[1.02] transition-all duration-300 mt-4 disabled:opacity-30 shadow-[0_0_20px_rgba(0,242,96,0.3)]">
-                {loading ? "SİSTEME İŞLENİYOR..." : "İLAN VER"}
+              {/* Gönder Butonu */}
+              <button
+                type="submit"
+                disabled={loading || isUploading || formData.images.length === 0}
+                style={{
+                  width: "100%", padding: "15px",
+                  background: loading || isUploading || formData.images.length === 0
+                    ? "#9ca3af" : gold,
+                  border: "none", borderRadius: 14,
+                  fontFamily: "inherit", fontSize: 14, fontWeight: 800,
+                  color: navy, cursor: loading || isUploading || formData.images.length === 0
+                    ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  letterSpacing: "0.02em", transition: "all 0.2s",
+                  boxShadow: formData.images.length > 0 && !loading
+                    ? "0 4px 16px rgba(201,168,76,0.35)" : "none",
+                }}
+              >
+                <Zap size={16} />
+                {loading ? "İlan Yayınlanıyor..." : isUploading ? "Medya Yükleniyor..." : "İlanı Yayınla"}
               </button>
+
             </form>
           )}
-
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        * { box-sizing: border-box; }
+        @media (max-width: 600px) {
+          .ilan-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }
