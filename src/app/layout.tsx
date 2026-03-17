@@ -1,4 +1,4 @@
-// app/layout.tsx
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import { getServerSession } from "next-auth";
@@ -11,7 +11,7 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-dm-sans",
-  display: "swap",
+  display: "optional",
   preload: true,
 });
 
@@ -19,7 +19,7 @@ const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700"],
   variable: "--font-playfair",
-  display: "swap",
+  display: "optional",
   preload: true,
 });
 
@@ -60,17 +60,29 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="tr" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
+    <html
+      lang="tr"
+      className={`${dmSans.variable} ${playfairDisplay.variable}`}
+    >
       <head>
+        {/* ✅ DNS + Preconnect — CDN bağlantısı önceden kurulur */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://placehold.co" />
+        <link rel="dns-prefetch" href="https://placehold.co" />
+
+        {/* ✅ Viewport meta — mobil render için kritik */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        {/* ✅ Theme color — mobil browser bar rengi */}
+        <meta name="theme-color" content="#0f2540" />
       </head>
       <body>
         <SessionProvider session={session}>
           {children}
         </SessionProvider>
 
-        {/* ✅ Vercel Analytics — <body> kapanmadan önce, provider dışında */}
+        {/* ✅ Vercel Analytics */}
         <Analytics />
       </body>
     </html>
