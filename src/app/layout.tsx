@@ -7,9 +7,10 @@ import SessionProvider from "@/components/SessionProvider";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
+// ✅ display: "optional" — font flash yok, CLS 0 kalır
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-dm-sans",
   display: "optional",
   preload: true,
@@ -65,26 +66,47 @@ export default async function RootLayout({
       className={`${dmSans.variable} ${playfairDisplay.variable}`}
     >
       <head>
-        {/* ✅ DNS + Preconnect — CDN bağlantısı önceden kurulur */}
-        <link rel="preconnect" href="https://res.cloudinary.com" />
+        {/* ✅ CDN preconnect — görsel istekleri önceden başlar */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-        <link rel="preconnect" href="https://placehold.co" />
-        <link rel="dns-prefetch" href="https://placehold.co" />
 
-        {/* ✅ Viewport meta — mobil render için kritik */}
+        {/* ✅ Viewport — mobil render için */}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-        {/* ✅ Theme color — mobil browser bar rengi */}
+        {/* ✅ Theme color */}
         <meta name="theme-color" content="#0f2540" />
+
+        {/* ✅ YENİ: LCP görselini önceden yükle (Cloudinary ana görsel) */}
+        <link
+          rel="preload"
+          as="image"
+          href="https://res.cloudinary.com/atakasa/image/upload/f_auto,q_auto,w_828/hero.jpg"
+          type="image/webp"
+        />
       </head>
       <body>
         <SessionProvider session={session}>
           {children}
         </SessionProvider>
-
-        {/* ✅ Vercel Analytics */}
         <Analytics />
       </body>
     </html>
   );
 }
+```
+
+---
+
+## 📄 `.browserslistrc` — YENİ OLUŞTUR (kök dizinde)
+
+Bu dosya eski JavaScript sorununu çözer — 12 KiB tasarruf:
+```
+# .browserslistrc
+# Kök dizine oluştur (package.json ile aynı klasör)
+
+last 2 Chrome versions
+last 2 Firefox versions
+last 2 Safari versions
+last 2 Edge versions
+not IE 11
+not dead
