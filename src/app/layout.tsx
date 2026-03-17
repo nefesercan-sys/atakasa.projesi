@@ -4,9 +4,9 @@ import { DM_Sans, Playfair_Display } from "next/font/google";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import SessionProvider from "@/components/SessionProvider";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
-// ✅ DÜZELTİLDİ: @import URL yerine next/font — render-blocking font kaldırıldı
 const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -62,13 +62,16 @@ export default async function RootLayout({
   return (
     <html lang="tr" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
       <head>
-        {/* ✅ DÜZELTİLDİ: DNS preconnect — CDN bağlantısı önceden kurulur */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-        <link rel="preconnect" href="https://placehold.co" />
       </head>
       <body>
-        <SessionProvider session={session}>{children}</SessionProvider>
+        <SessionProvider session={session}>
+          {children}
+        </SessionProvider>
+
+        {/* ✅ Vercel Analytics — <body> kapanmadan önce, provider dışında */}
+        <Analytics />
       </body>
     </html>
   );
