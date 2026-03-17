@@ -119,7 +119,7 @@ export default function Home() {
       });
     }
     if (aktifSehir !== "Tüm Şehirler") liste = liste.filter(i => (i.sehir || "").toUpperCase() === aktifSehir.toUpperCase());
-    if (minFiyat) liste = liste.filter(i => Number(i.fiyat) >= Number(minFiyat));
+    if (minFiyat) liste = liste.filter(i => Number(i.fiyat) >= Number(minFiyat)); 
     if (maxFiyat) liste = liste.filter(i => Number(i.fiyat) <= Number(maxFiyat));
     if (sadeceTakaslik) liste = liste.filter(i => i.takasIstegi);
     switch (aktifAltFiltre) {
