@@ -1,94 +1,74 @@
-import React from "react";
-// 1. Performans ve premium görünüm için fontları optimize ederek import ediyoruz
-import { Plus_Jakarta_Sans, Unbounded } from "next/font/google";
+// app/layout.tsx
+import type { Metadata } from "next";
+import { DM_Sans, Playfair_Display } from "next/font/google";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
+import SessionProvider from "@/components/SessionProvider";
 import "./globals.css";
-import Link from "next/link";
-import CyberNav from "../components/CyberNav";
-import AuthProvider from "../components/AuthProvider";
-import { Analytics } from "@vercel/analytics/react";
-import JsonLd from "../components/JsonLd";
-import HeaderSearch from "../components/HeaderSearch";
 
-export const dynamic = "force-dynamic";
-
-// 2. Font ayarları: 'display: swap' LCP süresini düşürmek için kritiktir
-const jakarta = Plus_Jakarta_Sans({ 
+// ✅ DÜZELTİLDİ: @import URL yerine next/font — render-blocking font kaldırıldı
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  display: 'swap',
-  variable: '--font-jakarta',
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-dm-sans",
+  display: "swap",
+  preload: true,
 });
 
-const unbounded = Unbounded({ 
+const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
-  display: 'swap',
-  variable: '--font-unbounded',
+  weight: ["600", "700"],
+  variable: "--font-playfair",
+  display: "swap",
+  preload: true,
 });
 
-// 3. Viewport: Google'ın sevmediği 'userScalable: false' yerine erişilebilir ayarlar
-export const viewport = {
-  width: "device-width",
-  initialScale: 1,
-  themeColor: "#050505",
-};
-
-export const metadata = {
-  title: {
-    default: "Atakasa.com | Türkiye'nin Siber Takas ve İkinci El Terminali",
-    template: "%s | Atakasa.com",
+export const metadata: Metadata = {
+  title: "A-TAKASA | Küresel B2B Barter ve Takas Platformu",
+  description:
+    "Türkiye'nin en güvenli takas ve barter platformu. Elektronik, emlak, araç ve daha fazlasını takas edin.",
+  keywords: "takas, barter, ikinci el, borsa, güvenli alışveriş, atakasa",
+  authors: [{ name: "Atakasa" }],
+  openGraph: {
+    title: "A-TAKASA | Küresel B2B Barter ve Takas Platformu",
+    description: "Türkiye'nin en güvenli takas ve barter platformu.",
+    url: "https://atakasa.com",
+    siteName: "A-TAKASA",
+    locale: "tr_TR",
+    type: "website",
   },
-  description: "Zararına satmak yerine değerinde takas yapın. Elektronik, araç, emlak ve binlerce varlığı güvenle değiştirin.",
-  metadataBase: new URL("https://atakasa.com"),
-  // Diğer metadata ayarlarını olduğu gibi koruyabilirsin...
+  twitter: {
+    card: "summary_large_image",
+    title: "A-TAKASA | Küresel B2B Barter ve Takas Platformu",
+    description: "Türkiye'nin en güvenli takas ve barter platformu.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+  alternates: {
+    canonical: "https://atakasa.com",
+  },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await getServerSession(authOptions);
+
   return (
-    // 4. Font değişkenlerini buraya tanımlıyoruz
-    <html lang="tr" className={`scroll-smooth ${jakarta.variable} ${unbounded.variable}`}>
+    <html lang="tr" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
       <head>
-        <JsonLd />
+        {/* ✅ DÜZELTİLDİ: DNS preconnect — CDN bağlantısı önceden kurulur */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://placehold.co" />
       </head>
-      <body className={`${jakarta.className} bg-[#050505] text-white antialiased min-h-screen overflow-x-hidden pb-24 selection:bg-[#00f260] selection:text-black`}>
-
-        <AuthProvider>
-          <header className="fixed top-0 left-0 w-full z-[100] bg-[#050505]/80 backdrop-blur-xl border-b border-white/[0.05] px-4 py-4 md:px-8 shadow-sm">
-            <div className="max-w-[1500px] mx-auto flex justify-between items-center">
-
-              {/* LOGO - Font-unbounded kullanımı ile daha siber bir hava */}
-              <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#00f260] to-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,242,96,0.3)] relative overflow-hidden shrink-0">
-                  <span className="text-lg font-black text-black relative z-10 italic">At<span className="text-white">⇄</span></span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none font-unbounded">
-                    Atakasa<span className="text-[#00f260]">.com</span>
-                  </span>
-                </div>
-              </Link>
-
-              <div className="hidden md:block flex-1 max-w-xl mx-8">
-                <HeaderSearch />
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Link
-                  href="/panel"
-                  className="w-10 h-10 bg-white/[0.03] border border-white/[0.05] rounded-full flex items-center justify-center text-slate-300 hover:bg-[#00f260] hover:text-black hover:border-transparent transition-all shadow-[0_0_10px_rgba(0,242,96,0)] hover:shadow-[0_0_15px_rgba(0,242,96,0.4)]"
-                >
-                  👤
-                </Link>
-              </div>
-            </div>
-          </header>
-
-          <main className="relative pt-24 min-h-screen">
-            {children}
-          </main>
-
-          <CyberNav />
-        </AuthProvider>
-
-        <Analytics />
+      <body>
+        <SessionProvider session={session}>{children}</SessionProvider>
       </body>
     </html>
   );
