@@ -751,6 +751,112 @@ export default function HomeClient({ ilkIlanlar }: Props) {
           </div>
         </div>
       )}
+      {/* ✅ MOBİL ALT MENÜ */}
+      <nav style={{
+        display: "none",
+        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 200,
+        background: "#fff", borderTop: "1px solid var(--border)",
+        boxShadow: "0 -4px 20px rgba(15,37,64,0.08)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }} className="mobil-alt-menu">
+        {[
+          {
+            label: "Ana Sayfa",
+            icon: (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            ),
+            onClick: () => router.push("/"),
+            aktif: true,
+          },
+          {
+            label: "Kategoriler",
+            icon: (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+            ),
+            onClick: () => {
+              const el = document.querySelector(".cat-strip");
+              el?.scrollIntoView({ behavior: "smooth" });
+            },
+          },
+          {
+            label: "İlan Ver",
+            icon: (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
+            ),
+            onClick: () => session ? router.push("/ilan-ver") : router.push("/giris"),
+            ozel: true,
+          },
+          {
+            label: "Mesajlar",
+            icon: (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              </svg>
+            ),
+            onClick: () => session ? router.push("/panel?tab=mesajlar") : router.push("/giris"),
+          },
+          {
+            label: session ? "Profil" : "Giriş",
+            icon: session ? (
+              <div style={{
+                width: 26, height: 26, borderRadius: "50%",
+                background: "var(--navy)", display: "flex",
+                alignItems: "center", justifyContent: "center",
+                fontSize: 12, fontWeight: 800, color: "var(--gold)",
+              }}>
+                {session.user?.email?.[0]?.toUpperCase() || "U"}
+              </div>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            ),
+            onClick: () => session ? router.push("/panel") : router.push("/giris"),
+          },
+        ].map((item, i) => (
+          <button
+            key={i}
+            onClick={item.onClick}
+            style={{
+              flex: 1, display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              gap: 4, background: "none", border: "none",
+              cursor: "pointer", padding: "10px 4px 8px",
+              color: item.ozel ? "var(--gold)" : "var(--text-soft)",
+              fontFamily: "inherit", transition: "color 0.15s",
+              position: "relative",
+            }}
+          >
+            {item.ozel ? (
+              <div style={{
+                width: 48, height: 48, borderRadius: "50%",
+                background: "var(--navy)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "var(--gold)",
+                boxShadow: "0 4px 16px rgba(15,37,64,0.25)",
+                marginTop: -16,
+                border: "3px solid #fff",
+              }}>
+                {item.icon}
+              </div>
+            ) : item.icon}
+            <span style={{
+              fontSize: 10, fontWeight: 600,
+              letterSpacing: "0.02em",
+              color: item.ozel ? "var(--gold)" : "var(--text-soft)",
+            }}>
+              {item.label}
+            </span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
