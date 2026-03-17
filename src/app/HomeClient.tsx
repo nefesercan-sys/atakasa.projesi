@@ -371,9 +371,12 @@ export default function HomeClient({ ilkIlanlar }: Props) {
         </div>
       </div>
 
-      {/* Nav */}
+      {/* ✅ NAV — nav-inner ve filtreMenusu doğru hiyerarşide */}
       <nav className="top-nav" aria-label="Ana navigasyon">
+        {/* nav-inner: logo + arama + butonlar */}
         <div className="nav-inner">
+
+          {/* Logo */}
           <div
             onClick={() => router.push("/")}
             style={{
@@ -391,6 +394,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
             </h1>
           </div>
 
+          {/* Arama */}
           <div className="search-wrap">
             <Search size={17} className="search-icon" aria-hidden="true" />
             <input
@@ -403,76 +407,80 @@ export default function HomeClient({ ilkIlanlar }: Props) {
             />
           </div>
 
-<div className="nav-actions">
-  <button
-    onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
-    className={`btn-filter ${filtreMenusuAcik ? "active" : ""}`}
-    aria-expanded={filtreMenusuAcik}
-  >
-    <SlidersHorizontal size={15} /> Filtrele
-    <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? "open" : ""}`} />
-  </button>
+          {/* Butonlar */}
+          <div className="nav-actions">
+            <button
+              onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
+              className={`btn-filter ${filtreMenusuAcik ? "active" : ""}`}
+              aria-expanded={filtreMenusuAcik}
+            >
+              <SlidersHorizontal size={15} /> Filtrele
+              <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? "open" : ""}`} />
+            </button>
 
-  <button onClick={() => router.push("/sepet")} className="btn-sepet">
-    <ShoppingCart size={15} /> Sepet
-  </button>
+            <button onClick={() => router.push("/sepet")} className="btn-sepet">
+              <ShoppingCart size={15} /> Sepet
+            </button>
 
-  {session ? (
-    <button
-      onClick={() => router.push("/panel")}
-      style={{
-        display: "flex", alignItems: "center", gap: 8,
-        padding: "8px 14px", borderRadius: "var(--radius)",
-        background: "var(--navy)", border: "none",
-        fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-        color: "#fff", cursor: "pointer", whiteSpace: "nowrap",
-      }}
-    >
-      <div style={{
-        width: 22, height: 22, borderRadius: "50%",
-        background: "var(--gold)", display: "flex",
-        alignItems: "center", justifyContent: "center",
-        fontSize: 11, fontWeight: 800, color: "var(--navy)", flexShrink: 0,
-      }}>
-        {session.user?.email?.[0]?.toUpperCase() || "U"}
-      </div>
-      Panelim
-    </button>
-  ) : (
-    <>
-      <button
-        onClick={() => router.push("/giris")}
-        style={{
-          padding: "8px 14px", borderRadius: "var(--radius)",
-          background: "transparent", border: "1.5px solid var(--border)",
-          fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-          color: "var(--text-mid)", cursor: "pointer", whiteSpace: "nowrap",
-        }}
-      >
-        Giriş Yap
-      </button>
-      <button
-        onClick={() => router.push("/kayit")}
-        style={{
-          padding: "8px 14px", borderRadius: "var(--radius)",
-          background: "var(--gold)", border: "none",
-          fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-          color: "var(--navy)", cursor: "pointer", whiteSpace: "nowrap",
-        }}
-      >
-        Üye Ol
-      </button>
-    </>
-  )}
+            {session ? (
+              <button
+                onClick={() => router.push("/panel")}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 14px", borderRadius: "var(--radius)",
+                  background: "var(--navy)", border: "none",
+                  fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                  color: "#fff", cursor: "pointer", whiteSpace: "nowrap",
+                }}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: "50%",
+                  background: "var(--gold)", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 800, color: "var(--navy)", flexShrink: 0,
+                }}>
+                  {session.user?.email?.[0]?.toUpperCase() || "U"}
+                </div>
+                Panelim
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => router.push("/giris")}
+                  style={{
+                    padding: "8px 14px", borderRadius: "var(--radius)",
+                    background: "transparent", border: "1.5px solid var(--border)",
+                    fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+                    color: "var(--text-mid)", cursor: "pointer", whiteSpace: "nowrap",
+                  }}
+                >
+                  Giriş Yap
+                </button>
+                <button
+                  onClick={() => router.push("/kayit")}
+                  style={{
+                    padding: "8px 14px", borderRadius: "var(--radius)",
+                    background: "var(--gold)", border: "none",
+                    fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                    color: "var(--navy)", cursor: "pointer", whiteSpace: "nowrap",
+                  }}
+                >
+                  Üye Ol
+                </button>
+              </>
+            )}
 
-  <button
-    onClick={() => session ? router.push("/ilan-ver") : router.push("/giris")}
-    className="btn-primary"
-  >
-    <Zap size={15} /> İlan Ver
-  </button>
-</div>
+            <button
+              onClick={() => session ? router.push("/ilan-ver") : router.push("/giris")}
+              className="btn-primary"
+            >
+              <Zap size={15} /> İlan Ver
+            </button>
+          </div>
+          {/* ✅ nav-inner kapanışı */}
+        </div>
 
+        {/* ✅ filtreMenusu nav-inner DIŞINDA, nav içinde */}
         {filtreMenusuAcik && (
           <div className="filter-panel">
             <div className="filter-grid">
