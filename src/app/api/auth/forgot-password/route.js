@@ -1,69 +1,94 @@
-import mongoose from 'mongoose';
-import crypto from 'crypto';
-import nodemailer from 'nodemailer';
-// 🚨 İŞTE DÜZELTİLEN SATIR BURASI (Göreceli yol kullanıldı)
-import User from '../../../../models/User'; 
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
-const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-  } catch (err) {
-    console.error("Veritabanı bağlantı hatası:", err);
-  }
-};
-
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const { email } = await req.json();
 
-    if (!email) return Response.json({ error: "E-posta adresi gerekli." }, { status: 400 });
+    if (!email) {
+      return NextResponse.json({ error: "E-posta adresi gerekli." }, { status: 400 });
+    }
 
-    await connectDB();
+    // ✅ Dinamik import — build sırasında mongoose/aws4 yüklenmez
+    const mongoose = (await import("mongoose")).default;
+    const UserModule = await import("../../../../models/User");
+    const User = UserModule.default;
+
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(process.env.MONGODB_URI as string);
+    }
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return Response.json({ error: "Bu e-posta adresiyle kayıtlı bir hesap bulunamadı." }, { status: 404 });
 
-    // Rastgele token oluştur ve veritabanına kaydet
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    if (!user) {
+      // Güvenlik: kullanıcı yoksa da başarılı yanıt ver
+      return NextResponse.json(
+        { message: "Eğer bu e-posta kayıtlıysa sıfırlama bağlantısı gönderildi." },
+        { status: 200 }
+      );
+    }
+
+    // Token oluştur
+    const resetToken = crypto.randomBytes(32).toString("hex");
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpire = Date.now() + 3600000; // 1 Saat
+    user.resetPasswordExpire = Date.now() + 3600000; // 1 saat
     await user.save();
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://atakasa.com";
     const resetUrl = `${baseUrl}/sifre-sifirla?token=${resetToken}`;
 
+    // Mail gönder
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
     });
 
-    const mailOptions = {
+    await transporter.sendMail({
       from: `"A-TAKASA Güvenlik" <${process.env.EMAIL_USER}>`,
       to: user.email,
-      subject: 'A-TAKASA | Şifre Sıfırlama',
+      subject: "A-TAKASA | Şifre Sıfırlama",
       html: `
-        <div style="font-family: Arial, sans-serif; background-color: #050505; color: #ffffff; padding: 40px; text-align: center; border-radius: 10px;">
-          <h1 style="color: #00f260; font-style: italic; text-transform: uppercase;">A-TAKASA.</h1>
-          <h2 style="color: #ffffff;">Şifre Sıfırlama Talebi</h2>
-          <p style="color: #888888; font-size: 14px; margin-bottom: 30px;">
-            Profil hesabı şifresini sıfırlamak için bir talep aldık. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.
+        <div style="font-family:'DM Sans',Arial,sans-serif;background:#0f2540;padding:48px 32px;text-align:center;border-radius:16px;max-width:560px;margin:0 auto;">
+          <div style="font-family:Georgia,serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;margin-bottom:8px;">
+            A-TAKASA<span style="color:#c9a84c;">.</span>
+          </div>
+          <p style="color:rgba(255,255,255,0.5);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:36px;">
+            Güvenli Şifre Sıfırlama
           </p>
-          <a href="${resetUrl}" style="background-color: #00f260; color: #000000; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">
-            Şifreyi Sıfırla ⚡
+          <h2 style="color:#ffffff;font-size:20px;font-weight:700;margin-bottom:12px;">
+            Şifre Sıfırlama Talebi
+          </h2>
+          <p style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.6;margin-bottom:32px;">
+            Bu e-postayı siz talep etmediyseniz güvenle görmezden gelebilirsiniz.
+            Bağlantı <strong>1 saat</strong> içinde geçerliliğini yitirecektir.
+          </p>
+          <a href="${resetUrl}"
+            style="display:inline-block;background:#c9a84c;color:#0f2540;padding:14px 32px;
+            text-decoration:none;border-radius:10px;font-weight:800;font-size:13px;
+            letter-spacing:0.04em;text-transform:uppercase;">
+            Şifremi Sıfırla →
           </a>
+          <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:32px;">
+            Bağlantı çalışmıyorsa bu URL'yi tarayıcınıza kopyalayın:<br/>
+            <span style="color:rgba(255,255,255,0.5);word-break:break-all;">${resetUrl}</span>
+          </p>
         </div>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-    return Response.json({ message: "Sıfırlama e-postası gönderildi." }, { status: 200 });
-
+    return NextResponse.json(
+      { message: "Sıfırlama e-postası gönderildi." },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Şifremi unuttum hatası:", error);
-    return Response.json({ error: "Sinyal gönderilemedi." }, { status: 500 });
+    console.error("Şifre sıfırlama hatası:", error);
+    return NextResponse.json(
+      { error: "İşlem sırasında bir hata oluştu." },
+      { status: 500 }
+    );
   }
 }
