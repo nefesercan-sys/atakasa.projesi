@@ -1,4 +1,3 @@
-// app/page.tsx
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -7,10 +6,6 @@ import {
   Play, Share2, Search, SlidersHorizontal, ShoppingCart,
   Zap, ChevronDown, Star, Shield, TrendingUp, TrendingDown,
 } from "lucide-react";
-
-// ✅ DÜZELTİLDİ: Tüm stiller globals.css'e taşındı
-// ✅ DÜZELTİLDİ: <style jsx global> içindeki @import URL kaldırıldı
-// ✅ DÜZELTİLDİ: font-family sabit string yerine CSS değişkeni kullanıyor
 
 export default function Home() {
   const { data: session } = useSession();
@@ -39,7 +34,6 @@ export default function Home() {
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null);
   const [videoModalBaslik, setVideoModalBaslik] = useState("");
 
-  // ✅ DÜZELTİLDİ: useMemo ile sabit dizi — her render'da yeniden oluşturulmaz
   const sehirler = useMemo(() => [
     "Tüm Şehirler", "İstanbul", "Ankara", "İzmir",
     "Bursa", "Antalya", "Adana", "Konya",
@@ -75,7 +69,7 @@ export default function Home() {
     }
   }, []);
 
-  // ✅ DÜZELTİLDİ: Veri çekme — ilk 20 hızlı, geri kalan arka planda
+  // Veri çekme — ilk 20 hızlı, geri kalan arka planda
   useEffect(() => {
     const veriCek = async () => {
       try {
@@ -86,8 +80,6 @@ export default function Home() {
           : data.data || data.ilanlar || data.varliklar || [];
         setIlanlar(liste);
         setLoading(false);
-
-        // Geri kalan ilanları arka planda yükle (LCP'yi engelleme)
         if (liste.length === 20) {
           setTimeout(async () => {
             try {
@@ -96,10 +88,8 @@ export default function Home() {
               const liste2 = Array.isArray(data2) ? data2 : [];
               if (liste2.length > 0)
                 setIlanlar((prev) => [...prev, ...liste2]);
-            } catch {
-              // Arka plan yükleme başarısız olsa da ilk 20 gösterilir
-            }
-          }, 100);
+            } catch {}
+          }, 500);
         }
       } catch (err) {
         console.error("Veri çekme hatası:", err);
@@ -133,8 +123,17 @@ export default function Home() {
     []
   );
 
+  // ✅ Cloudinary otomatik optimizasyon
+  const optimizeCloudinary = useCallback((url: string, w = 520, h = 220) => {
+    if (!url || !url.includes("res.cloudinary.com")) return url;
+    return url.replace(
+      "/upload/",
+      `/upload/f_auto,q_auto,w_${w},h_${h},c_fill/`
+    );
+  }, []);
+
   const getImageUrl = useCallback((ilan: any) => {
-    if (!ilan) return "https://placehold.co/600x400/1e3a5f/c9a84c?text=A-TAKASA";
+    if (!ilan) return "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
     const checkArray = (arr: any) =>
       Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
     const img =
@@ -148,7 +147,7 @@ export default function Home() {
       return ilan.medyalar;
     if (typeof ilan.images === "string" && ilan.images.length > 5)
       return ilan.images;
-    return "https://placehold.co/600x400/1e3a5f/c9a84c?text=A-TAKASA";
+    return "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
   }, []);
 
   const filtrelenmisIlanlar = useMemo(() => {
@@ -204,9 +203,7 @@ export default function Home() {
   const openModal = useCallback(
     (ilan: any, tur: "takas" | "satinal") => {
       if (!session) return router.push("/giris");
-      const saticiEmail = (
-        ilan.satici?.email || ilan.sellerEmail || ""
-      ).toLowerCase();
+      const saticiEmail = (ilan.satici?.email || ilan.sellerEmail || "").toLowerCase();
       if (saticiEmail === session.user?.email?.toLowerCase())
         return alert("Kendi ilanınızla işlem yapamazsınız.");
       setSeciliIlan(ilan);
@@ -269,16 +266,9 @@ export default function Home() {
           durum: "bekliyor",
         }),
       });
-      if (res.ok) {
-        alert("Takas teklifiniz iletildi!");
-        closeModal();
-      } else {
-        const err = await res.json();
-        alert(`Hata: ${err.error}`);
-      }
-    } catch {
-      alert("Bağlantı hatası.");
-    }
+      if (res.ok) { alert("Takas teklifiniz iletildi!"); closeModal(); }
+      else { const err = await res.json(); alert(`Hata: ${err.error}`); }
+    } catch { alert("Bağlantı hatası."); }
   };
 
   const handleSiparisTamamla = async () => {
@@ -308,187 +298,191 @@ export default function Home() {
       } else {
         alert("Sipariş alınamadı, tekrar deneyin.");
       }
-    } catch {
-      alert("Bağlantı hatası.");
-    }
+    } catch { alert("Bağlantı hatası."); }
   };
 
-  // ✅ DÜZELTİLDİ: BorsaKarti bileşeni render fonksiyonu dışına taşındı
-  // Bu sayede her ana render'da yeniden tanımlanmaz → React.memo gerçekten çalışır
-  const BorsaKarti = useMemo(
-    () =>
-      React.memo(({ ilan }: { ilan: any }) => {
-        const ilkMedya = getImageUrl(ilan);
-        const videoVar = isVideo(ilkMedya);
-        const pozitif = (ilan.degisimYuzdesi || 0) >= 0;
+  // ✅ BorsaKarti — index prop ile LCP optimizasyonu
+  const BorsaKarti = useCallback(
+    ({ ilan, index }: { ilan: any; index: number }) => {
+      const ilkMedya = getImageUrl(ilan);
+      const videoVar = isVideo(ilkMedya);
+      const pozitif = (ilan.degisimYuzdesi || 0) >= 0;
+      // ✅ Cloudinary görseli optimize et
+      const optimizedSrc = videoVar
+        ? ilkMedya
+        : optimizeCloudinary(ilkMedya, 520, 220);
 
-        const handleShare = async (e: React.MouseEvent) => {
-          e.stopPropagation();
-          const shareUrl = `${window.location.origin}/varlik/${ilan._id}`;
-          const shareData = {
-            title: `${ilan.baslik} | A-TAKASA`,
-            text: "Bu ilana bakmalısın!",
-            url: shareUrl,
-          };
-          if (navigator.share) {
-            try { await navigator.share(shareData); } catch {}
-          } else {
-            navigator.clipboard.writeText(shareUrl);
-            alert("İlan linki kopyalandı!");
-          }
-        };
+      const handleShare = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}/varlik/${ilan._id}`;
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: `${ilan.baslik} | A-TAKASA`,
+              text: "Bu ilana bakmalısın!",
+              url: shareUrl,
+            });
+          } catch {}
+        } else {
+          navigator.clipboard.writeText(shareUrl);
+          alert("İlan linki kopyalandı!");
+        }
+      };
 
-        return (
-          <div
-            className="product-card"
-            itemScope
-            itemType="https://schema.org/Product"
-          >
-            <meta itemProp="name" content={`${ilan.baslik} | A-TAKASA`} />
-            <meta itemProp="description" content={ilan.aciklama || "Ürün"} />
+      return (
+        <div
+          className="product-card"
+          itemScope
+          itemType="https://schema.org/Product"
+        >
+          <meta itemProp="name" content={`${ilan.baslik} | A-TAKASA`} />
+          <meta itemProp="description" content={ilan.aciklama || "Ürün"} />
 
-            <div className={`change-badge ${pozitif ? "change-up" : "change-down"}`}>
-              {pozitif ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-              %{Math.abs(ilan.degisimYuzdesi || 0)}
+          <div className={`change-badge ${pozitif ? "change-up" : "change-down"}`}>
+            {pozitif ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+            %{Math.abs(ilan.degisimYuzdesi || 0)}
+          </div>
+
+          {videoVar && (
+            <div className="video-badge">
+              <Play size={8} fill="currentColor" /> VİDEO
             </div>
+          )}
 
-            {videoVar && (
-              <div className="video-badge">
-                <Play size={8} fill="currentColor" /> VİDEO
-              </div>
-            )}
-
-            <div
-              className="card-media"
-              onClick={() => {
-                if (videoVar) {
-                  setVideoModalUrl(ilkMedya);
-                  setVideoModalBaslik(ilan.baslik || "");
-                } else {
-                  router.push(`/varlik/${ilan._id}`);
-                }
-              }}
-            >
-              {videoVar ? (
-                <div className="video-thumb">
-                  {ilkMedya.includes("res.cloudinary.com") ? (
-                    <img
-                      src={ilkMedya.replace(/\.(mp4|webm|mov)$/i, ".jpg")}
-                      className="thumb-img"
-                      alt="Video Kapak"
-                      width={520}
-                      height={220}
-                    />
-                  ) : (
-                    <video
-                      src={`${ilkMedya}#t=0.1`}
-                      className="thumb-img"
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  )}
-                  <div className="play-overlay">
-                    <div className="play-btn">
-                      <Play size={22} fill="white" />
-                    </div>
+          <div
+            className="card-media"
+            onClick={() => {
+              if (videoVar) {
+                setVideoModalUrl(ilkMedya);
+                setVideoModalBaslik(ilan.baslik || "");
+              } else {
+                router.push(`/varlik/${ilan._id}`);
+              }
+            }}
+          >
+            {videoVar ? (
+              <div className="video-thumb">
+                {ilkMedya.includes("res.cloudinary.com") ? (
+                  <img
+                    src={ilkMedya.replace(/\.(mp4|webm|mov)$/i, ".jpg")}
+                    className="thumb-img"
+                    alt="Video Kapak"
+                    width={520}
+                    height={220}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <video
+                    src={`${ilkMedya}#t=0.1`}
+                    className="thumb-img"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                )}
+                <div className="play-overlay">
+                  <div className="play-btn">
+                    <Play size={22} fill="white" />
                   </div>
                 </div>
-              ) : (
-                // ✅ DÜZELTİLDİ: width/height eklendi → CLS önlenir
-                <img
-                  src={ilkMedya}
-                  loading="lazy"
-                  decoding="async"
-                  width={520}
-                  height={220}
-                  className="card-img"
-                  alt={ilan.baslik || "Ürün"}
-                  itemProp="image"
-                />
-              )}
-              <div className="city-tag">📍 {ilan.sehir || "TÜRKİYE"}</div>
+              </div>
+            ) : (
+              // ✅ İlk 4 görsel eager, fetchPriority ile LCP iyileşir
+              <img
+                src={optimizedSrc}
+                loading={index < 4 ? "eager" : "lazy"}
+                fetchPriority={
+                  index === 0 ? "high" : index < 3 ? "auto" : "low"
+                }
+                decoding={index < 4 ? "sync" : "async"}
+                width={520}
+                height={220}
+                className="card-img"
+                alt={ilan.baslik || "Ürün"}
+                itemProp="image"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
+                }}
+              />
+            )}
+            <div className="city-tag">📍 {ilan.sehir || "TÜRKİYE"}</div>
+          </div>
+
+          <div className="card-body">
+            <span className="category-label">{ilan.kategori || "Genel"}</span>
+            <h3
+              className="card-title"
+              onClick={() => router.push(`/varlik/${ilan._id}`)}
+            >
+              {ilan.baslik}
+            </h3>
+
+            <div
+              className="price-row"
+              itemProp="offers"
+              itemScope
+              itemType="https://schema.org/Offer"
+            >
+              <span className="price-main">
+                <span itemProp="price">
+                  {Number(ilan.fiyat).toLocaleString("tr-TR")}
+                </span>
+                <meta itemProp="priceCurrency" content="TRY" />
+                <span className="price-currency"> ₺</span>
+              </span>
+              <span className="card-date">
+                {new Date(ilan.createdAt).toLocaleDateString("tr-TR")}
+              </span>
             </div>
 
-            <div className="card-body">
-              <span className="category-label">
-                {ilan.kategori || "Genel"}
-              </span>
-              <h3
-                className="card-title"
-                onClick={() => router.push(`/varlik/${ilan._id}`)}
-              >
-                {ilan.baslik}
-              </h3>
-
-              <div
-                className="price-row"
-                itemProp="offers"
-                itemScope
-                itemType="https://schema.org/Offer"
-              >
-                <span className="price-main">
-                  <span itemProp="price">
-                    {Number(ilan.fiyat).toLocaleString()}
-                  </span>
-                  <meta itemProp="priceCurrency" content="TRY" />
-                  <span className="price-currency"> ₺</span>
-                </span>
-                <span className="card-date">
-                  {new Date(ilan.createdAt).toLocaleDateString("tr-TR")}
-                </span>
+            <div className="card-actions">
+              <div className="action-row-top">
+                <button
+                  onClick={handleShare}
+                  className="btn-icon"
+                  title="Paylaş"
+                  aria-label="İlanı paylaş"
+                >
+                  <Share2 size={15} />
+                </button>
+                <button
+                  onClick={() => router.push(`/varlik/${ilan._id}`)}
+                  className="btn-outline flex-1"
+                >
+                  İncele
+                </button>
+                <button
+                  onClick={() => handleSepeteEkle(ilan)}
+                  className="btn-cart"
+                  aria-label="Sepete ekle"
+                >
+                  <ShoppingCart size={15} />
+                </button>
               </div>
-
-              <div className="card-actions">
-                <div className="action-row-top">
-                  <button
-                    onClick={handleShare}
-                    className="btn-icon"
-                    title="Paylaş"
-                    aria-label="İlanı paylaş"
-                  >
-                    <Share2 size={15} />
-                  </button>
-                  <button
-                    onClick={() => router.push(`/varlik/${ilan._id}`)}
-                    className="btn-outline flex-1"
-                  >
-                    İncele
-                  </button>
-                  <button
-                    onClick={() => handleSepeteEkle(ilan)}
-                    className="btn-cart"
-                    aria-label="Sepete ekle"
-                  >
-                    <ShoppingCart size={15} />
-                  </button>
-                </div>
-                <div className="action-row-bottom">
-                  <button
-                    onClick={() => openModal(ilan, "takas")}
-                    className="btn-swap"
-                  >
-                    🔄 Takas Teklifi
-                  </button>
-                  <button
-                    onClick={() => openModal(ilan, "satinal")}
-                    className="btn-buy"
-                  >
-                    Satın Al
-                  </button>
-                </div>
+              <div className="action-row-bottom">
+                <button
+                  onClick={() => openModal(ilan, "takas")}
+                  className="btn-swap"
+                >
+                  🔄 Takas Teklifi
+                </button>
+                <button
+                  onClick={() => openModal(ilan, "satinal")}
+                  className="btn-buy"
+                >
+                  Satın Al
+                </button>
               </div>
             </div>
           </div>
-        );
-      }),
-    [getImageUrl, isVideo, router, handleSepeteEkle, openModal]
+        </div>
+      );
+    },
+    [getImageUrl, isVideo, optimizeCloudinary, router, handleSepeteEkle, openModal]
   );
 
-  // ✅ displayName dışarıda set edilemez, içeride sabit isim verilmiş
-  const BorsaKartiComponent = BorsaKarti as any;
-
-  // Yapılandırılmış veri — SEO
   const jsonLd = useMemo(
     () => ({
       "@context": "https://schema.org",
@@ -507,7 +501,6 @@ export default function Home() {
 
   return (
     <div className="at-root">
-      {/* ✅ SEO: Yapılandırılmış veri */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -518,13 +511,9 @@ export default function Home() {
       {/* Trust banner */}
       <div className="trust-bar" role="banner">
         <div className="trust-bar-inner">
-          <span className="trust-item">
-            <Shield size={13} /> Güvenli Takas Havuzu
-          </span>
+          <span className="trust-item"><Shield size={13} /> Güvenli Takas Havuzu</span>
           <span className="trust-divider" />
-          <span className="trust-item">
-            <Star size={13} /> Onaylı Üyeler
-          </span>
+          <span className="trust-item"><Star size={13} /> Onaylı Üyeler</span>
           <span className="trust-divider" />
           <span className="trust-item">🛡️ %100 Alıcı &amp; Satıcı Koruması</span>
         </div>
@@ -539,16 +528,10 @@ export default function Home() {
             role="link"
             aria-label="Ana sayfaya git"
           >
-            <h1
-              style={{
-                color: "var(--navy)",
-                fontSize: "24px",
-                fontWeight: "800",
-                fontFamily: "var(--font-display)",
-                letterSpacing: "-0.02em",
-                margin: 0,
-              }}
-            >
+            <h1 style={{
+              color: "var(--navy)", fontSize: "24px", fontWeight: "800",
+              fontFamily: "var(--font-display)", letterSpacing: "-0.02em", margin: 0,
+            }}>
               A-TAKASA<span style={{ color: "var(--gold)" }}>.</span>
             </h1>
           </div>
@@ -570,14 +553,9 @@ export default function Home() {
               onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
               className={`btn-filter ${filtreMenusuAcik ? "active" : ""}`}
               aria-expanded={filtreMenusuAcik}
-              aria-controls="filter-panel"
             >
-              <SlidersHorizontal size={15} />
-              Filtrele
-              <ChevronDown
-                size={13}
-                className={`chevron ${filtreMenusuAcik ? "open" : ""}`}
-              />
+              <SlidersHorizontal size={15} /> Filtrele
+              <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? "open" : ""}`} />
             </button>
             <button
               onClick={() => router.push("/sepet")}
@@ -587,9 +565,7 @@ export default function Home() {
               <ShoppingCart size={15} /> Sepet
             </button>
             <button
-              onClick={() =>
-                session ? router.push("/ilan-ver") : router.push("/giris")
-              }
+              onClick={() => session ? router.push("/ilan-ver") : router.push("/giris")}
               className="btn-primary"
             >
               <Zap size={15} /> İlan Ver
@@ -598,49 +574,33 @@ export default function Home() {
         </div>
 
         {filtreMenusuAcik && (
-          <div className="filter-panel" id="filter-panel">
+          <div className="filter-panel">
             <div className="filter-grid">
               <div className="filter-field">
-                <label className="filter-label" htmlFor="sehir-select">
-                  Şehir / Bölge
-                </label>
+                <label className="filter-label" htmlFor="sehir-select">Şehir / Bölge</label>
                 <select
                   id="sehir-select"
                   value={aktifSehir}
                   onChange={(e) => setAktifSehir(e.target.value)}
                   className="filter-select"
                 >
-                  {sehirler.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  {sehirler.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div className="filter-field">
-                <label className="filter-label" htmlFor="min-fiyat">
-                  Min Fiyat (₺)
-                </label>
+                <label className="filter-label" htmlFor="min-fiyat">Min Fiyat (₺)</label>
                 <input
-                  id="min-fiyat"
-                  type="number"
-                  placeholder="Örn: 1000"
-                  value={minFiyat}
-                  onChange={(e) => setMinFiyat(e.target.value)}
-                  className="filter-input"
-                  min="0"
+                  id="min-fiyat" type="number" placeholder="Örn: 1000"
+                  value={minFiyat} onChange={(e) => setMinFiyat(e.target.value)}
+                  className="filter-input" min="0"
                 />
               </div>
               <div className="filter-field">
-                <label className="filter-label" htmlFor="max-fiyat">
-                  Max Fiyat (₺)
-                </label>
+                <label className="filter-label" htmlFor="max-fiyat">Max Fiyat (₺)</label>
                 <input
-                  id="max-fiyat"
-                  type="number"
-                  placeholder="Örn: 50000"
-                  value={maxFiyat}
-                  onChange={(e) => setMaxFiyat(e.target.value)}
-                  className="filter-input"
-                  min="0"
+                  id="max-fiyat" type="number" placeholder="Örn: 50000"
+                  value={maxFiyat} onChange={(e) => setMaxFiyat(e.target.value)}
+                  className="filter-input" min="0"
                 />
               </div>
               <div className="filter-field" style={{ justifyContent: "flex-end" }}>
@@ -657,18 +617,13 @@ export default function Home() {
               <button
                 onClick={() => {
                   setAktifSehir("Tüm Şehirler");
-                  setMinFiyat("");
-                  setMaxFiyat("");
-                  setSadeceTakaslik(false);
+                  setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false);
                 }}
                 className="btn-reset"
               >
                 Sıfırla
               </button>
-              <button
-                onClick={() => setFiltreMenusuAcik(false)}
-                className="btn-apply"
-              >
+              <button onClick={() => setFiltreMenusuAcik(false)} className="btn-apply">
                 Filtrele
               </button>
             </div>
@@ -680,10 +635,7 @@ export default function Home() {
       <div className="cat-strip" role="navigation" aria-label="Kategori filtresi">
         <div className="cat-inner">
           <button
-            onClick={() => {
-              setAktifKategori("Hepsi");
-              setAktifAltFiltre("Yeni İlanlar");
-            }}
+            onClick={() => { setAktifKategori("Hepsi"); setAktifAltFiltre("Yeni İlanlar"); }}
             className={`cat-btn ${aktifKategori === "Hepsi" ? "active" : ""}`}
             aria-pressed={aktifKategori === "Hepsi"}
           >
@@ -692,10 +644,7 @@ export default function Home() {
           {sektorler.map((s) => (
             <button
               key={s.ad}
-              onClick={() => {
-                setAktifKategori(s.ad);
-                setAktifAltFiltre("Yeni İlanlar");
-              }}
+              onClick={() => { setAktifKategori(s.ad); setAktifAltFiltre("Yeni İlanlar"); }}
               className={`cat-btn ${aktifKategori === s.ad ? "active" : ""}`}
               aria-pressed={aktifKategori === s.ad}
             >
@@ -711,12 +660,7 @@ export default function Home() {
       {/* Alt filtreler */}
       {aktifKategori !== "Hepsi" && (
         <div className="sub-filter-bar" role="navigation" aria-label="Alt filtreler">
-          {[
-            "Yeni İlanlar",
-            "En Çok Fiyatı Düşenler",
-            "En Çok Yükselenler",
-            "En Çok Takas Edilenler",
-          ].map((f) => (
+          {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map((f) => (
             <button
               key={f}
               onClick={() => setAktifAltFiltre(f)}
@@ -744,7 +688,7 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <div className="product-grid" aria-busy="true" aria-label="Yükleniyor">
+          <div className="product-grid" aria-busy="true">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <div key={n} className="skeleton-card">
                 <div className="skeleton-img" />
@@ -758,17 +702,15 @@ export default function Home() {
           </div>
         ) : filtrelenmisIlanlar.length > 0 ? (
           <div className="product-grid">
-            {filtrelenmisIlanlar.map((ilan) => (
-              <BorsaKartiComponent key={ilan._id} ilan={ilan} />
+            {filtrelenmisIlanlar.map((ilan, index) => (
+              <BorsaKarti key={ilan._id} ilan={ilan} index={index} />
             ))}
           </div>
         ) : (
           <div className="empty-state" role="status">
             <span className="empty-icon" aria-hidden="true">🔍</span>
             <p className="empty-title">Bu kriterlerde varlık bulunamadı.</p>
-            <p className="empty-sub">
-              Farklı filtreler deneyin veya arama terimini değiştirin.
-            </p>
+            <p className="empty-sub">Farklı filtreler deneyin veya arama terimini değiştirin.</p>
           </div>
         )}
       </main>
@@ -783,16 +725,10 @@ export default function Home() {
           aria-label={modalTuru === "takas" ? "Takas Teklifi" : "Satın Al"}
         >
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={closeModal}
-              className="modal-close"
-              aria-label="Kapat"
-            >
-              ✕
-            </button>
+            <button onClick={closeModal} className="modal-close" aria-label="Kapat">✕</button>
             <div className="modal-header">
               <img
-                src={getImageUrl(seciliIlan)}
+                src={optimizeCloudinary(getImageUrl(seciliIlan), 80, 80)}
                 className="modal-img"
                 alt={seciliIlan.baslik || "Ürün"}
                 loading="lazy"
@@ -805,7 +741,7 @@ export default function Home() {
                 </span>
                 <h3 className="modal-title">{seciliIlan.baslik}</h3>
                 <p className="modal-price">
-                  {Number(seciliIlan.fiyat).toLocaleString()} ₺
+                  {Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺
                 </p>
               </div>
             </div>
@@ -832,13 +768,10 @@ export default function Home() {
                   Üste Nakit Ekle (₺) — İsteğe Bağlı
                 </label>
                 <input
-                  id="nakit-ekle"
-                  type="number"
-                  placeholder="Örn: 5000"
+                  id="nakit-ekle" type="number" placeholder="Örn: 5000"
                   value={eklenecekNakit}
                   onChange={(e) => setEklenecekNakit(e.target.value)}
-                  className="form-input"
-                  min="0"
+                  className="form-input" min="0"
                 />
                 <button
                   onClick={handleTakasGonder}
@@ -854,48 +787,31 @@ export default function Home() {
                 <div className="price-summary">
                   <span>Ödenecek Tutar</span>
                   <span className="price-big">
-                    {Number(seciliIlan.fiyat).toLocaleString()} ₺
+                    {Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺
                   </span>
                 </div>
                 <input
-                  type="text"
-                  placeholder="Ad Soyad"
+                  type="text" placeholder="Ad Soyad"
                   value={siparisForm.adSoyad}
-                  onChange={(e) =>
-                    setSiparisForm({ ...siparisForm, adSoyad: e.target.value })
-                  }
-                  className="form-input"
-                  aria-label="Ad Soyad"
-                  autoComplete="name"
+                  onChange={(e) => setSiparisForm({ ...siparisForm, adSoyad: e.target.value })}
+                  className="form-input" aria-label="Ad Soyad" autoComplete="name"
                 />
                 <input
-                  type="tel"
-                  placeholder="Telefon Numarası"
+                  type="tel" placeholder="Telefon Numarası"
                   value={siparisForm.telefon}
-                  onChange={(e) =>
-                    setSiparisForm({ ...siparisForm, telefon: e.target.value })
-                  }
-                  className="form-input"
-                  aria-label="Telefon numarası"
-                  autoComplete="tel"
+                  onChange={(e) => setSiparisForm({ ...siparisForm, telefon: e.target.value })}
+                  className="form-input" aria-label="Telefon" autoComplete="tel"
                 />
                 <textarea
                   placeholder="Teslimat Adresi"
                   value={siparisForm.adres}
-                  onChange={(e) =>
-                    setSiparisForm({ ...siparisForm, adres: e.target.value })
-                  }
-                  className="form-textarea"
-                  aria-label="Teslimat adresi"
-                  autoComplete="street-address"
+                  onChange={(e) => setSiparisForm({ ...siparisForm, adres: e.target.value })}
+                  className="form-textarea" aria-label="Adres" autoComplete="street-address"
                 />
                 <select
                   value={siparisForm.odemeYontemi}
-                  onChange={(e) =>
-                    setSiparisForm({ ...siparisForm, odemeYontemi: e.target.value })
-                  }
-                  className="form-select"
-                  aria-label="Ödeme yöntemi"
+                  onChange={(e) => setSiparisForm({ ...siparisForm, odemeYontemi: e.target.value })}
+                  className="form-select" aria-label="Ödeme yöntemi"
                 >
                   <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
                   <option value="havale">🏦 Havale / EFT</option>
@@ -908,15 +824,12 @@ export default function Home() {
                       onChange={(e) => setKabulYasalZirh(e.target.checked)}
                     />
                     <span>
-                      <strong>🛡️ Siber Kalkan:</strong> Teslimat tamamlanana
-                      kadar ödeme havuzda bekler. Onaylıyorum.
+                      <strong>🛡️ Siber Kalkan:</strong> Teslimat tamamlanana kadar
+                      ödeme havuzda bekler. Onaylıyorum.
                     </span>
                   </label>
                 </div>
-                <button
-                  onClick={handleSiparisTamamla}
-                  className="btn-modal-primary"
-                >
+                <button onClick={handleSiparisTamamla} className="btn-modal-primary">
                   ✓ Güvenli Ödemeyi Tamamla
                 </button>
               </div>
@@ -942,11 +855,9 @@ export default function Home() {
             <button
               onClick={() => setVideoModalUrl(null)}
               className="modal-close"
-              aria-label="Videoyu kapat"
+              aria-label="Kapat"
               style={{ zIndex: 10 }}
-            >
-              ✕
-            </button>
+            >✕</button>
             <video
               src={videoModalUrl}
               controls
@@ -954,7 +865,10 @@ export default function Home() {
               style={{ width: "100%", display: "block" }}
             />
             {videoModalBaslik && (
-              <div style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
+              <div style={{
+                padding: "12px 16px", fontSize: 14,
+                fontWeight: 600, color: "var(--text)",
+              }}>
                 {videoModalBaslik}
               </div>
             )}
