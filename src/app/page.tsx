@@ -59,40 +59,37 @@ export default function Home() {
     { ad: "Oyun/Konsol", degisim: "+8.7", emoji: "🎮" },
   ], []);
 
-  // Sepet temizleme
   useEffect(() => {
     try {
-      const bozukVeri = localStorage.getItem("atakasa_sepet");
-      if (bozukVeri) JSON.parse(bozukVeri);
+      const b = localStorage.getItem("atakasa_sepet");
+      if (b) JSON.parse(b);
     } catch {
       localStorage.removeItem("atakasa_sepet");
     }
   }, []);
 
-  // Veri çekme — ilk 20 hızlı, geri kalan arka planda
   useEffect(() => {
     const veriCek = async () => {
       try {
-        const res = await fetch("/api/varliklar?limit=20");
+        const res = await fetch("/api/varliklar?limit=20", {
+          next: { revalidate: 30 },
+        } as RequestInit);
         const data = await res.json();
         const liste = Array.isArray(data)
-          ? data
-          : data.data || data.ilanlar || data.varliklar || [];
+          ? data : data.data || data.ilanlar || data.varliklar || [];
         setIlanlar(liste);
         setLoading(false);
         if (liste.length === 20) {
           setTimeout(async () => {
             try {
-              const res2 = await fetch("/api/varliklar?limit=200&skip=20");
-              const data2 = await res2.json();
-              const liste2 = Array.isArray(data2) ? data2 : [];
-              if (liste2.length > 0)
-                setIlanlar((prev) => [...prev, ...liste2]);
+              const r2 = await fetch("/api/varliklar?limit=200&skip=20");
+              const d2 = await r2.json();
+              const l2 = Array.isArray(d2) ? d2 : [];
+              if (l2.length > 0) setIlanlar(p => [...p, ...l2]);
             } catch {}
-          }, 500);
+          }, 600);
         }
-      } catch (err) {
-        console.error("Veri çekme hatası:", err);
+      } catch {
         setLoading(false);
       }
     };
@@ -101,169 +98,121 @@ export default function Home() {
 
   useEffect(() => {
     if (session?.user?.email && ilanlar.length > 0) {
-      const kEmail = session.user.email.toLowerCase();
+      const k = session.user.email.toLowerCase();
       setBenimIlanlarim(
-        ilanlar.filter((i: any) => {
-          const sEmail = (
-            i.satici?.email || i.sellerEmail || i.satici || ""
-          ).toString().toLowerCase();
-          return sEmail === kEmail;
-        })
+        ilanlar.filter((i: any) =>
+          (i.satici?.email || i.sellerEmail || i.satici || "")
+            .toString().toLowerCase() === k
+        )
       );
     }
   }, [session, ilanlar]);
 
-  const isVideo = useCallback(
-    (url: string) =>
-      !!url &&
-      (url.includes(".mp4") ||
-        url.includes(".mov") ||
-        url.includes(".webm") ||
-        url.includes("video")),
-    []
-  );
+  const isVideo = useCallback((url: string) =>
+    !!url && (url.includes(".mp4") || url.includes(".mov") ||
+      url.includes(".webm") || url.includes("video")), []);
 
-  // ✅ Cloudinary otomatik optimizasyon
-  const optimizeCloudinary = useCallback((url: string, w = 520, h = 220) => {
-    if (!url || !url.includes("res.cloudinary.com")) return url;
-    return url.replace(
-      "/upload/",
-      `/upload/f_auto,q_auto,w_${w},h_${h},c_fill/`
-    );
+  const optimizeImg = useCallback((url: string, w = 520, h = 220) => {
+    if (!url) return url;
+    if (url.includes("res.cloudinary.com") && url.includes("/upload/"))
+      return url.replace("/upload/", `/upload/f_auto,q_auto,w_${w},h_${h},c_fill/`);
+    return url;
   }, []);
 
-  const getImageUrl = useCallback((ilan: any) => {
-    if (!ilan) return "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
-    const checkArray = (arr: any) =>
-      Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
-    const img =
-      checkArray(ilan.resimler) ||
-      checkArray(ilan.medyalar) ||
-      checkArray(ilan.images);
-    if (img && typeof img === "string") return img;
-    if (typeof ilan.resimler === "string" && ilan.resimler.length > 5)
-      return ilan.resimler;
-    if (typeof ilan.medyalar === "string" && ilan.medyalar.length > 5)
-      return ilan.medyalar;
-    if (typeof ilan.images === "string" && ilan.images.length > 5)
-      return ilan.images;
-    return "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
+  const getImageUrl = useCallback((ilan: any): string => {
+    if (!ilan) return "https://placehold.co/520x220/0f2540/c9a84c?text=A-TAKASA";
+    const chk = (a: any) =>
+      Array.isArray(a) && a.length > 0 && typeof a[0] === "string" ? a[0] : null;
+    const img = chk(ilan.resimler) || chk(ilan.medyalar) || chk(ilan.images);
+    if (img) return img;
+    if (typeof ilan.resimler === "string" && ilan.resimler.length > 5) return ilan.resimler;
+    if (typeof ilan.medyalar === "string" && ilan.medyalar.length > 5) return ilan.medyalar;
+    if (typeof ilan.images === "string" && ilan.images.length > 5) return ilan.images;
+    return "https://placehold.co/520x220/0f2540/c9a84c?text=A-TAKASA";
   }, []);
 
   const filtrelenmisIlanlar = useMemo(() => {
     let liste = [...ilanlar];
     if (searchTerm)
-      liste = liste.filter(
-        (i) =>
-          (i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (i.aciklama || "").toLowerCase().includes(searchTerm.toLowerCase())
+      liste = liste.filter(i =>
+        (i.baslik || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (i.aciklama || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
     if (aktifKategori !== "Hepsi") {
-      liste = liste.filter((i) => {
+      liste = liste.filter(i => {
         const kat = (i.kategori || i.sektorId || "").toLowerCase();
-        const aranan = aktifKategori.toLowerCase();
-        if (kat.includes(aranan)) return true;
-        if (aranan === "araç" && kat.includes("vasıta")) return true;
-        if (aranan === "tekstil" && (kat.includes("giyim") || kat.includes("moda"))) return true;
-        if (aranan === "oyun/konsol" && kat.includes("oyun")) return true;
-        if (aranan === "elektronik" && kat.includes("telefon")) return true;
-        if (aranan === "emlak" && kat.includes("konut")) return true;
-        if (aranan === "mobilya" && kat.includes("ev")) return true;
+        const ar = aktifKategori.toLowerCase();
+        if (kat.includes(ar)) return true;
+        if (ar === "araç" && kat.includes("vasıta")) return true;
+        if (ar === "tekstil" && (kat.includes("giyim") || kat.includes("moda"))) return true;
+        if (ar === "oyun/konsol" && kat.includes("oyun")) return true;
+        if (ar === "elektronik" && kat.includes("telefon")) return true;
+        if (ar === "emlak" && kat.includes("konut")) return true;
+        if (ar === "mobilya" && kat.includes("ev")) return true;
         return false;
       });
     }
     if (aktifSehir !== "Tüm Şehirler")
-      liste = liste.filter(
-        (i) => (i.sehir || "").toUpperCase() === aktifSehir.toUpperCase()
-      );
-    if (minFiyat)
-      liste = liste.filter((i) => Number(i.fiyat || 0) >= Number(minFiyat));
-    if (maxFiyat)
-      liste = liste.filter((i) => Number(i.fiyat || 0) <= Number(maxFiyat));
-    if (sadeceTakaslik) liste = liste.filter((i) => i.takasIstegi);
+      liste = liste.filter(i => (i.sehir || "").toUpperCase() === aktifSehir.toUpperCase());
+    if (minFiyat) liste = liste.filter(i => Number(i.fiyat || 0) >= Number(minFiyat));
+    if (maxFiyat) liste = liste.filter(i => Number(i.fiyat || 0) <= Number(maxFiyat));
+    if (sadeceTakaslik) liste = liste.filter(i => i.takasIstegi);
     switch (aktifAltFiltre) {
       case "En Çok Fiyatı Düşenler":
-        liste.sort((a, b) => (a.degisimYuzdesi || 0) - (b.degisimYuzdesi || 0));
-        break;
+        liste.sort((a, b) => (a.degisimYuzdesi || 0) - (b.degisimYuzdesi || 0)); break;
       case "En Çok Yükselenler":
-        liste.sort((a, b) => (b.degisimYuzdesi || 0) - (a.degisimYuzdesi || 0));
-        break;
+        liste.sort((a, b) => (b.degisimYuzdesi || 0) - (a.degisimYuzdesi || 0)); break;
       case "En Çok Takas Edilenler":
-        liste.sort((a, b) => (b.takasTeklifiSayisi || 0) - (a.takasTeklifiSayisi || 0));
-        break;
+        liste.sort((a, b) => (b.takasTeklifiSayisi || 0) - (a.takasTeklifiSayisi || 0)); break;
       default:
-        liste.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        liste.sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return liste;
   }, [ilanlar, searchTerm, aktifKategori, aktifSehir, minFiyat, maxFiyat, sadeceTakaslik, aktifAltFiltre]);
 
-  const openModal = useCallback(
-    (ilan: any, tur: "takas" | "satinal") => {
-      if (!session) return router.push("/giris");
-      const saticiEmail = (ilan.satici?.email || ilan.sellerEmail || "").toLowerCase();
-      if (saticiEmail === session.user?.email?.toLowerCase())
-        return alert("Kendi ilanınızla işlem yapamazsınız.");
-      setSeciliIlan(ilan);
-      setModalTuru(tur);
-      setKabulSozlesme(false);
-      setKabulYasalZirh(false);
-    },
-    [session, router]
-  );
+  const openModal = useCallback((ilan: any, tur: "takas" | "satinal") => {
+    if (!session) return router.push("/giris");
+    const sEmail = (ilan.satici?.email || ilan.sellerEmail || "").toLowerCase();
+    if (sEmail === session.user?.email?.toLowerCase())
+      return alert("Kendi ilanınızla işlem yapamazsınız.");
+    setSeciliIlan(ilan); setModalTuru(tur);
+    setKabulSozlesme(false); setKabulYasalZirh(false);
+  }, [session, router]);
 
   const closeModal = useCallback(() => {
-    setSeciliIlan(null);
-    setModalTuru(null);
-    setSecilenBenimIlanim("");
-    setEklenecekNakit("");
+    setSeciliIlan(null); setModalTuru(null);
+    setSecilenBenimIlanim(""); setEklenecekNakit("");
   }, []);
 
-  const handleSepeteEkle = useCallback(
-    (ilan: any) => {
-      try {
-        const mevcutSepet = JSON.parse(
-          localStorage.getItem("atakasa_sepet") || "[]"
-        );
-        const urunId = ilan._id || ilan.id;
-        if (mevcutSepet.find((item: any) => item.id === urunId))
-          return alert("Bu ürün zaten sepetinizde.");
-        mevcutSepet.push({
-          id: urunId,
-          baslik: ilan.baslik,
-          fiyat: Number(ilan.fiyat),
-          resim: getImageUrl(ilan),
-          saticiMail: ilan.satici?.email || ilan.sellerEmail || "",
-        });
-        localStorage.setItem("atakasa_sepet", JSON.stringify(mevcutSepet));
-        alert("Ürün sepete eklendi!");
-      } catch {
-        localStorage.removeItem("atakasa_sepet");
-        alert("Önbellek temizlendi, tekrar deneyin.");
-      }
-    },
-    [getImageUrl]
-  );
+  const handleSepeteEkle = useCallback((ilan: any) => {
+    try {
+      const sepet = JSON.parse(localStorage.getItem("atakasa_sepet") || "[]");
+      const uid = ilan._id || ilan.id;
+      if (sepet.find((x: any) => x.id === uid)) return alert("Bu ürün zaten sepetinizde.");
+      sepet.push({
+        id: uid, baslik: ilan.baslik, fiyat: Number(ilan.fiyat),
+        resim: getImageUrl(ilan), saticiMail: ilan.satici?.email || ilan.sellerEmail || "",
+      });
+      localStorage.setItem("atakasa_sepet", JSON.stringify(sepet));
+      alert("Ürün sepete eklendi!");
+    } catch {
+      localStorage.removeItem("atakasa_sepet");
+      alert("Önbellek temizlendi, tekrar deneyin.");
+    }
+  }, [getImageUrl]);
 
   const handleTakasGonder = async () => {
-    if (!secilenBenimIlanim)
-      return alert("Lütfen takas edeceğiniz ürününüzü seçin.");
+    if (!secilenBenimIlanim) return alert("Lütfen takas edeceğiniz ürününüzü seçin.");
     const [id, baslik] = secilenBenimIlanim.split("|");
     try {
       const res = await fetch("/api/takas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           aliciEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail,
-          hedefIlanId: seciliIlan._id,
-          hedefIlanBaslik: seciliIlan.baslik,
-          hedefIlanFiyat: seciliIlan.fiyat,
-          teklifEdilenIlanId: id,
-          teklifEdilenIlanBaslik: baslik,
-          eklenenNakit: eklenecekNakit || 0,
-          durum: "bekliyor",
+          hedefIlanId: seciliIlan._id, hedefIlanBaslik: seciliIlan.baslik,
+          hedefIlanFiyat: seciliIlan.fiyat, teklifEdilenIlanId: id,
+          teklifEdilenIlanBaslik: baslik, eklenenNakit: eklenecekNakit || 0, durum: "bekliyor",
         }),
       });
       if (res.ok) { alert("Takas teklifiniz iletildi!"); closeModal(); }
@@ -278,226 +227,148 @@ export default function Home() {
       return alert("Devam etmek için sözleşmeleri onaylamalısınız.");
     try {
       const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listingId: seciliIlan._id,
           sellerEmail: seciliIlan.satici?.email || seciliIlan.sellerEmail,
-          adSoyad: siparisForm.adSoyad,
-          telefon: siparisForm.telefon,
-          adres: siparisForm.adres,
-          not: siparisForm.not,
-          odemeYontemi: siparisForm.odemeYontemi,
-          fiyat: seciliIlan.fiyat,
-          durum: "bekliyor",
+          adSoyad: siparisForm.adSoyad, telefon: siparisForm.telefon,
+          adres: siparisForm.adres, not: siparisForm.not,
+          odemeYontemi: siparisForm.odemeYontemi, fiyat: seciliIlan.fiyat, durum: "bekliyor",
         }),
       });
-      if (res.ok) {
-        alert("Siparişiniz alındı! Panelinizden takip edebilirsiniz.");
-        closeModal();
-      } else {
-        alert("Sipariş alınamadı, tekrar deneyin.");
-      }
+      if (res.ok) { alert("Siparişiniz alındı! Panelinizden takip edebilirsiniz."); closeModal(); }
+      else { alert("Sipariş alınamadı, tekrar deneyin."); }
     } catch { alert("Bağlantı hatası."); }
   };
 
-  // ✅ BorsaKarti — index prop ile LCP optimizasyonu
-  const BorsaKarti = useCallback(
-    ({ ilan, index }: { ilan: any; index: number }) => {
-      const ilkMedya = getImageUrl(ilan);
-      const videoVar = isVideo(ilkMedya);
-      const pozitif = (ilan.degisimYuzdesi || 0) >= 0;
-      // ✅ Cloudinary görseli optimize et
-      const optimizedSrc = videoVar
-        ? ilkMedya
-        : optimizeCloudinary(ilkMedya, 520, 220);
+  const BorsaKarti = useCallback(({ ilan, index }: { ilan: any; index: number }) => {
+    const ham = getImageUrl(ilan);
+    const videoVar = isVideo(ham);
+    const gorsel = videoVar ? ham : optimizeImg(ham, 520, 220);
+    const pozitif = (ilan.degisimYuzdesi || 0) >= 0;
 
-      const handleShare = async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        const shareUrl = `${window.location.origin}/varlik/${ilan._id}`;
-        if (navigator.share) {
-          try {
-            await navigator.share({
-              title: `${ilan.baslik} | A-TAKASA`,
-              text: "Bu ilana bakmalısın!",
-              url: shareUrl,
-            });
-          } catch {}
-        } else {
-          navigator.clipboard.writeText(shareUrl);
-          alert("İlan linki kopyalandı!");
-        }
-      };
+    const handleShare = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const url = `${window.location.origin}/varlik/${ilan._id}`;
+      if (navigator.share) {
+        try { await navigator.share({ title: `${ilan.baslik} | A-TAKASA`, url }); } catch {}
+      } else {
+        navigator.clipboard.writeText(url);
+        alert("İlan linki kopyalandı!");
+      }
+    };
 
-      return (
+    return (
+      <div className="product-card" itemScope itemType="https://schema.org/Product">
+        <meta itemProp="name" content={`${ilan.baslik} | A-TAKASA`} />
+        <meta itemProp="description" content={ilan.aciklama || "Ürün"} />
+
+        <div className={`change-badge ${pozitif ? "change-up" : "change-down"}`}>
+          {pozitif ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+          %{Math.abs(ilan.degisimYuzdesi || 0)}
+        </div>
+
+        {videoVar && (
+          <div className="video-badge">
+            <Play size={8} fill="currentColor" /> VİDEO
+          </div>
+        )}
+
         <div
-          className="product-card"
-          itemScope
-          itemType="https://schema.org/Product"
+          className="card-media"
+          onClick={() => {
+            if (videoVar) { setVideoModalUrl(ham); setVideoModalBaslik(ilan.baslik || ""); }
+            else router.push(`/varlik/${ilan._id}`);
+          }}
         >
-          <meta itemProp="name" content={`${ilan.baslik} | A-TAKASA`} />
-          <meta itemProp="description" content={ilan.aciklama || "Ürün"} />
-
-          <div className={`change-badge ${pozitif ? "change-up" : "change-down"}`}>
-            {pozitif ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-            %{Math.abs(ilan.degisimYuzdesi || 0)}
-          </div>
-
-          {videoVar && (
-            <div className="video-badge">
-              <Play size={8} fill="currentColor" /> VİDEO
+          {videoVar ? (
+            <div className="video-thumb">
+              {ham.includes("res.cloudinary.com") ? (
+                <img
+                  src={ham.replace(/\.(mp4|webm|mov)$/i, ".jpg")}
+                  className="thumb-img" alt="Video Kapak"
+                  width={520} height={220} loading="lazy" decoding="async"
+                />
+              ) : (
+                <video src={`${ham}#t=0.1`} className="thumb-img" muted playsInline preload="metadata" />
+              )}
+              <div className="play-overlay">
+                <div className="play-btn"><Play size={22} fill="white" /></div>
+              </div>
             </div>
+          ) : (
+            <img
+              src={gorsel}
+              loading={index < 4 ? "eager" : "lazy"}
+              fetchPriority={index === 0 ? "high" : index < 3 ? "auto" : "low"}
+              decoding={index < 4 ? "sync" : "async"}
+              width={520}
+              height={220}
+              className="card-img"
+              alt={ilan.baslik || "Ürün"}
+              itemProp="image"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src =
+                  "https://placehold.co/520x220/0f2540/c9a84c?text=A-TAKASA";
+              }}
+            />
           )}
+          <div className="city-tag">📍 {ilan.sehir || "TÜRKİYE"}</div>
+        </div>
 
-          <div
-            className="card-media"
-            onClick={() => {
-              if (videoVar) {
-                setVideoModalUrl(ilkMedya);
-                setVideoModalBaslik(ilan.baslik || "");
-              } else {
-                router.push(`/varlik/${ilan._id}`);
-              }
-            }}
-          >
-            {videoVar ? (
-              <div className="video-thumb">
-                {ilkMedya.includes("res.cloudinary.com") ? (
-                  <img
-                    src={ilkMedya.replace(/\.(mp4|webm|mov)$/i, ".jpg")}
-                    className="thumb-img"
-                    alt="Video Kapak"
-                    width={520}
-                    height={220}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <video
-                    src={`${ilkMedya}#t=0.1`}
-                    className="thumb-img"
-                    muted
-                    playsInline
-                    preload="metadata"
-                  />
-                )}
-                <div className="play-overlay">
-                  <div className="play-btn">
-                    <Play size={22} fill="white" />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // ✅ İlk 4 görsel eager, fetchPriority ile LCP iyileşir
-              <img
-                src={optimizedSrc}
-                loading={index < 4 ? "eager" : "lazy"}
-                fetchPriority={
-                  index === 0 ? "high" : index < 3 ? "auto" : "low"
-                }
-                decoding={index < 4 ? "sync" : "async"}
-                width={520}
-                height={220}
-                className="card-img"
-                alt={ilan.baslik || "Ürün"}
-                itemProp="image"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
-                }}
-              />
-            )}
-            <div className="city-tag">📍 {ilan.sehir || "TÜRKİYE"}</div>
+        <div className="card-body">
+          <span className="category-label">{ilan.kategori || "Genel"}</span>
+          <h3 className="card-title" onClick={() => router.push(`/varlik/${ilan._id}`)}>
+            {ilan.baslik}
+          </h3>
+          <div className="price-row" itemProp="offers" itemScope itemType="https://schema.org/Offer">
+            <span className="price-main">
+              <span itemProp="price">{Number(ilan.fiyat).toLocaleString("tr-TR")}</span>
+              <meta itemProp="priceCurrency" content="TRY" />
+              <span className="price-currency"> ₺</span>
+            </span>
+            <span className="card-date">
+              {new Date(ilan.createdAt).toLocaleDateString("tr-TR")}
+            </span>
           </div>
-
-          <div className="card-body">
-            <span className="category-label">{ilan.kategori || "Genel"}</span>
-            <h3
-              className="card-title"
-              onClick={() => router.push(`/varlik/${ilan._id}`)}
-            >
-              {ilan.baslik}
-            </h3>
-
-            <div
-              className="price-row"
-              itemProp="offers"
-              itemScope
-              itemType="https://schema.org/Offer"
-            >
-              <span className="price-main">
-                <span itemProp="price">
-                  {Number(ilan.fiyat).toLocaleString("tr-TR")}
-                </span>
-                <meta itemProp="priceCurrency" content="TRY" />
-                <span className="price-currency"> ₺</span>
-              </span>
-              <span className="card-date">
-                {new Date(ilan.createdAt).toLocaleDateString("tr-TR")}
-              </span>
+          <div className="card-actions">
+            <div className="action-row-top">
+              <button onClick={handleShare} className="btn-icon" title="Paylaş" aria-label="Paylaş">
+                <Share2 size={15} />
+              </button>
+              <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="btn-outline flex-1">
+                İncele
+              </button>
+              <button onClick={() => handleSepeteEkle(ilan)} className="btn-cart" aria-label="Sepete ekle">
+                <ShoppingCart size={15} />
+              </button>
             </div>
-
-            <div className="card-actions">
-              <div className="action-row-top">
-                <button
-                  onClick={handleShare}
-                  className="btn-icon"
-                  title="Paylaş"
-                  aria-label="İlanı paylaş"
-                >
-                  <Share2 size={15} />
-                </button>
-                <button
-                  onClick={() => router.push(`/varlik/${ilan._id}`)}
-                  className="btn-outline flex-1"
-                >
-                  İncele
-                </button>
-                <button
-                  onClick={() => handleSepeteEkle(ilan)}
-                  className="btn-cart"
-                  aria-label="Sepete ekle"
-                >
-                  <ShoppingCart size={15} />
-                </button>
-              </div>
-              <div className="action-row-bottom">
-                <button
-                  onClick={() => openModal(ilan, "takas")}
-                  className="btn-swap"
-                >
-                  🔄 Takas Teklifi
-                </button>
-                <button
-                  onClick={() => openModal(ilan, "satinal")}
-                  className="btn-buy"
-                >
-                  Satın Al
-                </button>
-              </div>
+            <div className="action-row-bottom">
+              <button onClick={() => openModal(ilan, "takas")} className="btn-swap">
+                🔄 Takas Teklifi
+              </button>
+              <button onClick={() => openModal(ilan, "satinal")} className="btn-buy">
+                Satın Al
+              </button>
             </div>
           </div>
         </div>
-      );
-    },
-    [getImageUrl, isVideo, optimizeCloudinary, router, handleSepeteEkle, openModal]
-  );
+      </div>
+    );
+  }, [getImageUrl, isVideo, optimizeImg, router, handleSepeteEkle, openModal]);
 
-  const jsonLd = useMemo(
-    () => ({
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "Atakasa",
-      url: "https://atakasa.com",
-      description: "Küresel B2B Barter ve Takas Platformu",
-      potentialAction: {
-        "@type": "SearchAction",
-        target: "https://atakasa.com/ilanlar?q={search_term_string}",
-        "query-input": "required name=search_term_string",
-      },
-    }),
-    []
-  );
+  const jsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Atakasa",
+    url: "https://atakasa.com",
+    description: "Küresel B2B Barter ve Takas Platformu",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://atakasa.com/ilanlar?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  }), []);
 
   return (
     <div className="at-root">
@@ -505,10 +376,9 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-
       <div className="bg-texture" aria-hidden="true" />
 
-      {/* Trust banner */}
+      {/* Trust Bar */}
       <div className="trust-bar" role="banner">
         <div className="trust-bar-inner">
           <span className="trust-item"><Shield size={13} /> Güvenli Takas Havuzu</span>
@@ -525,8 +395,7 @@ export default function Home() {
           <div
             onClick={() => router.push("/")}
             style={{ cursor: "pointer", marginRight: "16px", display: "flex", alignItems: "center" }}
-            role="link"
-            aria-label="Ana sayfaya git"
+            role="link" aria-label="Ana sayfaya git"
           >
             <h1 style={{
               color: "var(--navy)", fontSize: "24px", fontWeight: "800",
@@ -557,11 +426,7 @@ export default function Home() {
               <SlidersHorizontal size={15} /> Filtrele
               <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? "open" : ""}`} />
             </button>
-            <button
-              onClick={() => router.push("/sepet")}
-              className="btn-sepet"
-              aria-label="Sepete git"
-            >
+            <button onClick={() => router.push("/sepet")} className="btn-sepet" aria-label="Sepete git">
               <ShoppingCart size={15} /> Sepet
             </button>
             <button
@@ -579,12 +444,10 @@ export default function Home() {
               <div className="filter-field">
                 <label className="filter-label" htmlFor="sehir-select">Şehir / Bölge</label>
                 <select
-                  id="sehir-select"
-                  value={aktifSehir}
-                  onChange={(e) => setAktifSehir(e.target.value)}
-                  className="filter-select"
+                  id="sehir-select" value={aktifSehir}
+                  onChange={(e) => setAktifSehir(e.target.value)} className="filter-select"
                 >
-                  {sehirler.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div className="filter-field">
@@ -641,7 +504,7 @@ export default function Home() {
           >
             🌐 Tümü
           </button>
-          {sektorler.map((s) => (
+          {sektorler.map(s => (
             <button
               key={s.ad}
               onClick={() => { setAktifKategori(s.ad); setAktifAltFiltre("Yeni İlanlar"); }}
@@ -660,10 +523,9 @@ export default function Home() {
       {/* Alt filtreler */}
       {aktifKategori !== "Hepsi" && (
         <div className="sub-filter-bar" role="navigation" aria-label="Alt filtreler">
-          {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map((f) => (
+          {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map(f => (
             <button
-              key={f}
-              onClick={() => setAktifAltFiltre(f)}
+              key={f} onClick={() => setAktifAltFiltre(f)}
               className={`sub-filter-btn ${aktifAltFiltre === f ? "active" : ""}`}
               aria-pressed={aktifAltFiltre === f}
             >
@@ -673,7 +535,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Ana içerik */}
+      {/* Ana İçerik */}
       <main className="main-content">
         <div className="section-header">
           <div>
@@ -689,7 +551,7 @@ export default function Home() {
 
         {loading ? (
           <div className="product-grid" aria-busy="true">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
               <div key={n} className="skeleton-card">
                 <div className="skeleton-img" />
                 <div className="skeleton-body">
@@ -715,53 +577,41 @@ export default function Home() {
         )}
       </main>
 
-      {/* Modaller */}
+      {/* Takas / Satın Al Modal */}
       {seciliIlan && modalTuru && (
         <div
-          className="modal-overlay"
-          onClick={closeModal}
-          role="dialog"
-          aria-modal="true"
+          className="modal-overlay" onClick={closeModal}
+          role="dialog" aria-modal="true"
           aria-label={modalTuru === "takas" ? "Takas Teklifi" : "Satın Al"}
         >
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
             <button onClick={closeModal} className="modal-close" aria-label="Kapat">✕</button>
             <div className="modal-header">
               <img
-                src={optimizeCloudinary(getImageUrl(seciliIlan), 80, 80)}
+                src={optimizeImg(getImageUrl(seciliIlan), 80, 80)}
                 className="modal-img"
                 alt={seciliIlan.baslik || "Ürün"}
-                loading="lazy"
-                width={80}
-                height={80}
+                loading="lazy" width={80} height={80}
               />
               <div className="modal-info">
                 <span className="modal-type-label">
                   {modalTuru === "takas" ? "Takas Teklifi" : "Güvenli Satın Alma"}
                 </span>
                 <h3 className="modal-title">{seciliIlan.baslik}</h3>
-                <p className="modal-price">
-                  {Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺
-                </p>
+                <p className="modal-price">{Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺</p>
               </div>
             </div>
 
             {modalTuru === "takas" ? (
               <div className="modal-form">
-                <label className="form-label" htmlFor="takas-secim">
-                  Vereceğiniz Varlığı Seçin
-                </label>
+                <label className="form-label" htmlFor="takas-secim">Vereceğiniz Varlığı Seçin</label>
                 <select
-                  id="takas-secim"
-                  value={secilenBenimIlanim}
-                  onChange={(e) => setSecilenBenimIlanim(e.target.value)}
-                  className="form-select"
+                  id="takas-secim" value={secilenBenimIlanim}
+                  onChange={e => setSecilenBenimIlanim(e.target.value)} className="form-select"
                 >
                   <option value="">-- İlanlarınızdan seçin --</option>
-                  {benimIlanlarim.map((b) => (
-                    <option key={b._id} value={`${b._id}|${b.baslik}`}>
-                      {b.baslik}
-                    </option>
+                  {benimIlanlarim.map(b => (
+                    <option key={b._id} value={`${b._id}|${b.baslik}`}>{b.baslik}</option>
                   ))}
                 </select>
                 <label className="form-label" htmlFor="nakit-ekle">
@@ -769,15 +619,12 @@ export default function Home() {
                 </label>
                 <input
                   id="nakit-ekle" type="number" placeholder="Örn: 5000"
-                  value={eklenecekNakit}
-                  onChange={(e) => setEklenecekNakit(e.target.value)}
+                  value={eklenecekNakit} onChange={e => setEklenecekNakit(e.target.value)}
                   className="form-input" min="0"
                 />
                 <button
-                  onClick={handleTakasGonder}
-                  disabled={!secilenBenimIlanim}
-                  className="btn-modal-primary"
-                  style={{ marginTop: "16px" }}
+                  onClick={handleTakasGonder} disabled={!secilenBenimIlanim}
+                  className="btn-modal-primary" style={{ marginTop: "16px" }}
                 >
                   Takas Teklifini Gönder →
                 </button>
@@ -786,31 +633,26 @@ export default function Home() {
               <div className="modal-form">
                 <div className="price-summary">
                   <span>Ödenecek Tutar</span>
-                  <span className="price-big">
-                    {Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺
-                  </span>
+                  <span className="price-big">{Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺</span>
                 </div>
                 <input
-                  type="text" placeholder="Ad Soyad"
-                  value={siparisForm.adSoyad}
-                  onChange={(e) => setSiparisForm({ ...siparisForm, adSoyad: e.target.value })}
+                  type="text" placeholder="Ad Soyad" value={siparisForm.adSoyad}
+                  onChange={e => setSiparisForm({ ...siparisForm, adSoyad: e.target.value })}
                   className="form-input" aria-label="Ad Soyad" autoComplete="name"
                 />
                 <input
-                  type="tel" placeholder="Telefon Numarası"
-                  value={siparisForm.telefon}
-                  onChange={(e) => setSiparisForm({ ...siparisForm, telefon: e.target.value })}
+                  type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon}
+                  onChange={e => setSiparisForm({ ...siparisForm, telefon: e.target.value })}
                   className="form-input" aria-label="Telefon" autoComplete="tel"
                 />
                 <textarea
-                  placeholder="Teslimat Adresi"
-                  value={siparisForm.adres}
-                  onChange={(e) => setSiparisForm({ ...siparisForm, adres: e.target.value })}
+                  placeholder="Teslimat Adresi" value={siparisForm.adres}
+                  onChange={e => setSiparisForm({ ...siparisForm, adres: e.target.value })}
                   className="form-textarea" aria-label="Adres" autoComplete="street-address"
                 />
                 <select
                   value={siparisForm.odemeYontemi}
-                  onChange={(e) => setSiparisForm({ ...siparisForm, odemeYontemi: e.target.value })}
+                  onChange={e => setSiparisForm({ ...siparisForm, odemeYontemi: e.target.value })}
                   className="form-select" aria-label="Ödeme yöntemi"
                 >
                   <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
@@ -819,9 +661,8 @@ export default function Home() {
                 <div className="legal-box">
                   <label className="legal-check">
                     <input
-                      type="checkbox"
-                      checked={kabulYasalZirh}
-                      onChange={(e) => setKabulYasalZirh(e.target.checked)}
+                      type="checkbox" checked={kabulYasalZirh}
+                      onChange={e => setKabulYasalZirh(e.target.checked)}
                     />
                     <span>
                       <strong>🛡️ Siber Kalkan:</strong> Teslimat tamamlanana kadar
@@ -841,34 +682,20 @@ export default function Home() {
       {/* Video Modal */}
       {videoModalUrl && (
         <div
-          className="modal-overlay"
-          onClick={() => setVideoModalUrl(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Video oynatıcı"
+          className="modal-overlay" onClick={() => setVideoModalUrl(null)}
+          role="dialog" aria-modal="true" aria-label="Video oynatıcı"
         >
           <div
-            className="modal-box"
-            onClick={(e) => e.stopPropagation()}
+            className="modal-box" onClick={e => e.stopPropagation()}
             style={{ maxWidth: 640, padding: 0, overflow: "hidden" }}
           >
             <button
               onClick={() => setVideoModalUrl(null)}
-              className="modal-close"
-              aria-label="Kapat"
-              style={{ zIndex: 10 }}
+              className="modal-close" aria-label="Kapat" style={{ zIndex: 10 }}
             >✕</button>
-            <video
-              src={videoModalUrl}
-              controls
-              autoPlay
-              style={{ width: "100%", display: "block" }}
-            />
+            <video src={videoModalUrl} controls autoPlay style={{ width: "100%", display: "block" }} />
             {videoModalBaslik && (
-              <div style={{
-                padding: "12px 16px", fontSize: 14,
-                fontWeight: 600, color: "var(--text)",
-              }}>
+              <div style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
                 {videoModalBaslik}
               </div>
             )}
