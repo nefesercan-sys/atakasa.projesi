@@ -1,4 +1,3 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import { getServerSession } from "next-auth";
@@ -25,8 +24,7 @@ const playfairDisplay = Playfair_Display({
 
 export const metadata: Metadata = {
   title: "A-TAKASA | Küresel B2B Barter ve Takas Platformu",
-  description:
-    "Türkiye'nin en güvenli takas ve barter platformu. Elektronik, emlak, araç ve daha fazlasını takas edin.",
+  description: "Türkiye'nin en güvenli takas ve barter platformu. Elektronik, emlak, araç ve daha fazlasını takas edin.",
   keywords: "takas, barter, ikinci el, borsa, güvenli alışveriş, atakasa",
   authors: [{ name: "Atakasa" }],
   openGraph: {
@@ -60,10 +58,7 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   return (
-    <html
-      lang="tr"
-      className={`${dmSans.variable} ${playfairDisplay.variable}`}
-    >
+    <html lang="tr" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
       <head>
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
