@@ -410,3 +410,33 @@ img[width][height] { aspect-ratio: attr(width) / attr(height); }
   .top-nav { padding: 10px 16px; }
   .main-content { padding: 24px 16px 48px; }
 }
+/* MOBİL ALT MENÜ */
+@media (max-width: 768px) {
+  .mobil-alt-menu {
+    display: flex !important;
+  }
+  /* Alt menü için sayfa altına boşluk */
+  .at-root {
+    padding-bottom: 70px;
+  }
+  /* Nav'da arama full genişlik */
+  .nav-inner {
+    flex-wrap: wrap;
+  }
+  .search-wrap {
+    width: 100%;
+    order: 3;
+    flex: 1 1 100%;
+  }
+  .nav-actions {
+    order: 2;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobil-alt-menu {
+    display: none !important;
+  }
+}
