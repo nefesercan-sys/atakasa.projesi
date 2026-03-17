@@ -2,90 +2,248 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ShoppingCart, Trash2, Eye, ArrowLeft, ShieldCheck } from "lucide-react";
 
-export default function SiberSepet() {
+export default function Sepet() {
   const [sepetItems, setSepetItems] = useState<any[]>([]);
   const router = useRouter();
 
-  // 📡 Tarayıcının siber hafızasından verileri çek
   useEffect(() => {
-    const hafiza = JSON.parse(localStorage.getItem('atakasa_sepet') || '[]');
-    setSepetItems(hafiza);
+    try {
+      const hafiza = JSON.parse(localStorage.getItem("atakasa_sepet") || "[]");
+      setSepetItems(Array.isArray(hafiza) ? hafiza : []);
+    } catch {
+      setSepetItems([]);
+    }
   }, []);
 
-  // 🗑️ Sepetten Silme Motoru
   const sepettenSil = (id: string) => {
-    const yeniSepet = sepetItems.filter((item) => item.id !== id);
-    setSepetItems(yeniSepet);
-    localStorage.setItem('atakasa_sepet', JSON.stringify(yeniSepet));
+    const yeni = sepetItems.filter((i) => i.id !== id);
+    setSepetItems(yeni);
+    localStorage.setItem("atakasa_sepet", JSON.stringify(yeni));
   };
 
-  const toplamTutar = sepetItems.reduce((toplam, item) => toplam + item.fiyat, 0);
+  const toplamTutar = sepetItems.reduce((t, i) => t + Number(i.fiyat || 0), 0);
+
+  const navy = "var(--navy, #0f2540)";
+  const gold = "var(--gold, #c9a84c)";
+  const cream = "var(--cream, #faf8f4)";
+  const border = "var(--border, #dce6f0)";
+  const white = "#ffffff";
+  const textSoft = "var(--text-soft, #8097b1)";
 
   return (
-    <div className="min-h-screen bg-[#050505] py-24 px-4 text-white font-sans italic relative overflow-hidden">
-      {/* 🟢 Arka Plan Siber Efekt */}
-      <div className="absolute top-[-10%] right-[-5%] w-[40vw] h-[40vw] bg-[#00f260] opacity-[0.03] blur-[120px] rounded-full pointer-events-none"></div>
+    <div style={{
+      minHeight: "100vh", background: cream,
+      fontFamily: "var(--font-sans, 'DM Sans', sans-serif)",
+      color: navy, padding: "32px 16px 80px",
+    }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
-      <div className="max-w-5xl mx-auto z-10 relative">
-        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-2">Siber <span className="text-[#00f260]">Kasa (Sepet).</span></h1>
-        <p className="text-slate-500 text-[10px] font-black tracking-[0.3em] uppercase mb-10">Güvenli İşlem Sırasındaki Varlıklar</p>
+        {/* Başlık */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
+          <button
+            onClick={() => router.push("/")}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 13, fontWeight: 600, color: textSoft,
+              fontFamily: "inherit", padding: 0,
+            }}
+          >
+            <ArrowLeft size={16} /> Vitrine Dön
+          </button>
+          <div style={{ flex: 1 }}>
+            <h1 style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 26, fontWeight: 800, color: navy,
+              letterSpacing: "-0.02em", margin: 0,
+            }}>
+              Sepetim<span style={{ color: gold }}>.</span>
+            </h1>
+            <p style={{ fontSize: 13, color: textSoft, margin: "4px 0 0" }}>
+              Güvenli işlem sırasındaki varlıklar
+            </p>
+          </div>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: white, border: `1px solid ${border}`,
+            borderRadius: 10, padding: "6px 14px",
+            fontSize: 12, fontWeight: 700, color: navy,
+          }}>
+            <ShoppingCart size={14} />
+            {sepetItems.length} ürün
+          </div>
+        </div>
 
+        {/* Boş Sepet */}
         {sepetItems.length === 0 ? (
-          <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] py-32 text-center shadow-2xl flex flex-col items-center">
-            <span className="text-6xl mb-6 block grayscale opacity-30">🛒</span>
-            <p className="text-white font-black tracking-[0.3em] uppercase text-sm mb-6">SİBER KASANIZ ŞU AN BOŞ</p>
-            <Link href="/" className="bg-[#00f260]/10 text-[#00f260] px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-[#00f260] hover:text-black transition-all border border-[#00f260]/20">
-              PİYASAYA GERİ DÖN
+          <div style={{
+            background: white, border: `1.5px dashed ${border}`,
+            borderRadius: 24, padding: "80px 24px",
+            textAlign: "center",
+          }}>
+            <ShoppingCart size={52} style={{ color: border, margin: "0 auto 20px", display: "block" }} />
+            <p style={{ fontSize: 16, fontWeight: 700, color: navy, marginBottom: 8 }}>
+              Sepetiniz şu an boş
+            </p>
+            <p style={{ fontSize: 13, color: textSoft, marginBottom: 28 }}>
+              Beğendiğiniz ürünleri sepete ekleyerek buradan takip edebilirsiniz.
+            </p>
+            <Link href="/" style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "12px 28px", background: navy, borderRadius: 12,
+              fontSize: 13, fontWeight: 700, color: white, textDecoration: "none",
+            }}>
+              Piyasaya Dön
             </Link>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* 🛒 ÜRÜN LİSTESİ */}
-            <div className="flex-1 space-y-4">
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+
+            {/* Ürün Listesi */}
+            <div style={{ flex: 1, minWidth: 280, display: "flex", flexDirection: "column", gap: 14 }}>
               {sepetItems.map((item) => (
-                <div key={item.id} className="bg-[#0a0a0a] border border-white/5 p-4 md:p-6 rounded-[2rem] flex flex-col md:flex-row items-center gap-6 shadow-xl relative group hover:border-white/10 transition-colors">
-                  <img src={item.resim} alt={item.baslik} className="w-24 h-24 object-cover rounded-xl border border-white/5" />
-                  
-                  <div className="flex-1 text-center md:text-left">
-                    <h3 className="text-white font-black uppercase text-lg mb-1">{item.baslik}</h3>
-                    <p className="text-[#00f260] font-black text-xl">{item.fiyat.toLocaleString()} ₺</p>
+                <div
+                  key={item.id}
+                  style={{
+                    background: white, border: `1px solid ${border}`,
+                    borderRadius: 18, padding: "16px 18px",
+                    display: "flex", gap: 16, alignItems: "center",
+                    boxShadow: "0 2px 8px rgba(15,37,64,0.06)",
+                    transition: "box-shadow 0.2s",
+                  }}
+                >
+                  {/* Görsel */}
+                  <div style={{
+                    width: 80, height: 80, borderRadius: 12, overflow: "hidden",
+                    border: `1px solid ${border}`, flexShrink: 0, background: cream,
+                  }}>
+                    <img
+                      src={item.resim || "https://placehold.co/80x80/0f2540/c9a84c?text=A"}
+                      alt={item.baslik}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/80x80/0f2540/c9a84c?text=A"; }}
+                    />
                   </div>
 
-                  <div className="flex gap-3 w-full md:w-auto mt-4 md:mt-0">
-                    <button onClick={() => sepettenSil(item.id)} className="flex-1 md:flex-none bg-red-500/10 text-red-500 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
-                      SİL
+                  {/* Bilgi */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{
+                      fontSize: 14, fontWeight: 700, color: navy,
+                      margin: "0 0 6px", overflow: "hidden",
+                      textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {item.baslik}
+                    </h3>
+                    <p style={{ fontSize: 18, fontWeight: 800, color: navy, margin: 0 }}>
+                      {Number(item.fiyat).toLocaleString("tr-TR")}
+                      <span style={{ fontSize: 13, color: gold, marginLeft: 4 }}>₺</span>
+                    </p>
+                  </div>
+
+                  {/* Butonlar */}
+                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                    <button
+                      onClick={() => router.push(`/varlik/${item.id}?islem=satinal`)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 5,
+                        padding: "8px 14px", borderRadius: 10,
+                        background: navy, border: "none",
+                        fontSize: 11, fontWeight: 700, color: white,
+                        cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                      }}
+                    >
+                      <Eye size={13} /> İncele
                     </button>
-                    {/* 🚀 SATIN ALMA SAYFASINA YÖNLENDİRME (İşlem Parametresi İle) */}
-                    <button onClick={() => router.push(`/varlik/${item.id}?islem=satinal`)} className="flex-1 md:flex-none bg-cyan-500/10 text-cyan-400 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all">
-                      İNCELE / AL
+                    <button
+                      onClick={() => sepettenSil(item.id)}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: 36, height: 36, borderRadius: 10,
+                        background: "var(--danger-bg, #fdecea)",
+                        border: "1px solid #f5c6c2",
+                        cursor: "pointer", color: "var(--danger, #c0392b)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* 💰 ÖDEME ÖZETİ PANELİ */}
-            <div className="w-full lg:w-80 bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-8 h-max sticky top-24 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-              <h3 className="text-white font-black uppercase tracking-widest text-[10px] mb-6 border-b border-white/5 pb-4">Kasa Özeti</h3>
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-slate-500 text-xs font-bold">Toplam Varlık:</span>
-                <span className="text-white font-black">{sepetItems.length} Adet</span>
+            {/* Özet Paneli */}
+            <div style={{
+              width: 280, flexShrink: 0, alignSelf: "flex-start",
+              background: white, border: `1px solid ${border}`,
+              borderRadius: 20, padding: "24px 22px",
+              boxShadow: "0 4px 16px rgba(15,37,64,0.08)",
+              position: "sticky", top: 80,
+            }}>
+              <h3 style={{
+                fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+                letterSpacing: "0.08em", color: textSoft,
+                marginBottom: 18, paddingBottom: 14,
+                borderBottom: `1px solid ${border}`,
+              }}>
+                Sepet Özeti
+              </h3>
+
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                <span style={{ fontSize: 13, color: textSoft }}>Toplam Ürün</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: navy }}>{sepetItems.length} Adet</span>
               </div>
-              <div className="flex justify-between items-center mb-8">
-                <span className="text-slate-500 text-xs font-bold">Toplam Tutar:</span>
-                <span className="text-[#00f260] font-black text-2xl">{toplamTutar.toLocaleString()} ₺</span>
-              </div>
-              
-              <div className="bg-[#00f260]/10 border border-[#00f260]/20 p-4 rounded-xl text-center">
-                <span className="text-[#00f260] text-[9px] font-black uppercase tracking-widest block leading-relaxed">
-                  İşlemler A-Takasa Escrow güvencesiyle tek tek mühürlenir. İşlem yapmak istediğiniz varlığın yanındaki "İncele / Al" butonuna tıklayınız.
+
+              <div style={{
+                display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                marginBottom: 24, paddingBottom: 20, borderBottom: `1px solid ${border}`,
+              }}>
+                <span style={{ fontSize: 13, color: textSoft }}>Toplam Tutar</span>
+                <span style={{ fontSize: 22, fontWeight: 800, color: navy, letterSpacing: "-0.02em" }}>
+                  {toplamTutar.toLocaleString("tr-TR")}
+                  <span style={{ fontSize: 14, color: gold, marginLeft: 4 }}>₺</span>
                 </span>
               </div>
+
+              {/* Güvenlik Notu */}
+              <div style={{
+                background: "var(--success-bg, #eaf5ee)",
+                border: "1px solid #b8dfc6",
+                borderRadius: 12, padding: "12px 14px",
+                display: "flex", gap: 10, alignItems: "flex-start",
+              }}>
+                <ShieldCheck size={15} style={{ color: "var(--success, #1a7a4a)", flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: 11, color: "var(--success, #1a7a4a)", lineHeight: 1.5, margin: 0 }}>
+                  İşlemler A-Takasa güvencesiyle korunur. Her ürün için "İncele" butonuna tıklayın.
+                </p>
+              </div>
+
+              <button
+                onClick={() => router.push("/")}
+                style={{
+                  width: "100%", marginTop: 16, padding: "12px",
+                  background: "transparent", border: `1.5px solid ${border}`,
+                  borderRadius: 12, fontFamily: "inherit",
+                  fontSize: 12, fontWeight: 600, color: textSoft,
+                  cursor: "pointer",
+                }}
+              >
+                Alışverişe Devam Et
+              </button>
             </div>
+
           </div>
         )}
       </div>
+
+      <style>{`
+        * { box-sizing: border-box; }
+        @media (max-width: 600px) {
+          .sepet-flex { flex-direction: column !important; }
+        }
+      `}</style>
     </div>
   );
 }
