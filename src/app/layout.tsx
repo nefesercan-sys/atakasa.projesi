@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import SessionProvider from "@/components/SessionProvider";
 import { Analytics } from "@vercel/analytics/react";
+import CyberNav from "@/components/CyberNav";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -68,6 +69,8 @@ export default async function RootLayout({
       <body>
         <SessionProvider session={session}>
           {children}
+          {/* ✅ Mobil alt menü + giriş butonları — tüm sayfalarda görünür */}
+          <CyberNav />
         </SessionProvider>
         <Analytics />
       </body>
