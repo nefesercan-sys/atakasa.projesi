@@ -223,8 +223,8 @@ export default function HomeClient({ ilkIlanlar }: Props) {
           odemeYontemi: siparisForm.odemeYontemi, fiyat: seciliIlan.fiyat, durum: "bekliyor",
         }),
       });
-      if (res.ok) { alert("Siparişiniz alındı! Panelinizden takip edebilirsiniz."); closeModal(); }
-      else { alert("Sipariş alınamadı, tekrar deneyin."); }
+      if (res.ok) { alert("Siparişiniz alındı!"); closeModal(); }
+      else { alert("Sipariş alınamadı."); }
     } catch { alert("Bağlantı hatası."); }
   };
 
@@ -268,11 +268,9 @@ export default function HomeClient({ ilkIlanlar }: Props) {
           {videoVar ? (
             <div className="video-thumb">
               {ham.includes("res.cloudinary.com") ? (
-                <img
-                  src={ham.replace(/\.(mp4|webm|mov)$/i, ".jpg")}
+                <img src={ham.replace(/\.(mp4|webm|mov)$/i, ".jpg")}
                   className="thumb-img" alt="Video Kapak"
-                  width={520} height={220} loading="lazy" decoding="async"
-                />
+                  width={520} height={220} loading="lazy" decoding="async" />
               ) : (
                 <video src={`${ham}#t=0.1`} className="thumb-img" muted playsInline preload="metadata" />
               )}
@@ -309,9 +307,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
               <meta itemProp="priceCurrency" content="TRY" />
               <span className="price-currency"> ₺</span>
             </span>
-            <span className="card-date">
-              {new Date(ilan.createdAt).toLocaleDateString("tr-TR")}
-            </span>
+            <span className="card-date">{new Date(ilan.createdAt).toLocaleDateString("tr-TR")}</span>
           </div>
           <div className="card-actions">
             <div className="action-row-top">
@@ -352,6 +348,34 @@ export default function HomeClient({ ilkIlanlar }: Props) {
     },
   }), []);
 
+  // Alt menü ikonları
+  const HomeIcon = () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  );
+  const GridIcon = () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+    </svg>
+  );
+  const PlusIcon = () => (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+  );
+  const MsgIcon = () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+  );
+  const UserIcon = () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  );
+
   return (
     <div className="at-root">
       <script
@@ -371,22 +395,18 @@ export default function HomeClient({ ilkIlanlar }: Props) {
         </div>
       </div>
 
-      {/* ✅ NAV — nav-inner ve filtreMenusu doğru hiyerarşide */}
+      {/* Nav */}
       <nav className="top-nav" aria-label="Ana navigasyon">
-        {/* nav-inner: logo + arama + butonlar */}
         <div className="nav-inner">
 
           {/* Logo */}
           <div
             onClick={() => router.push("/")}
-            style={{
-              cursor: "pointer", marginRight: "16px",
-              display: "flex", alignItems: "center", flexShrink: 0,
-            }}
+            style={{ cursor: "pointer", marginRight: "12px", display: "flex", alignItems: "center", flexShrink: 0 }}
             role="link" aria-label="Ana sayfaya git"
           >
             <h1 style={{
-              color: "var(--navy)", fontSize: "22px", fontWeight: "800",
+              color: "var(--navy)", fontSize: "20px", fontWeight: "800",
               fontFamily: "var(--font-display)", letterSpacing: "-0.02em",
               margin: 0, whiteSpace: "nowrap",
             }}>
@@ -396,7 +416,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
 
           {/* Arama */}
           <div className="search-wrap">
-            <Search size={17} className="search-icon" aria-hidden="true" />
+            <Search size={16} className="search-icon" aria-hidden="true" />
             <input
               className="search-input"
               placeholder="Varlık ara..."
@@ -409,25 +429,13 @@ export default function HomeClient({ ilkIlanlar }: Props) {
 
           {/* Butonlar */}
           <div className="nav-actions">
-            <button
-              onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
-              className={`btn-filter ${filtreMenusuAcik ? "active" : ""}`}
-              aria-expanded={filtreMenusuAcik}
-            >
-              <SlidersHorizontal size={15} /> Filtrele
-              <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? "open" : ""}`} />
-            </button>
-
-            <button onClick={() => router.push("/sepet")} className="btn-sepet">
-              <ShoppingCart size={15} /> Sepet
-            </button>
-
+            {/* Giriş/Profil — EN ÖNDE */}
             {session ? (
               <button
                 onClick={() => router.push("/panel")}
                 style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "8px 14px", borderRadius: "var(--radius)",
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "8px 12px", borderRadius: "var(--radius)",
                   background: "var(--navy)", border: "none",
                   fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                   color: "#fff", cursor: "pointer", whiteSpace: "nowrap",
@@ -448,18 +456,18 @@ export default function HomeClient({ ilkIlanlar }: Props) {
                 <button
                   onClick={() => router.push("/giris")}
                   style={{
-                    padding: "8px 14px", borderRadius: "var(--radius)",
+                    padding: "8px 12px", borderRadius: "var(--radius)",
                     background: "transparent", border: "1.5px solid var(--border)",
                     fontFamily: "inherit", fontSize: 12, fontWeight: 600,
                     color: "var(--text-mid)", cursor: "pointer", whiteSpace: "nowrap",
                   }}
                 >
-                  Giriş Yap
+                  Giriş
                 </button>
                 <button
                   onClick={() => router.push("/kayit")}
                   style={{
-                    padding: "8px 14px", borderRadius: "var(--radius)",
+                    padding: "8px 12px", borderRadius: "var(--radius)",
                     background: "var(--gold)", border: "none",
                     fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                     color: "var(--navy)", cursor: "pointer", whiteSpace: "nowrap",
@@ -471,68 +479,64 @@ export default function HomeClient({ ilkIlanlar }: Props) {
             )}
 
             <button
+              onClick={() => setFiltreMenusuAcik(!filtreMenusuAcik)}
+              className={`btn-filter ${filtreMenusuAcik ? "active" : ""}`}
+              aria-expanded={filtreMenusuAcik}
+            >
+              <SlidersHorizontal size={15} /> Filtrele
+              <ChevronDown size={13} className={`chevron ${filtreMenusuAcik ? "open" : ""}`} />
+            </button>
+
+            <button onClick={() => router.push("/sepet")} className="btn-sepet">
+              <ShoppingCart size={15} /> Sepet
+            </button>
+
+            <button
               onClick={() => session ? router.push("/ilan-ver") : router.push("/giris")}
               className="btn-primary"
             >
               <Zap size={15} /> İlan Ver
             </button>
           </div>
-          {/* ✅ nav-inner kapanışı */}
         </div>
 
-        {/* ✅ filtreMenusu nav-inner DIŞINDA, nav içinde */}
+        {/* Filtre Paneli — nav-inner DIŞINDA */}
         {filtreMenusuAcik && (
           <div className="filter-panel">
             <div className="filter-grid">
               <div className="filter-field">
                 <label className="filter-label" htmlFor="sehir-select">Şehir / Bölge</label>
-                <select
-                  id="sehir-select" value={aktifSehir}
-                  onChange={(e) => setAktifSehir(e.target.value)}
-                  className="filter-select"
-                >
+                <select id="sehir-select" value={aktifSehir}
+                  onChange={(e) => setAktifSehir(e.target.value)} className="filter-select">
                   {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div className="filter-field">
                 <label className="filter-label" htmlFor="min-fiyat">Min Fiyat (₺)</label>
-                <input
-                  id="min-fiyat" type="number" placeholder="Örn: 1000"
+                <input id="min-fiyat" type="number" placeholder="Örn: 1000"
                   value={minFiyat} onChange={(e) => setMinFiyat(e.target.value)}
-                  className="filter-input" min="0"
-                />
+                  className="filter-input" min="0" />
               </div>
               <div className="filter-field">
                 <label className="filter-label" htmlFor="max-fiyat">Max Fiyat (₺)</label>
-                <input
-                  id="max-fiyat" type="number" placeholder="Örn: 50000"
+                <input id="max-fiyat" type="number" placeholder="Örn: 50000"
                   value={maxFiyat} onChange={(e) => setMaxFiyat(e.target.value)}
-                  className="filter-input" min="0"
-                />
+                  className="filter-input" min="0" />
               </div>
               <div className="filter-field" style={{ justifyContent: "flex-end" }}>
-                <button
-                  onClick={() => setSadeceTakaslik(!sadeceTakaslik)}
+                <button onClick={() => setSadeceTakaslik(!sadeceTakaslik)}
                   className={`swap-toggle ${sadeceTakaslik ? "active" : ""}`}
-                  aria-pressed={sadeceTakaslik}
-                >
+                  aria-pressed={sadeceTakaslik}>
                   🔄 {sadeceTakaslik ? "Sadece Takaslıklar" : "Takas Durumu"}
                 </button>
               </div>
             </div>
             <div className="filter-footer">
-              <button
-                onClick={() => {
-                  setAktifSehir("Tüm Şehirler");
-                  setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false);
-                }}
-                className="btn-reset"
-              >
-                Sıfırla
-              </button>
-              <button onClick={() => setFiltreMenusuAcik(false)} className="btn-apply">
-                Filtrele
-              </button>
+              <button onClick={() => {
+                setAktifSehir("Tüm Şehirler");
+                setMinFiyat(""); setMaxFiyat(""); setSadeceTakaslik(false);
+              }} className="btn-reset">Sıfırla</button>
+              <button onClick={() => setFiltreMenusuAcik(false)} className="btn-apply">Filtrele</button>
             </div>
           </div>
         )}
@@ -549,12 +553,10 @@ export default function HomeClient({ ilkIlanlar }: Props) {
             🌐 Tümü
           </button>
           {sektorler.map(s => (
-            <button
-              key={s.ad}
+            <button key={s.ad}
               onClick={() => { setAktifKategori(s.ad); setAktifAltFiltre("Yeni İlanlar"); }}
               className={`cat-btn ${aktifKategori === s.ad ? "active" : ""}`}
-              aria-pressed={aktifKategori === s.ad}
-            >
+              aria-pressed={aktifKategori === s.ad}>
               {s.emoji} {s.ad}{" "}
               <span className={`cat-pct ${Number(s.degisim) >= 0 ? "up" : "down"}`}>
                 {s.degisim}%
@@ -568,13 +570,9 @@ export default function HomeClient({ ilkIlanlar }: Props) {
       {aktifKategori !== "Hepsi" && (
         <div className="sub-filter-bar" role="navigation" aria-label="Alt filtreler">
           {["Yeni İlanlar", "En Çok Fiyatı Düşenler", "En Çok Yükselenler", "En Çok Takas Edilenler"].map(f => (
-            <button
-              key={f} onClick={() => setAktifAltFiltre(f)}
+            <button key={f} onClick={() => setAktifAltFiltre(f)}
               className={`sub-filter-btn ${aktifAltFiltre === f ? "active" : ""}`}
-              aria-pressed={aktifAltFiltre === f}
-            >
-              {f}
-            </button>
+              aria-pressed={aktifAltFiltre === f}>{f}</button>
           ))}
         </div>
       )}
@@ -616,27 +614,22 @@ export default function HomeClient({ ilkIlanlar }: Props) {
           <div className="empty-state" role="status">
             <span className="empty-icon" aria-hidden="true">🔍</span>
             <p className="empty-title">Bu kriterlerde varlık bulunamadı.</p>
-            <p className="empty-sub">Farklı filtreler deneyin veya arama terimini değiştirin.</p>
+            <p className="empty-sub">Farklı filtreler deneyin.</p>
           </div>
         )}
       </main>
 
       {/* Takas / Satın Al Modal */}
       {seciliIlan && modalTuru && (
-        <div
-          className="modal-overlay" onClick={closeModal}
+        <div className="modal-overlay" onClick={closeModal}
           role="dialog" aria-modal="true"
-          aria-label={modalTuru === "takas" ? "Takas Teklifi" : "Satın Al"}
-        >
+          aria-label={modalTuru === "takas" ? "Takas Teklifi" : "Satın Al"}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
             <button onClick={closeModal} className="modal-close" aria-label="Kapat">✕</button>
             <div className="modal-header">
-              <img
-                src={optimizeImg(getImageUrl(seciliIlan), 80, 80)}
-                className="modal-img"
-                alt={seciliIlan.baslik || "Ürün"}
-                loading="lazy" width={80} height={80}
-              />
+              <img src={optimizeImg(getImageUrl(seciliIlan), 80, 80)}
+                className="modal-img" alt={seciliIlan.baslik || "Ürün"}
+                loading="lazy" width={80} height={80} />
               <div className="modal-info">
                 <span className="modal-type-label">
                   {modalTuru === "takas" ? "Takas Teklifi" : "Güvenli Satın Alma"}
@@ -645,34 +638,22 @@ export default function HomeClient({ ilkIlanlar }: Props) {
                 <p className="modal-price">{Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺</p>
               </div>
             </div>
-
             {modalTuru === "takas" ? (
               <div className="modal-form">
-                <label className="form-label" htmlFor="takas-secim">
-                  Vereceğiniz Varlığı Seçin
-                </label>
-                <select
-                  id="takas-secim" value={secilenBenimIlanim}
-                  onChange={e => setSecilenBenimIlanim(e.target.value)}
-                  className="form-select"
-                >
+                <label className="form-label" htmlFor="takas-secim">Vereceğiniz Varlığı Seçin</label>
+                <select id="takas-secim" value={secilenBenimIlanim}
+                  onChange={e => setSecilenBenimIlanim(e.target.value)} className="form-select">
                   <option value="">-- İlanlarınızdan seçin --</option>
                   {benimIlanlarim.map(b => (
                     <option key={b._id} value={`${b._id}|${b.baslik}`}>{b.baslik}</option>
                   ))}
                 </select>
-                <label className="form-label" htmlFor="nakit-ekle">
-                  Üste Nakit Ekle (₺) — İsteğe Bağlı
-                </label>
-                <input
-                  id="nakit-ekle" type="number" placeholder="Örn: 5000"
+                <label className="form-label" htmlFor="nakit-ekle">Üste Nakit (₺) — İsteğe Bağlı</label>
+                <input id="nakit-ekle" type="number" placeholder="Örn: 5000"
                   value={eklenecekNakit} onChange={e => setEklenecekNakit(e.target.value)}
-                  className="form-input" min="0"
-                />
-                <button
-                  onClick={handleTakasGonder} disabled={!secilenBenimIlanim}
-                  className="btn-modal-primary" style={{ marginTop: "16px" }}
-                >
+                  className="form-input" min="0" />
+                <button onClick={handleTakasGonder} disabled={!secilenBenimIlanim}
+                  className="btn-modal-primary" style={{ marginTop: "16px" }}>
                   Takas Teklifini Gönder →
                 </button>
               </div>
@@ -680,43 +661,28 @@ export default function HomeClient({ ilkIlanlar }: Props) {
               <div className="modal-form">
                 <div className="price-summary">
                   <span>Ödenecek Tutar</span>
-                  <span className="price-big">
-                    {Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺
-                  </span>
+                  <span className="price-big">{Number(seciliIlan.fiyat).toLocaleString("tr-TR")} ₺</span>
                 </div>
-                <input
-                  type="text" placeholder="Ad Soyad" value={siparisForm.adSoyad}
+                <input type="text" placeholder="Ad Soyad" value={siparisForm.adSoyad}
                   onChange={e => setSiparisForm({ ...siparisForm, adSoyad: e.target.value })}
-                  className="form-input" aria-label="Ad Soyad" autoComplete="name"
-                />
-                <input
-                  type="tel" placeholder="Telefon Numarası" value={siparisForm.telefon}
+                  className="form-input" aria-label="Ad Soyad" autoComplete="name" />
+                <input type="tel" placeholder="Telefon" value={siparisForm.telefon}
                   onChange={e => setSiparisForm({ ...siparisForm, telefon: e.target.value })}
-                  className="form-input" aria-label="Telefon" autoComplete="tel"
-                />
-                <textarea
-                  placeholder="Teslimat Adresi" value={siparisForm.adres}
+                  className="form-input" aria-label="Telefon" autoComplete="tel" />
+                <textarea placeholder="Teslimat Adresi" value={siparisForm.adres}
                   onChange={e => setSiparisForm({ ...siparisForm, adres: e.target.value })}
-                  className="form-textarea" aria-label="Adres"
-                />
-                <select
-                  value={siparisForm.odemeYontemi}
+                  className="form-textarea" aria-label="Adres" />
+                <select value={siparisForm.odemeYontemi}
                   onChange={e => setSiparisForm({ ...siparisForm, odemeYontemi: e.target.value })}
-                  className="form-select"
-                >
+                  className="form-select">
                   <option value="kredi_karti">💳 Kredi Kartı (Güvenli Havuz)</option>
                   <option value="havale">🏦 Havale / EFT</option>
                 </select>
                 <div className="legal-box">
                   <label className="legal-check">
-                    <input
-                      type="checkbox" checked={kabulYasalZirh}
-                      onChange={e => setKabulYasalZirh(e.target.checked)}
-                    />
-                    <span>
-                      <strong>🛡️ Siber Kalkan:</strong> Teslimat tamamlanana kadar
-                      ödeme havuzda bekler. Onaylıyorum.
-                    </span>
+                    <input type="checkbox" checked={kabulYasalZirh}
+                      onChange={e => setKabulYasalZirh(e.target.checked)} />
+                    <span><strong>🛡️ Siber Kalkan:</strong> Teslimat tamamlanana kadar ödeme havuzda bekler.</span>
                   </label>
                 </div>
                 <button onClick={handleSiparisTamamla} className="btn-modal-primary">
@@ -730,18 +696,12 @@ export default function HomeClient({ ilkIlanlar }: Props) {
 
       {/* Video Modal */}
       {videoModalUrl && (
-        <div
-          className="modal-overlay" onClick={() => setVideoModalUrl(null)}
-          role="dialog" aria-modal="true" aria-label="Video"
-        >
-          <div
-            className="modal-box" onClick={e => e.stopPropagation()}
-            style={{ maxWidth: 640, padding: 0, overflow: "hidden" }}
-          >
-            <button
-              onClick={() => setVideoModalUrl(null)}
-              className="modal-close" aria-label="Kapat" style={{ zIndex: 10 }}
-            >✕</button>
+        <div className="modal-overlay" onClick={() => setVideoModalUrl(null)}
+          role="dialog" aria-modal="true" aria-label="Video">
+          <div className="modal-box" onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 640, padding: 0, overflow: "hidden" }}>
+            <button onClick={() => setVideoModalUrl(null)}
+              className="modal-close" aria-label="Kapat" style={{ zIndex: 10 }}>✕</button>
             <video src={videoModalUrl} controls autoPlay style={{ width: "100%", display: "block" }} />
             {videoModalBaslik && (
               <div style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
@@ -751,33 +711,27 @@ export default function HomeClient({ ilkIlanlar }: Props) {
           </div>
         </div>
       )}
+
       {/* ✅ MOBİL ALT MENÜ */}
-      <nav style={{
-        display: "none",
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 200,
-        background: "#fff", borderTop: "1px solid var(--border)",
-        boxShadow: "0 -4px 20px rgba(15,37,64,0.08)",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-      }} className="mobil-alt-menu">
+      <nav
+        className="mobil-alt-menu"
+        style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 200,
+          background: "#fff", borderTop: "1px solid var(--border)",
+          boxShadow: "0 -4px 20px rgba(15,37,64,0.1)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+        aria-label="Alt navigasyon"
+      >
         {[
           {
             label: "Ana Sayfa",
-            icon: (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-            ),
+            icon: <HomeIcon />,
             onClick: () => router.push("/"),
-            aktif: true,
           },
           {
             label: "Kategoriler",
-            icon: (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-              </svg>
-            ),
+            icon: <GridIcon />,
             onClick: () => {
               const el = document.querySelector(".cat-strip");
               el?.scrollIntoView({ behavior: "smooth" });
@@ -785,21 +739,13 @@ export default function HomeClient({ ilkIlanlar }: Props) {
           },
           {
             label: "İlan Ver",
-            icon: (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-              </svg>
-            ),
+            icon: <PlusIcon />,
             onClick: () => session ? router.push("/ilan-ver") : router.push("/giris"),
             ozel: true,
           },
           {
             label: "Mesajlar",
-            icon: (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-              </svg>
-            ),
+            icon: <MsgIcon />,
             onClick: () => session ? router.push("/panel?tab=mesajlar") : router.push("/giris"),
           },
           {
@@ -813,11 +759,7 @@ export default function HomeClient({ ilkIlanlar }: Props) {
               }}>
                 {session.user?.email?.[0]?.toUpperCase() || "U"}
               </div>
-            ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-              </svg>
-            ),
+            ) : <UserIcon />,
             onClick: () => session ? router.push("/panel") : router.push("/giris"),
           },
         ].map((item, i) => (
@@ -827,30 +769,29 @@ export default function HomeClient({ ilkIlanlar }: Props) {
             style={{
               flex: 1, display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
-              gap: 4, background: "none", border: "none",
-              cursor: "pointer", padding: "10px 4px 8px",
-              color: item.ozel ? "var(--gold)" : "var(--text-soft)",
-              fontFamily: "inherit", transition: "color 0.15s",
-              position: "relative",
+              gap: 3, background: "none", border: "none",
+              cursor: "pointer", padding: "8px 4px 6px",
+              color: "var(--text-soft)", fontFamily: "inherit",
+              transition: "color 0.15s",
             }}
           >
             {item.ozel ? (
               <div style={{
-                width: 48, height: 48, borderRadius: "50%",
+                width: 46, height: 46, borderRadius: "50%",
                 background: "var(--navy)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: "var(--gold)",
-                boxShadow: "0 4px 16px rgba(15,37,64,0.25)",
-                marginTop: -16,
+                boxShadow: "0 4px 16px rgba(15,37,64,0.3)",
+                marginTop: -18,
                 border: "3px solid #fff",
               }}>
                 {item.icon}
               </div>
             ) : item.icon}
             <span style={{
-              fontSize: 10, fontWeight: 600,
-              letterSpacing: "0.02em",
+              fontSize: 10, fontWeight: 600, letterSpacing: "0.01em",
               color: item.ozel ? "var(--gold)" : "var(--text-soft)",
+              marginTop: item.ozel ? 2 : 0,
             }}>
               {item.label}
             </span>
