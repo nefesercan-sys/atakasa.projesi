@@ -1,0 +1,35 @@
+ATAKASA.COM — 2026 TAM SEO RAPORU & AKSİYON PLANI
+===================================================
+
+MEVCUT DURUM:
+✅ PageSpeed Mobil: 98/100
+✅ PageSpeed Masaüstü: 95/100
+✅ SEO Skoru: 100/100
+✅ Core Web Vitals: Geçti
+✅ robots.txt: Var
+✅ sitemap.xml: Var
+✅ Schema (Organization, WebSite, Marketplace): Var
+
+EKSİK OLANLAR (Sıralama için kritik):
+❌ FAQ Schema — AI Overview'da çıkmak için şart
+❌ BreadcrumbList Schema — Her sayfa için
+❌ Product Schema (her ilan sayfasında)
+❌ Kategori sayfaları (SEO içerik yok)
+❌ Google Search Console doğrulaması
+❌ Bing Webmaster doğrulaması (meta var ama dosya yok)
+❌ Yandex.xml sitemap (Türkiye trafiği için kritik)
+❌ Open Graph görsel (og-default.jpg eksik olabilir)
+
+YAPILACAKLAR (Bu dosyalar):
+1. varlik/[id]/page.tsx — Her ilan için SEO meta + Product schema
+2. kategori/[slug]/page.tsx — Kategori sayfaları için SEO
+3. app/faq/page.tsx — FAQ sayfası (AI Overview için)
+4. public/yandex-verification.xml — Yandex doğrulama
+5. layout.tsx güncellemesi — FAQ schema ekle
+
+2026 SEO KURAL DEĞİŞİKLİKLERİ (Google Discover Core Update - Feb 2026):
+- AI Overview'da çıkmak için FAQ ve HowTo schema şart
+- Uzun içerik (2000+ kelime) backlink çekiyor
+- Kullanıcı davranışı sinyalleri (dwell time, CTR) kritik
+- Brand signal: sosyal medya profilleri, mention'lar
+- E-E-A-T: Uzmanlık, deneyim, güvenilirlik, güven

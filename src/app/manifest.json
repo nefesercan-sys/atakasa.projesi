@@ -1,0 +1,44 @@
+{
+  "name": "A-TAKASA — İster Sat, İster Takas Et",
+  "short_name": "A-TAKASA",
+  "description": "Türkiye'nin en güvenli takas ve ikinci el satış platformu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f2540",
+  "orientation": "portrait-primary",
+  "lang": "tr",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" },
+    { "src": "/apple-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-default.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "A-TAKASA Vitrin"
+    }
+  ],
+  "categories": ["shopping", "finance", "business"],
+  "shortcuts": [
+    {
+      "name": "İlan Ver",
+      "short_name": "İlan Ver",
+      "description": "Hızlıca yeni ilan oluştur",
+      "url": "/ilan-ver",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Keşfet",
+      "short_name": "Keşfet",
+      "description": "İlanları keşfet",
+      "url": "/kesfet",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": []
+}
