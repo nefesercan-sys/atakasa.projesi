@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+Disallow: /api/
+Disallow: /panel/
+Disallow: /giris
+Disallow: /_next/
+
+Sitemap: https://atakasa.com/sitemap.xml
+Sitemap: https://atakasa.com/sitemap-varliklar.xml
