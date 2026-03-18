@@ -11,7 +11,6 @@ export default function CyberNav() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // ✅ Panel sayfasında CyberNav'ı gizle — panel kendi menüsünü yönetiyor
   if (pathname?.startsWith("/panel")) return null;
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -38,7 +37,6 @@ export default function CyberNav() {
   const CLOUD_NAME = "diuamcnej";
   const UPLOAD_PRESET = "atakasa_hizli";
 
-  // SEO: Kategori slug'ları arama motoru dostu
   const sectors = [
     { name: "ÜRÜN SATIŞ",    icon: "💰", slug: "urun-satis" },
     { name: "HİZMET AL",     icon: "🛠️", slug: "hizmet" },
@@ -157,7 +155,6 @@ export default function CyberNav() {
         setLastPublishedId(data.id);
         setPublishStatus("success");
         stopCamera();
-        // SEO: Yeni ilan oluşturulunca arama motorlarına ping
         try {
           await fetch("/api/seo/ping", {
             method: "POST",
@@ -206,7 +203,6 @@ export default function CyberNav() {
   return (
     <React.Fragment>
 
-      {/* SEKTÖRLER MODALI */}
       {activeModal === "sectors" && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/95 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in fade-in duration-300">
           <div className="flex justify-between items-center mb-8 border-b border-white/[0.05] pb-4 mt-4">
@@ -216,7 +212,6 @@ export default function CyberNav() {
             <button onClick={closeModal} className="text-slate-500 hover:text-white text-3xl transition-colors">✕</button>
           </div>
 
-          {/* SEO: Kategori linkleri <a> tag ile — arama motorları tarafından taranır */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {sectors.map((s, idx) => (
               
@@ -232,7 +227,6 @@ export default function CyberNav() {
             ))}
           </div>
 
-          {/* SEO: Popüler arama önerileri */}
           <div className="max-w-4xl mx-auto mt-10 pt-6 border-t border-white/[0.04]">
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-4">Popüler Aramalar</p>
             <div className="flex flex-wrap gap-2">
@@ -251,7 +245,6 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* AT TAKASA MODALI — İlan Verme */}
       {activeModal === "ilan" && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/98 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in slide-in-from-bottom-8 duration-500">
           <div className="max-w-xl mx-auto mt-4">
@@ -418,7 +411,7 @@ export default function CyberNav() {
                       />
                     </div>
                     <textarea
-                      placeholder="Açıklama ve takas şartları... (Detaylı açıklama SEO sıralamanızı artırır)"
+                      placeholder="Açıklama ve takas şartları..."
                       rows={3}
                       className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none text-sm resize-none"
                       value={formData.aciklama}
@@ -439,43 +432,22 @@ export default function CyberNav() {
         </div>
       )}
 
-      {/* MOBİL ALT MENÜ — sadece md altında görünür */}
-      <nav
-        className="fixed bottom-0 left-0 z-[500] w-full md:hidden"
-        aria-label="A-TAKASA mobil navigasyon"
-      >
+      <nav className="fixed bottom-0 left-0 z-[500] w-full md:hidden" aria-label="A-TAKASA mobil navigasyon">
         <div className="absolute bottom-0 w-full h-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-t border-white/[0.04]" />
         <div className="relative flex justify-between items-end px-4 pb-3 h-24">
 
-          {/* VİTRİN */}
-          <Link
-            href="/"
-            onClick={closeModal}
-            className="flex flex-col items-center justify-end w-full h-full pb-1 group"
-            title="A-TAKASA Ana Sayfa — Satılık ve Takaslik İlanlar"
-          >
+          <Link href="/" onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group" title="A-TAKASA Ana Sayfa">
             <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname === "/" && !activeModal ? "" : "grayscale opacity-50"}`}>🏠</span>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname === "/" && !activeModal ? "text-[#00f260]" : "text-slate-500"}`}>VİTRİN</span>
           </Link>
 
-          {/* SEKTÖR */}
-          <button
-            onClick={() => setActiveModal("sectors")}
-            className="flex flex-col items-center justify-end w-full h-full pb-1 group"
-            aria-label="Sektörler ve kategoriler"
-          >
+          <button onClick={() => setActiveModal("sectors")} className="flex flex-col items-center justify-end w-full h-full pb-1 group" aria-label="Sektörler">
             <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${activeModal === "sectors" ? "" : "grayscale opacity-50"}`}>🗂️</span>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${activeModal === "sectors" ? "text-[#00f260]" : "text-slate-500"}`}>SEKTÖR</span>
           </button>
 
-          {/* AT TAKASA — FAB */}
           <div className="relative flex justify-center w-full px-2 z-20">
-            <button
-              onClick={() => setActiveModal("ilan")}
-              className="group flex flex-col items-center outline-none relative -top-6"
-              aria-label="Hızlı ilan ver — A-TAKASA"
-              title="İster sat, ister takas et — hemen ilan ver, hemen kazan"
-            >
+            <button onClick={() => setActiveModal("ilan")} className="group flex flex-col items-center outline-none relative -top-6" aria-label="Hızlı ilan ver">
               <div className="absolute inset-0 bg-[#00f260] rounded-full blur-xl opacity-30 group-hover:opacity-60 transition-opacity duration-500" />
               <div className="relative w-[72px] h-[72px] bg-[#050505] rounded-full flex items-center justify-center border-4 border-[#0a0a0a] shadow-[0_10px_30px_rgba(0,242,96,0.3)] group-hover:border-[#00f260]/50 transition-all duration-300">
                 <span className="text-3xl text-[#00f260] drop-shadow-[0_0_8px_rgba(0,242,96,0.8)] group-hover:scale-110 transition-transform duration-300">⚡</span>
@@ -484,13 +456,7 @@ export default function CyberNav() {
             </button>
           </div>
 
-          {/* MESAJ */}
-          <Link
-            href={session ? "/mesajlar" : "/giris"}
-            onClick={closeModal}
-            className="flex flex-col items-center justify-end w-full h-full pb-1 group"
-            title="Mesajlarım — A-TAKASA"
-          >
+          <Link href={session ? "/mesajlar" : "/giris"} onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group" title="Mesajlarım">
             <div className="relative mb-1.5 transition-transform group-hover:scale-110">
               <span className={`text-2xl ${pathname.startsWith("/mesajlar") ? "" : "grayscale opacity-50"}`}>💬</span>
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00f260] rounded-full border-2 border-[#0a0a0a] animate-pulse" />
@@ -498,13 +464,7 @@ export default function CyberNav() {
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith("/mesajlar") ? "text-[#00f260]" : "text-slate-500"}`}>MESAJ</span>
           </Link>
 
-          {/* PANEL */}
-          <Link
-            href={session ? "/panel" : "/giris"}
-            onClick={closeModal}
-            className="flex flex-col items-center justify-end w-full h-full pb-1 group"
-            title="Panelim — A-TAKASA"
-          >
+          <Link href={session ? "/panel" : "/giris"} onClick={closeModal} className="flex flex-col items-center justify-end w-full h-full pb-1 group" title="Panelim">
             <span className={`text-2xl mb-1.5 transition-transform group-hover:scale-110 ${pathname.startsWith("/panel") ? "" : "grayscale opacity-50"}`}>👤</span>
             <span className={`text-[9px] font-bold tracking-widest uppercase transition-colors ${pathname.startsWith("/panel") ? "text-[#00f260]" : "text-slate-500"}`}>PANEL</span>
           </Link>
