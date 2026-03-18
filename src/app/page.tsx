@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import {
   Play, Share2, Search, SlidersHorizontal, ShoppingCart,
   Zap, ChevronDown, Star, Shield, TrendingUp, TrendingDown,
+  User, LogIn,
 } from "lucide-react";
 
 export default function Home() {
@@ -564,6 +565,23 @@ export default function Home() {
             >
               <ShoppingCart size={15} /> Sepet
             </button>
+
+            {/* ✅ YENİ: GİRİŞ YAP / PANEL BUTONU */}
+            <button
+              onClick={() => router.push(session ? "/panel" : "/giris")}
+              className="btn-filter"
+              style={{
+                background: session ? "rgba(22,163,74,0.08)" : "transparent",
+                borderColor: session ? "rgba(22,163,74,0.3)" : undefined,
+                color: session ? "#16a34a" : undefined,
+              }}
+            >
+              {session
+                ? <><User size={15} /> Panel</>
+                : <><LogIn size={15} /> Giriş Yap</>
+              }
+            </button>
+
             <button
               onClick={() => session ? router.push("/ilan-ver") : router.push("/giris")}
               className="btn-primary"
@@ -818,6 +836,17 @@ export default function Home() {
                 </select>
                 <div className="legal-box">
                   <label className="legal-check">
+                    <input
+                      type="checkbox"
+                      checked={kabulSozlesme}
+                      onChange={(e) => setKabulSozlesme(e.target.checked)}
+                    />
+                    <span>
+                      <strong>📄 Kullanıcı Sözleşmesi:</strong> Satış koşullarını
+                      ve kullanıcı sözleşmesini okudum, kabul ediyorum.
+                    </span>
+                  </label>
+                  <label className="legal-check" style={{ marginTop: "8px" }}>
                     <input
                       type="checkbox"
                       checked={kabulYasalZirh}
