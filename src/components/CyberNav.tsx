@@ -11,8 +11,6 @@ export default function CyberNav() {
   const router = useRouter();
   const pathname = usePathname();
 
-  if (pathname?.startsWith("/panel")) return null;
-
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -199,6 +197,9 @@ export default function CyberNav() {
     setImages(Array(5).fill(null));
     setFormData({ sektor: "", baslik: "", fiyat: "", ulke: "Türkiye", sehir: "İstanbul", ilce: "", aciklama: "" });
   };
+
+  // ✅ Panel kontrolü hook'lardan SONRA
+  if (pathname?.startsWith("/panel")) return null;
 
   return (
     <React.Fragment>
