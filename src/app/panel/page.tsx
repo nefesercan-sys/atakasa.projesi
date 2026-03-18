@@ -7,7 +7,7 @@ import {
   LogOut, Edit, Trash2, Power, LayoutDashboard, Package,
   ArrowLeftRight, ShoppingCart, Truck, Sparkles,
   Image as ImageIcon, MessageCircle, Send, Bell,
-  TrendingUp, Wallet, ChevronRight, X,
+  Wallet, ChevronRight, X, Home, Search, RotateCcw, User,
 } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -55,13 +55,11 @@ export default function Panel() {
   const [islemYukleniyor, setIslemYukleniyor] = useState(false);
   const [topluSilYukleniyor, setTopluSilYukleniyor] = useState(false);
   const [mobilMenuAcik, setMobilMenuAcik] = useState(false);
-
   const [aiKategori, setAiKategori] = useState("vasita");
   const [aiSehir, setAiSehir] = useState("İstanbul");
   const [aiAdet, setAiAdet] = useState(5);
   const [aiYukleniyor, setAiYukleniyor] = useState(false);
   const [aiSonuc, setAiSonuc] = useState("");
-
   const [konusmalar, setKonusmalar] = useState<any[]>([]);
   const [aktifKonusma, setAktifKonusma] = useState<any>(null);
   const [sohbet, setSohbet] = useState<any[]>([]);
@@ -75,25 +73,16 @@ export default function Panel() {
   const { data: ordersData, mutate: mutateOrders } = useSWR(aktifEmail ? `/api/orders?email=${aktifEmail}` : null, fetcher, swrOpts);
   const { data: mesajlarData, mutate: mutateMesajlar } = useSWR(aktifEmail ? `/api/mesajlar` : null, fetcher, { refreshInterval: 5000 });
 
-  const safeArr = (d: any, ...keys: string[]) => {
-    if (Array.isArray(d)) return d;
-    for (const k of keys) if (Array.isArray(d?.[k])) return d[k];
-    return [];
-  };
-
+  const safeArr = (d: any, ...keys: string[]) => { if (Array.isArray(d)) return d; for (const k of keys) if (Array.isArray(d?.[k])) return d[k]; return []; };
   const tumSiparisler = safeArr(ordersData, "orders", "data");
   const tumTakas = safeArr(takasData, "takaslar", "data");
   const tumIlanlar = safeArr(listingsData, "ilanlar", "data");
   const bakiye = walletData?.balance || 0;
-
-  const ilanlarim = tumIlanlar.filter((i: any) =>
-    String(i?.sellerEmail || i?.userId || i?.satici || "").toLowerCase() === aktifEmail
-  );
+  const ilanlarim = tumIlanlar.filter((i: any) => String(i?.sellerEmail || i?.userId || i?.satici || "").toLowerCase() === aktifEmail);
   const gelenTakas = tumTakas.filter((t: any) => String(t?.aliciEmail || "").toLowerCase() === aktifEmail);
   const gidenTakas = tumTakas.filter((t: any) => String(t?.gonderenEmail || "").toLowerCase() === aktifEmail);
   const gelenSiparis = tumSiparisler.filter((o: any) => String(o?.sellerEmail || o?.saticiEmail || "").toLowerCase() === aktifEmail);
   const gidenSiparis = tumSiparisler.filter((o: any) => String(o?.buyerEmail || o?.aliciEmail || "").toLowerCase() === aktifEmail);
-
   const bekleyenSatis = gelenSiparis.filter((s: any) => ["bekliyor", "isleme_alindi"].includes(String(s?.durum || "").toLowerCase())).length;
   const bekleyenTakas = gelenTakas.filter((t: any) => String(t?.durum || "").toLowerCase() === "bekliyor").length;
   const aktifAlim = gidenSiparis.filter((s: any) => !["teslim_edildi", "tamamlandi", "iptal", "iptal_edildi"].includes(String(s?.durum || "").toLowerCase())).length;
@@ -267,10 +256,7 @@ export default function Panel() {
       <div className="sb-ust">
         <div className="sb-logo" onClick={() => router.push("/")}>A-TAKASA<span>.</span></div>
         <div className="sb-email">{aktifEmail}</div>
-        <div className="sb-bakiye">
-          <Wallet size={12} />
-          <span>{bakiye.toLocaleString()} ₺</span>
-        </div>
+        <div className="sb-bakiye"><Wallet size={12} /><span>{bakiye.toLocaleString()} ₺</span></div>
       </div>
       <nav className="sb-nav">
         {menuler.map((m) => (
@@ -309,7 +295,7 @@ export default function Panel() {
         </div>
       </header>
 
-      {/* MOBİL MENÜ DRAWER */}
+      {/* MOBİL DRAWER */}
       {mobilMenuAcik && (
         <div className="mobil-overlay" onClick={() => setMobilMenuAcik(false)}>
           <div className="mobil-drawer" onClick={(e) => e.stopPropagation()}>
@@ -321,35 +307,36 @@ export default function Panel() {
       {/* MASAÜSTÜ SIDEBAR */}
       <aside className="sidebar"><SidebarIcerik /></aside>
 
-      {/* SAYFA İÇERİĞİ */}
+      {/* ANA İÇERİK */}
       <main className="panel-icerik">
 
-        {/* ── PANELİM ── */}
+        {/* PANELİM */}
         {sekme === "panelim" && (
           <div className="fade-in">
             <div className="sayfa-baslik">
-              <div>
-                <h1>Hoş Geldiniz 👋</h1>
-                <p>Hesabınızın genel durumuna bakın</p>
-              </div>
+              <div><h1>Hoş Geldiniz 👋</h1><p>Hesabınızın genel durumuna bakın</p></div>
             </div>
 
+            {/* ── 4'lü istat grid — her zaman yan yana ── */}
             <div className="istat-grid">
-              {[
-                { label: "Kasa Bakiyesi", deger: `${bakiye.toLocaleString()} ₺`, renk: "#c9a84c", icon: "💰", tikla: undefined },
-                { label: "Yayındaki İlanlar", deger: `${ilanlarim.length} Adet`, renk: "#0f2540", icon: "📦", tikla: () => setSekme("ilanlarim") },
-                { label: "Bekleyen Aksiyonlar", deger: String(bekleyenSatis + bekleyenTakas), renk: bekleyenSatis + bekleyenTakas > 0 ? "#e85d24" : "#1a7a4a", icon: "⚡", tikla: undefined },
-                { label: "Aktif Satın Almalar", deger: `${aktifAlim} Adet`, renk: "#1a3a5c", icon: "🛒", tikla: () => setSekme("giden_siparis") },
-              ].map((k) => (
-                <div key={k.label} className={`istat-kart ${k.tikla ? "istat-kart-tikla" : ""}`} onClick={k.tikla}>
-                  <div className="istat-ust">
-                    <span className="istat-label">{k.label}</span>
-                    <span className="istat-icon">{k.icon}</span>
-                  </div>
-                  <div className="istat-deger" style={{ color: k.renk }}>{k.deger}</div>
-                  {k.tikla && <div className="istat-git"><ChevronRight size={14} /> Görüntüle</div>}
-                </div>
-              ))}
+              <div className="istat-kart">
+                <div className="istat-ust"><span className="istat-label">Kasa Bakiyesi</span><span className="istat-icon">💰</span></div>
+                <div className="istat-deger" style={{ color: "#c9a84c" }}>{bakiye.toLocaleString()} ₺</div>
+              </div>
+              <div className="istat-kart istat-kart-tikla" onClick={() => setSekme("ilanlarim")}>
+                <div className="istat-ust"><span className="istat-label">Yayındaki İlanlar</span><span className="istat-icon">📦</span></div>
+                <div className="istat-deger" style={{ color: "#0f2540" }}>{ilanlarim.length} Adet</div>
+                <div className="istat-git"><ChevronRight size={14} /> Görüntüle</div>
+              </div>
+              <div className="istat-kart">
+                <div className="istat-ust"><span className="istat-label">Bekleyen Aksiyonlar</span><span className="istat-icon">⚡</span></div>
+                <div className="istat-deger" style={{ color: bekleyenSatis + bekleyenTakas > 0 ? "#e85d24" : "#1a7a4a" }}>{bekleyenSatis + bekleyenTakas}</div>
+              </div>
+              <div className="istat-kart istat-kart-tikla" onClick={() => setSekme("giden_siparis")}>
+                <div className="istat-ust"><span className="istat-label">Aktif Satın Almalar</span><span className="istat-icon">🛒</span></div>
+                <div className="istat-deger" style={{ color: "#1a3a5c" }}>{aktifAlim} Adet</div>
+                <div className="istat-git"><ChevronRight size={14} /> Görüntüle</div>
+              </div>
             </div>
 
             {(bekleyenSatis + bekleyenTakas) > 0 && (
@@ -372,10 +359,7 @@ export default function Panel() {
               ].map((h) => (
                 <button key={h.id} onClick={() => setSekme(h.id)} className="hizli-btn">
                   <span className="hizli-emoji">{h.emoji}</span>
-                  <div>
-                    <div className="hizli-ad">{h.ad}</div>
-                    <div className="hizli-aciklama">{h.aciklama}</div>
-                  </div>
+                  <div><div className="hizli-ad">{h.ad}</div><div className="hizli-aciklama">{h.aciklama}</div></div>
                   <ChevronRight size={14} className="hizli-ok" />
                 </button>
               ))}
@@ -383,14 +367,11 @@ export default function Panel() {
           </div>
         )}
 
-        {/* ── VARLIKLARIM ── */}
+        {/* VARLIKLARIM */}
         {sekme === "ilanlarim" && (
           <div className="fade-in">
             <div className="sayfa-baslik">
-              <div>
-                <h1>Varlıklarım</h1>
-                <p>{ilanlarim.length} ilan yayında</p>
-              </div>
+              <div><h1>Varlıklarım</h1><p>{ilanlarim.length} ilan yayında</p></div>
               <div className="btn-grup">
                 {ilanlarim.length > 0 && (
                   <button onClick={topluSil} disabled={topluSilYukleniyor} className="btn btn-tehlike">
@@ -400,7 +381,6 @@ export default function Panel() {
                 <button onClick={() => router.push("/ilan-ver")} className="btn btn-ana">+ Yeni İlan</button>
               </div>
             </div>
-
             {ilanlarim.length === 0 ? (
               <div className="bos-durum">
                 <ImageIcon size={44} className="bos-icon" />
@@ -445,7 +425,7 @@ export default function Panel() {
           </div>
         )}
 
-        {/* ── TAKAS / SİPARİŞ TABLOLARI ── */}
+        {/* TAKAS / SİPARİŞ */}
         {["gelen_takas", "giden_takas", "gelen_siparis", "giden_siparis"].includes(sekme) && (
           <div className="fade-in">
             <div className="sayfa-baslik">
@@ -458,7 +438,6 @@ export default function Panel() {
                 </h1>
               </div>
             </div>
-
             <div className="filtre-bar">
               {["hepsi", "bekliyor", "onaylandi", "kargoda", "teslim_edildi", "iptal"].map((f) => (
                 <button key={f} onClick={() => setAltFiltre(f)} className={`filtre-btn ${altFiltre === f ? "filtre-btn-aktif" : ""}`}>
@@ -466,18 +445,13 @@ export default function Panel() {
                 </button>
               ))}
             </div>
-
             <div className="islem-liste">
               {tabVeri().length === 0 ? (
-                <div className="bos-durum">
-                  <Package size={40} className="bos-icon" />
-                  <p className="bos-baslik">Bu filtrede işlem bulunamadı</p>
-                </div>
+                <div className="bos-durum"><Package size={40} className="bos-icon" /><p className="bos-baslik">Bu filtrede işlem bulunamadı</p></div>
               ) : tabVeri().map((islem: any, idx: number) => {
                 if (!islem) return null;
                 const isTakas = sekme.includes("takas");
                 const gid = String(islem._id || idx);
-
                 if (isTakas) {
                   const rol = durumStr(islem.gonderenEmail) === aktifEmail ? "gonderen" : "alici";
                   return (
@@ -506,7 +480,6 @@ export default function Panel() {
                     </div>
                   );
                 }
-
                 const rol = durumStr(islem.sellerEmail || islem.saticiEmail) === aktifEmail ? "satici" : "alici";
                 const ist = durumStr(islem.durum || islem.status);
                 return (
@@ -556,7 +529,7 @@ export default function Panel() {
           </div>
         )}
 
-        {/* ── MESAJLAR ── */}
+        {/* MESAJLAR */}
         {sekme === "mesajlar" && (
           <div className="fade-in mesaj-root">
             <div className="mesaj-sol">
@@ -627,16 +600,12 @@ export default function Panel() {
           </div>
         )}
 
-        {/* ── AI İLAN MOTORU ── */}
+        {/* AI İLAN MOTORU */}
         {sekme === "ai_ilan" && (
           <div className="fade-in">
             <div className="sayfa-baslik">
-              <div>
-                <h1>AI İlan Motoru ✨</h1>
-                <p>Claude AI ile saniyeler içinde gerçekçi ilanlar oluşturun</p>
-              </div>
+              <div><h1>AI İlan Motoru ✨</h1><p>Claude AI ile saniyeler içinde gerçekçi ilanlar oluşturun</p></div>
             </div>
-
             <div className="ai-kart">
               <div className="ai-form-grid">
                 <div className="form-alan">
@@ -653,7 +622,6 @@ export default function Panel() {
                   </select>
                 </div>
               </div>
-
               <div className="form-alan" style={{ marginTop: 20 }}>
                 <label className="form-label">
                   <span>İlan Sayısı</span>
@@ -662,7 +630,6 @@ export default function Panel() {
                 <input type="range" min={1} max={20} value={aiAdet} onChange={(e) => setAiAdet(Number(e.target.value))} className="ai-range" />
                 <div className="ai-range-uc"><span>1</span><span>20</span></div>
               </div>
-
               <div className="ai-butonlar">
                 <button onClick={aiOlustur} disabled={aiYukleniyor} className={`btn btn-ai ${aiYukleniyor ? "btn-loading" : ""}`}>
                   <Sparkles size={16} /> {aiYukleniyor ? "Hazırlanıyor..." : "Yapay İlanları Yayına Al"}
@@ -673,7 +640,6 @@ export default function Panel() {
                   </button>
                 )}
               </div>
-
               {aiSonuc && (
                 <div className={`ai-sonuc ${aiSonuc.includes("❌") ? "ai-sonuc-hata" : "ai-sonuc-ok"}`}>
                   {aiSonuc}
@@ -685,7 +651,33 @@ export default function Panel() {
 
       </main>
 
-      {/* ── DÜZENLEME MODALI ── */}
+      {/* ══════════════════════════════════════
+          MOBİL ALT MENÜ — sadece ≤768px görünür
+      ══════════════════════════════════════ */}
+      <nav className="alt-menu">
+        <button className="alt-menu-btn" onClick={() => router.push("/")}>
+          <Home size={22} />
+          <span className="alt-menu-label">Anasayfa</span>
+        </button>
+        <button className="alt-menu-btn" onClick={() => router.push("/kesfet")}>
+          <Search size={22} />
+          <span className="alt-menu-label">Keşfet</span>
+        </button>
+        <button className="alt-menu-fab-wrap" onClick={() => router.push("/ilan-ver")}>
+          <div className="alt-fab">+</div>
+          <span className="alt-menu-label">İlan Ver</span>
+        </button>
+        <button className="alt-menu-btn" onClick={() => setSekme("gelen_takas")}>
+          <RotateCcw size={22} />
+          <span className="alt-menu-label">Takaslar</span>
+        </button>
+        <button className="alt-menu-btn" onClick={() => setSekme("panelim")}>
+          <User size={22} />
+          <span className="alt-menu-label">Profilim</span>
+        </button>
+      </nav>
+
+      {/* DÜZENLEME MODALI */}
       {duzenle && (
         <div className="modal-overlay" onClick={() => setDuzenle(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -742,175 +734,141 @@ export default function Panel() {
         </div>
       )}
 
-      {/* ── STİLLER ── */}
       <style jsx global>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         .panel-root {
-          min-height: 100vh;
-          display: flex;
+          min-height: 100vh; display: flex;
           font-family: "DM Sans", var(--font-sans, sans-serif);
-          background: #f0f2f5;
-          color: #1a2740;
+          background: #f0f2f5; color: #1a2740;
         }
 
-        /* ─ MOBİL HEADER ─ */
+        /* MOBİL HEADER */
         .mobil-header {
-          display: none;
-          position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+          display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 50;
           background: #fff; border-bottom: 1px solid #dce6f0;
           padding: 0 20px; height: 56px;
           align-items: center; justify-content: space-between;
         }
         @media (max-width: 768px) { .mobil-header { display: flex; } }
-        .mobil-logo {
-          font-family: "Playfair Display", Georgia, serif;
-          font-size: 20px; font-weight: 800; color: #0f2540; cursor: pointer;
-        }
+        .mobil-logo { font-family: "Playfair Display", Georgia, serif; font-size: 20px; font-weight: 800; color: #0f2540; cursor: pointer; }
         .mobil-logo span { color: #c9a84c; }
-        .mobil-bildirim {
-          background: #e85d24; color: #fff;
-          font-size: 10px; font-weight: 700;
-          padding: 2px 7px; border-radius: 999px;
-        }
-        .mobil-menu-btn {
-          background: none; border: none; cursor: pointer;
-          color: #0f2540; padding: 4px; display: flex; align-items: center;
-        }
-        .mobil-overlay {
-          position: fixed; inset: 0; z-index: 40;
-          background: rgba(15,37,64,0.6); backdrop-filter: blur(4px);
-        }
-        .mobil-drawer {
-          position: absolute; left: 0; top: 0; bottom: 0;
-          width: 280px; background: #fff;
-          display: flex; flex-direction: column;
-          animation: drawerAc 0.22s ease;
-        }
+        .mobil-bildirim { background: #e85d24; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+        .mobil-menu-btn { background: none; border: none; cursor: pointer; color: #0f2540; padding: 4px; display: flex; align-items: center; }
+        .mobil-overlay { position: fixed; inset: 0; z-index: 40; background: rgba(15,37,64,0.6); backdrop-filter: blur(4px); }
+        .mobil-drawer { position: absolute; left: 0; top: 0; bottom: 0; width: 280px; background: #fff; display: flex; flex-direction: column; animation: drawerAc 0.22s ease; }
         @keyframes drawerAc { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 
-        /* ─ SIDEBAR ─ */
-        .sidebar {
-          width: 256px; flex-shrink: 0;
-          background: #fff; border-right: 1px solid #e8edf3;
-          display: flex; flex-direction: column;
-          height: 100vh; position: sticky; top: 0; z-index: 10;
-        }
+        /* SIDEBAR */
+        .sidebar { width: 256px; flex-shrink: 0; background: #fff; border-right: 1px solid #e8edf3; display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0; z-index: 10; }
         @media (max-width: 768px) { .sidebar { display: none; } }
-
         .sb-ust { padding: 28px 22px 18px; border-bottom: 1px solid #f0f4f8; }
-        .sb-logo {
-          font-family: "Playfair Display", Georgia, serif;
-          font-size: 20px; font-weight: 800; color: #0f2540;
-          cursor: pointer; letter-spacing: -0.02em; display: inline-block; margin-bottom: 6px;
-        }
+        .sb-logo { font-family: "Playfair Display", Georgia, serif; font-size: 20px; font-weight: 800; color: #0f2540; cursor: pointer; letter-spacing: -0.02em; display: inline-block; margin-bottom: 6px; }
         .sb-logo span { color: #c9a84c; }
         .sb-email { font-size: 11px; color: #8097b1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 10px; }
-        .sb-bakiye {
-          display: inline-flex; align-items: center; gap: 5px;
-          background: #fdf6e3; border: 1px solid #f0dda0;
-          color: #a07830; font-size: 12px; font-weight: 700;
-          padding: 4px 12px; border-radius: 999px;
-        }
+        .sb-bakiye { display: inline-flex; align-items: center; gap: 5px; background: #fdf6e3; border: 1px solid #f0dda0; color: #a07830; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; }
         .sb-nav { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
-        .sb-btn {
-          width: 100%; display: flex; align-items: center; justify-content: space-between;
-          padding: 10px 12px; border-radius: 10px; border: none;
-          background: transparent; font-family: inherit; font-size: 13px; font-weight: 500;
-          color: #5a6a7e; cursor: pointer; transition: all 0.12s; text-align: left;
-        }
+        .sb-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; border: none; background: transparent; font-family: inherit; font-size: 13px; font-weight: 500; color: #5a6a7e; cursor: pointer; transition: all 0.12s; text-align: left; }
         .sb-btn:hover { background: #f5f7fa; color: #0f2540; }
         .sb-btn-aktif { background: #eef3f8 !important; color: #0f2540 !important; font-weight: 600; }
         .sb-btn-ozel { color: #b08030 !important; font-weight: 600; }
         .sb-btn-ozel.sb-btn-aktif { background: #fdf6e3 !important; }
         .sb-btn-sol { display: flex; align-items: center; gap: 9px; }
-        .sb-sayi {
-          font-size: 10px; font-weight: 700; padding: 2px 7px;
-          border-radius: 999px; background: #eef3f8; color: #5a6a7e;
-        }
+        .sb-sayi { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: #eef3f8; color: #5a6a7e; }
         .sb-sayi-uyari { background: #fff0eb; color: #e85d24; }
         .sb-alt { padding: 12px 10px; border-top: 1px solid #f0f4f8; }
-        .sb-cikis {
-          width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px;
-          padding: 10px; background: #f5f7fa; border: 1px solid #e0e8f0;
-          border-radius: 10px; font-family: inherit; font-size: 12px; font-weight: 600;
-          color: #5a6a7e; cursor: pointer; transition: all 0.12s;
-        }
+        .sb-cikis { width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 10px; background: #f5f7fa; border: 1px solid #e0e8f0; border-radius: 10px; font-family: inherit; font-size: 12px; font-weight: 600; color: #5a6a7e; cursor: pointer; transition: all 0.12s; }
         .sb-cikis:hover { background: #fdecea; color: #c0392b; border-color: #f5c6c2; }
 
-        /* ─ ANA İÇERİK ─ */
-        .panel-icerik {
-          flex: 1; padding: 36px 40px; min-height: 100vh;
-          overflow-x: hidden;
-        }
-        @media (max-width: 768px) { .panel-icerik { padding: 76px 16px 32px; } }
+        /* ANA İÇERİK */
+        .panel-icerik { flex: 1; padding: 36px 40px; min-height: 100vh; overflow-x: hidden; }
+        @media (max-width: 768px) { .panel-icerik { padding: 68px 14px 90px; } }
 
         .fade-in { animation: fadeIn 0.22s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ─ SAYFA BAŞLIĞI ─ */
-        .sayfa-baslik {
-          display: flex; justify-content: space-between; align-items: flex-start;
-          flex-wrap: wrap; gap: 12px; margin-bottom: 28px;
-        }
-        .sayfa-baslik h1 {
-          font-family: "Playfair Display", Georgia, serif;
-          font-size: 26px; font-weight: 700; color: #0f2540;
-          letter-spacing: -0.02em; margin-bottom: 3px;
-        }
+        .sayfa-baslik { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+        .sayfa-baslik h1 { font-family: "Playfair Display", Georgia, serif; font-size: 26px; font-weight: 700; color: #0f2540; letter-spacing: -0.02em; margin-bottom: 3px; }
         .sayfa-baslik p { font-size: 13px; color: #8097b1; }
 
-        /* ─ İSTATİSTİK ─ */
-        .istat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
-        .istat-kart {
-          background: #fff; border: 1px solid #e8edf3;
-          border-radius: 16px; padding: 20px;
-          transition: all 0.15s;
+        /* ══ İSTATİSTİK GRID — 4 sütun sabit, hiç kırılmaz ══ */
+        .istat-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 14px;
+          margin-bottom: 20px;
         }
+        @media (max-width: 900px) {
+          .istat-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .istat-kart { background: #fff; border: 1px solid #e8edf3; border-radius: 16px; padding: 18px 14px; transition: all 0.15s; }
         .istat-kart-tikla { cursor: pointer; }
         .istat-kart-tikla:hover { border-color: #c9a84c; box-shadow: 0 4px 16px rgba(201,168,76,0.1); transform: translateY(-1px); }
-        .istat-ust { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-        .istat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #8097b1; }
-        .istat-icon { font-size: 20px; }
-        .istat-deger { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin-bottom: 8px; }
+        .istat-ust { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .istat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #8097b1; line-height: 1.4; }
+        .istat-icon { font-size: 18px; flex-shrink: 0; }
+        .istat-deger { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin-bottom: 6px; }
         .istat-git { font-size: 11px; font-weight: 600; color: #8097b1; display: flex; align-items: center; gap: 3px; }
 
-        /* ─ UYARI BANNER ─ */
-        .uyari-banner {
-          display: flex; align-items: center; gap: 10px;
-          background: #fff8f0; border: 1px solid #fbd8b8;
-          border-radius: 12px; padding: 12px 16px;
-          font-size: 13px; color: #a05010; margin-bottom: 24px;
-        }
-        .uyari-git {
-          margin-left: auto; display: flex; align-items: center; gap: 4px;
-          font-size: 12px; font-weight: 700; color: #e85d24;
-          background: none; border: none; cursor: pointer; white-space: nowrap;
-        }
+        .uyari-banner { display: flex; align-items: center; gap: 10px; background: #fff8f0; border: 1px solid #fbd8b8; border-radius: 12px; padding: 12px 16px; font-size: 13px; color: #a05010; margin-bottom: 24px; }
+        .uyari-git { margin-left: auto; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #e85d24; background: none; border: none; cursor: pointer; white-space: nowrap; }
 
-        /* ─ HIZLI ERİŞİM ─ */
         .hizli-baslik { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #8097b1; margin-bottom: 10px; }
-        .hizli-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-        .hizli-btn {
-          display: flex; align-items: center; gap: 14px;
-          background: #fff; border: 1px solid #e8edf3; border-radius: 14px;
-          padding: 16px 18px; font-family: inherit; cursor: pointer;
-          transition: all 0.15s; text-align: left;
-        }
+        .hizli-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media (max-width: 480px) { .hizli-grid { grid-template-columns: 1fr; } }
+        .hizli-btn { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #e8edf3; border-radius: 14px; padding: 16px 18px; font-family: inherit; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; }
         .hizli-btn:hover { border-color: #0f2540; box-shadow: 0 3px 12px rgba(15,37,64,0.07); transform: translateY(-1px); }
         .hizli-emoji { font-size: 22px; flex-shrink: 0; }
         .hizli-ad { font-size: 13px; font-weight: 700; color: #0f2540; margin-bottom: 2px; }
         .hizli-aciklama { font-size: 11px; color: #8097b1; }
         .hizli-ok { margin-left: auto; color: #c0ccd8; flex-shrink: 0; }
 
-        /* ─ BUTONLAR ─ */
-        .btn-grup { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 10px 18px; border-radius: 10px;
-          font-family: inherit; font-size: 12px; font-weight: 700;
-          cursor: pointer; transition: all 0.14s; border: none; white-space: nowrap;
+        /* ══ MOBİL ALT MENÜ ══ */
+        .alt-menu {
+          display: none;
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+          background: #fff; border-top: 1px solid #e4eaf2;
+          height: 64px;
+          padding-bottom: env(safe-area-inset-bottom);
+          align-items: center; justify-content: space-around;
         }
+        @media (max-width: 768px) { .alt-menu { display: flex; } }
+
+        .alt-menu-btn {
+          flex: 1; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; gap: 3px;
+          background: none; border: none; cursor: pointer;
+          color: #8097b1; font-family: inherit;
+          padding: 0; transition: color 0.12s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .alt-menu-btn:active { color: #0f2540; }
+
+        .alt-menu-label { font-size: 10px; font-weight: 600; color: inherit; line-height: 1; }
+
+        /* FAB — ortadaki yükselen + butonu */
+        .alt-menu-fab-wrap {
+          flex: 1; display: flex; flex-direction: column;
+          align-items: center; justify-content: flex-end;
+          padding-bottom: 6px;
+          background: none; border: none; cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .alt-fab {
+          width: 52px; height: 52px; border-radius: 50%;
+          background: #0f2540; color: #fff;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 28px; font-weight: 300;
+          margin-bottom: 3px; margin-top: -22px;
+          box-shadow: 0 4px 18px rgba(15,37,64,0.38);
+          transition: background 0.13s, transform 0.13s;
+        }
+        .alt-menu-fab-wrap:active .alt-fab { background: #1a3a5c; transform: scale(0.92); }
+        .alt-menu-fab-wrap .alt-menu-label { color: #8097b1; }
+
+        /* BUTONLAR */
+        .btn-grup { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 10px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.14s; border: none; white-space: nowrap; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-ana { background: #0f2540; color: #fff; }
         .btn-ana:hover:not(:disabled) { background: #1a3a5c; }
@@ -930,22 +888,15 @@ export default function Panel() {
         .btn-ai:hover:not(:disabled) { background: #1a3a5c; }
         .btn-loading { opacity: 0.65; cursor: wait; }
 
-        /* ─ İLAN GRİD ─ */
+        /* İLAN GRİD */
         .ilan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
-        .ilan-kart {
-          background: #fff; border: 1px solid #e8edf3;
-          border-radius: 18px; overflow: hidden; transition: all 0.18s;
-        }
+        .ilan-kart { background: #fff; border: 1px solid #e8edf3; border-radius: 18px; overflow: hidden; transition: all 0.18s; }
         .ilan-kart:hover:not(.ilan-kart-pasif) { border-color: #c9a84c40; box-shadow: 0 6px 24px rgba(15,37,64,0.09); transform: translateY(-2px); }
         .ilan-kart-pasif { opacity: 0.65; border-color: #f5c6c2; filter: grayscale(15%); }
         .ilan-gorsel-wrap { position: relative; height: 196px; overflow: hidden; background: #f0f4f8; }
         .ilan-gorsel { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
         .ilan-kart:hover .ilan-gorsel { transform: scale(1.04); }
-        .ilan-durum-rozet {
-          position: absolute; top: 10px; right: 10px;
-          font-size: 10px; font-weight: 700; padding: 3px 9px;
-          border-radius: 999px; letter-spacing: 0.03em;
-        }
+        .ilan-durum-rozet { position: absolute; top: 10px; right: 10px; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px; letter-spacing: 0.03em; }
         .ilan-durum-aktif { background: rgba(26,122,74,0.9); color: #fff; }
         .ilan-durum-pasif { background: rgba(192,57,43,0.85); color: #fff; }
         .ilan-bilgi { padding: 14px 16px 10px; }
@@ -965,19 +916,16 @@ export default function Panel() {
         .ilan-btn-sil { background: #fdecea; color: #c0392b; }
         .ilan-btn-sil:hover { background: #c0392b; color: #fff; }
 
-        /* ─ BOŞ DURUM ─ */
         .bos-durum { text-align: center; padding: 60px 24px; background: #fff; border-radius: 18px; border: 1.5px dashed #dce6f0; }
         .bos-icon { color: #dce6f0; margin: 0 auto 14px; display: block; }
         .bos-baslik { font-size: 15px; font-weight: 600; color: #5a6a7e; margin-bottom: 5px; }
         .bos-alt { font-size: 13px; color: #9aabb8; }
 
-        /* ─ FİLTRE ─ */
         .filtre-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
         .filtre-btn { padding: 7px 15px; border-radius: 999px; font-family: inherit; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer; transition: all 0.13s; background: #fff; border: 1px solid #e0e8f0; color: #5a6a7e; white-space: nowrap; }
         .filtre-btn:hover { border-color: #0f2540; color: #0f2540; }
         .filtre-btn-aktif { background: #0f2540 !important; color: #fff !important; border-color: #0f2540 !important; }
 
-        /* ─ İŞLEM KARTLARI ─ */
         .islem-liste { display: flex; flex-direction: column; gap: 12px; }
         .islem-kart { background: #fff; border: 1px solid #e8edf3; border-radius: 16px; padding: 20px; }
         .islem-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -1004,7 +952,6 @@ export default function Panel() {
         .kargo-input { flex: 1; padding: 10px 14px; background: #f5f7fa; border: 1px solid #e0e8f0; border-radius: 10px; font-family: inherit; font-size: 13px; outline: none; }
         .kargo-input:focus { border-color: #0f2540; background: #fff; }
 
-        /* ─ ROZETLER ─ */
         .rozet { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
         .rozet-bekle { background: #fef9e7; color: #a07830; border: 1px solid #f0dda0; }
         .rozet-onay { background: #eef3f8; color: #0f2540; border: 1px solid #dce6f0; }
@@ -1013,7 +960,6 @@ export default function Panel() {
         .rozet-iptal { background: #fdecea; color: #c0392b; border: 1px solid #f5c6c2; }
         .rozet-diger { background: #f5f7fa; color: #5a6a7e; }
 
-        /* ─ MESAJLAR ─ */
         .mesaj-root { display: flex; gap: 16px; height: calc(100vh - 108px); }
         @media (max-width: 768px) { .mesaj-root { flex-direction: column; height: auto; } }
         .mesaj-sol { width: 280px; flex-shrink: 0; background: #fff; border: 1px solid #e8edf3; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
@@ -1050,7 +996,6 @@ export default function Panel() {
         .mesaj-gonder-btn:hover:not(:disabled) { background: #1a3a5c; }
         .mesaj-gonder-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        /* ─ AI İLAN ─ */
         .ai-kart { background: #fff; border: 1px solid #e8edf3; border-radius: 18px; padding: 28px; max-width: 640px; }
         .ai-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         @media (max-width: 600px) { .ai-form-grid { grid-template-columns: 1fr; } }
@@ -1062,34 +1007,15 @@ export default function Panel() {
         .ai-sonuc-ok { background: #eaf5ee; border: 1px solid #b8dfc6; color: #1a7a4a; }
         .ai-sonuc-hata { background: #fdecea; border: 1px solid #f5c6c2; color: #c0392b; }
 
-        /* ─ FORM ELEMANLARI ─ */
         .form-alan { display: flex; flex-direction: column; gap: 6px; }
         .form-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #5a6a7e; display: flex; justify-content: space-between; align-items: center; }
-        .form-input, .form-select, .form-textarea {
-          width: 100%; padding: 11px 14px;
-          background: #f5f7fa; border: 1.5px solid #e0e8f0;
-          border-radius: 10px; font-family: inherit; font-size: 13px;
-          color: #1a2740; outline: none; transition: all 0.14s;
-        }
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
-          border-color: #0f2540; background: #fff;
-          box-shadow: 0 0 0 3px rgba(15,37,64,0.05);
-        }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 11px 14px; background: #f5f7fa; border: 1.5px solid #e0e8f0; border-radius: 10px; font-family: inherit; font-size: 13px; color: #1a2740; outline: none; transition: all 0.14s; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #0f2540; background: #fff; box-shadow: 0 0 0 3px rgba(15,37,64,0.05); }
         .form-textarea { resize: none; }
         .form-select { cursor: pointer; }
 
-        /* ─ MODAL ─ */
-        .modal-overlay {
-          position: fixed; inset: 0; z-index: 999;
-          background: rgba(15,37,64,0.65); backdrop-filter: blur(6px);
-          display: flex; align-items: center; justify-content: center; padding: 16px;
-        }
-        .modal {
-          background: #fff; border-radius: 20px; width: 100%; max-width: 580px;
-          max-height: 90vh; overflow-y: auto; padding: 28px;
-          box-shadow: 0 24px 60px rgba(15,37,64,0.22);
-          animation: modalAc 0.22s ease;
-        }
+        .modal-overlay { position: fixed; inset: 0; z-index: 999; background: rgba(15,37,64,0.65); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .modal { background: #fff; border-radius: 20px; width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; padding: 28px; box-shadow: 0 24px 60px rgba(15,37,64,0.22); animation: modalAc 0.22s ease; }
         @keyframes modalAc { from { opacity: 0; transform: scale(0.97) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid #f0f4f8; }
         .modal-header h2 { font-size: 18px; font-weight: 700; color: #0f2540; }
