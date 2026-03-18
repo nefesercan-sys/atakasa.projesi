@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
@@ -201,7 +201,8 @@ export default function CyberNav() {
   if (pathname?.startsWith("/panel")) return null;
 
   return (
-    <>
+    <div className="contents">
+
       {activeModal === "sectors" && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/95 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in fade-in duration-300">
           <div className="flex justify-between items-center mb-8 border-b border-white/[0.05] pb-4 mt-4">
@@ -266,7 +267,7 @@ export default function CyberNav() {
                 </button>
               </div>
             ) : (
-              <>
+              <div>
                 <div className="aspect-video md:aspect-square bg-[#0a0a0a] border border-white/[0.05] rounded-[2.5rem] mb-6 overflow-hidden relative shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                   {!cameraActive ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-4">
@@ -291,13 +292,13 @@ export default function CyberNav() {
                       </div>
                     </div>
                   ) : (
-                    <>
+                    <div>
                       <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                       <button onClick={takePhoto} className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 bg-black/30 backdrop-blur-md rounded-full border-4 border-[#00f260] flex items-center justify-center active:scale-90 transition-transform z-20">
                         <div className="w-10 h-10 bg-[#00f260] rounded-full" />
                       </button>
                       <button onClick={stopCamera} className="absolute top-4 right-4 bg-black/50 backdrop-blur-md text-white w-10 h-10 rounded-full flex items-center justify-center border border-white/10 z-20">✕</button>
-                    </>
+                    </div>
                   )}
                   <canvas ref={canvasRef} className="hidden" />
                 </div>
@@ -306,7 +307,7 @@ export default function CyberNav() {
                   {images.map((img, i) => (
                     <div key={i} className="aspect-square bg-[#0a0a0a] border border-white/[0.04] rounded-2xl flex items-center justify-center overflow-hidden shadow-inner relative group">
                       {img ? (
-                        <>
+                        <div className="contents">
                           {img.includes(".mp4") || img.includes(".mov") || img.includes(".webm") ? (
                             <video src={img} className="w-full h-full object-cover" />
                           ) : (
@@ -316,7 +317,7 @@ export default function CyberNav() {
                             onClick={() => { const n = [...images]; n[i] = null; setImages(n); }}
                             className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white font-black"
                           >✕</button>
-                        </>
+                        </div>
                       ) : (
                         <span className="text-slate-600 text-[8px] font-black tracking-widest">MEDYA {i + 1}</span>
                       )}
@@ -421,7 +422,7 @@ export default function CyberNav() {
                     </button>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -466,6 +467,6 @@ export default function CyberNav() {
 
         </div>
       </nav>
-    </>
+    </div>
   );
 }
