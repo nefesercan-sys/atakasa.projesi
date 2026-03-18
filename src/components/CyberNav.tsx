@@ -18,7 +18,7 @@ export default function CyberNav() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
-  const [publishStatus, setPublishStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [publishStatus, setPublishStatus] = useState<"idle" | "loading" | "success">("idle");
   const [isCloudLoading, setIsCloudLoading] = useState(false);
   const [lastPublishedId, setLastPublishedId] = useState<string | null>(null);
   const [images, setImages] = useState<Array<string | null>>(Array(5).fill(null));
@@ -29,7 +29,7 @@ export default function CyberNav() {
     ulke: "Türkiye",
     sehir: "İstanbul",
     ilce: "",
-    aciklama: ""
+    aciklama: "",
   });
 
   const CLOUD_NAME = "diuamcnej";
@@ -90,7 +90,7 @@ export default function CyberNav() {
 
   const stopCamera = () => {
     if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
+      (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
     }
     setCameraActive(false);
   };
@@ -112,16 +112,16 @@ export default function CyberNav() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file) => {
       if (file.size > 100 * 1024 * 1024) return alert("Dosya 100MB sınırını aşıyor!");
       uploadToCloudinary(file);
     });
   };
 
   const addImageToState = (url: string) => {
-    setImages(prev => {
+    setImages((prev) => {
       const next = [...prev];
-      const idx = next.findIndex(img => img === null);
+      const idx = next.findIndex((img) => img === null);
       if (idx !== -1) next[idx] = url;
       return next;
     });
@@ -198,12 +198,10 @@ export default function CyberNav() {
     setFormData({ sektor: "", baslik: "", fiyat: "", ulke: "Türkiye", sehir: "İstanbul", ilce: "", aciklama: "" });
   };
 
-  // ✅ Panel kontrolü hook'lardan SONRA
   if (pathname?.startsWith("/panel")) return null;
 
   return (
-    <React.Fragment>
-
+    <>
       {activeModal === "sectors" && (
         <div className="fixed inset-0 z-[600] bg-[#050505]/95 backdrop-blur-3xl p-6 overflow-y-auto pb-32 animate-in fade-in duration-300">
           <div className="flex justify-between items-center mb-8 border-b border-white/[0.05] pb-4 mt-4">
@@ -212,7 +210,6 @@ export default function CyberNav() {
             </h2>
             <button onClick={closeModal} className="text-slate-500 hover:text-white text-3xl transition-colors">✕</button>
           </div>
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {sectors.map((s, idx) => (
               
@@ -227,7 +224,6 @@ export default function CyberNav() {
               </a>
             ))}
           </div>
-
           <div className="max-w-4xl mx-auto mt-10 pt-6 border-t border-white/[0.04]">
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-4">Popüler Aramalar</p>
             <div className="flex flex-wrap gap-2">
@@ -255,7 +251,6 @@ export default function CyberNav() {
               </h2>
               <button onClick={closeModal} className="text-slate-500 hover:text-white text-3xl transition-colors">✕</button>
             </div>
-
             {publishStatus === "success" ? (
               <div className="flex flex-col items-center justify-center py-10 animate-in zoom-in duration-500 text-center">
                 <div className="w-24 h-24 bg-[#00f260]/10 rounded-full flex items-center justify-center border border-[#00f260]/30 shadow-[0_0_40px_rgba(0,242,96,0.3)] mb-6">
@@ -271,7 +266,7 @@ export default function CyberNav() {
                 </button>
               </div>
             ) : (
-              <React.Fragment>
+              <>
                 <div className="aspect-video md:aspect-square bg-[#0a0a0a] border border-white/[0.05] rounded-[2.5rem] mb-6 overflow-hidden relative shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                   {!cameraActive ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-4">
@@ -296,13 +291,13 @@ export default function CyberNav() {
                       </div>
                     </div>
                   ) : (
-                    <React.Fragment>
+                    <>
                       <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                       <button onClick={takePhoto} className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 bg-black/30 backdrop-blur-md rounded-full border-4 border-[#00f260] flex items-center justify-center active:scale-90 transition-transform z-20">
                         <div className="w-10 h-10 bg-[#00f260] rounded-full" />
                       </button>
                       <button onClick={stopCamera} className="absolute top-4 right-4 bg-black/50 backdrop-blur-md text-white w-10 h-10 rounded-full flex items-center justify-center border border-white/10 z-20">✕</button>
-                    </React.Fragment>
+                    </>
                   )}
                   <canvas ref={canvasRef} className="hidden" />
                 </div>
@@ -311,7 +306,7 @@ export default function CyberNav() {
                   {images.map((img, i) => (
                     <div key={i} className="aspect-square bg-[#0a0a0a] border border-white/[0.04] rounded-2xl flex items-center justify-center overflow-hidden shadow-inner relative group">
                       {img ? (
-                        <React.Fragment>
+                        <>
                           {img.includes(".mp4") || img.includes(".mov") || img.includes(".webm") ? (
                             <video src={img} className="w-full h-full object-cover" />
                           ) : (
@@ -321,7 +316,7 @@ export default function CyberNav() {
                             onClick={() => { const n = [...images]; n[i] = null; setImages(n); }}
                             className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white font-black"
                           >✕</button>
-                        </React.Fragment>
+                        </>
                       ) : (
                         <span className="text-slate-600 text-[8px] font-black tracking-widest">MEDYA {i + 1}</span>
                       )}
@@ -338,7 +333,7 @@ export default function CyberNav() {
                     <select
                       className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-slate-300 outline-none appearance-none text-sm font-bold uppercase tracking-wide"
                       value={formData.sektor}
-                      onChange={e => setFormData({ ...formData, sektor: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, sektor: e.target.value })}
                     >
                       <option value="" disabled>SEKTÖR SEÇİNİZ...</option>
                       <optgroup label="🏢 EMLAK & GAYRİMENKUL">
@@ -380,20 +375,19 @@ export default function CyberNav() {
                         <option value="Diğer">Diğer İlanlar</option>
                       </optgroup>
                     </select>
-
                     <input
                       type="text"
                       placeholder="İlan Başlığı (örn: iPhone 15 Pro takas)"
                       className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none font-bold"
                       value={formData.baslik}
-                      onChange={e => setFormData({ ...formData, baslik: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, baslik: e.target.value })}
                     />
                     <input
                       type="number"
                       placeholder="Fiyat / Değer (₺)"
                       className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-[#00f260] font-black outline-none focus:border-[#00f260]/50"
                       value={formData.fiyat}
-                      onChange={e => setFormData({ ...formData, fiyat: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, fiyat: e.target.value })}
                     />
                     <div className="grid grid-cols-2 gap-3">
                       <input
@@ -401,14 +395,14 @@ export default function CyberNav() {
                         placeholder="Şehir"
                         className="w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none text-sm"
                         value={formData.sehir}
-                        onChange={e => setFormData({ ...formData, sehir: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, sehir: e.target.value })}
                       />
                       <input
                         type="text"
                         placeholder="İlçe"
                         className="w-full bg-[#0a0a0a] border border-white/[0.05] p-4 rounded-xl text-white outline-none text-sm"
                         value={formData.ilce}
-                        onChange={e => setFormData({ ...formData, ilce: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, ilce: e.target.value })}
                       />
                     </div>
                     <textarea
@@ -416,7 +410,7 @@ export default function CyberNav() {
                       rows={3}
                       className="w-full bg-[#0a0a0a] border border-white/[0.05] p-5 rounded-2xl text-white outline-none text-sm resize-none"
                       value={formData.aciklama}
-                      onChange={e => setFormData({ ...formData, aciklama: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, aciklama: e.target.value })}
                     />
                     <button
                       onClick={handlePublish}
@@ -427,7 +421,7 @@ export default function CyberNav() {
                     </button>
                   </div>
                 )}
-              </React.Fragment>
+              </>
             )}
           </div>
         </div>
@@ -472,6 +466,6 @@ export default function CyberNav() {
 
         </div>
       </nav>
-    </React.Fragment>
+    </>
   );
 }
