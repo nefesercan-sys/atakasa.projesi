@@ -84,7 +84,7 @@ export const metadata: Metadata = {
   },
   verification: {
     google: "BURAYA_GOOGLE_SEARCH_CONSOLE_KODUNUZU_YAZIN",
-    yandex: "2987c5a9db76f0f2", // ✅ Yandex doğrulama eklendi
+    yandex: "2987c5a9db76f0f2",
     other: {
       "msvalidate.01": "EE22134B7D1B55A44BA700154371D5C3",
     },
@@ -142,6 +142,9 @@ export default async function RootLayout({
       <head>
         {/* Bing */}
         <meta name="msvalidate.01" content="EE22134B7D1B55A44BA700154371D5C3" />
+
+        {/* Yandex */}
+        <meta name="yandex-verification" content="2987c5a9db76f0f2" />
 
         {/* Hreflang */}
         <link rel="alternate" hrefLang="tr"        href="https://atakasa.com" />
