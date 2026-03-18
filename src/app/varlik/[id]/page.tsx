@@ -1,14 +1,3 @@
-nged
-+0
--877
-lines changed
-Search within code
- 
-‎src/app/varlik/[id]/page.tsx‎
--877
-Lines changed: 0 additions & 877 deletions
-Original file line number	Diff line number	Diff line change
-@@ -1,877 +0,0 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
