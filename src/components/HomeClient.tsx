@@ -108,16 +108,17 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
     []
   );
 
-  const optimizeCloudinary = useCallback((url: string, w = 520, h = 220) => {
+  // ✅ Mobil için optimize edildi: q_auto:eco + küçük boyut
+  const optimizeCloudinary = useCallback((url: string, w = 400, h = 180) => {
     if (!url || !url.includes("res.cloudinary.com")) return url;
     return url.replace(
       "/upload/",
-      `/upload/f_auto,q_auto,w_${w},h_${h},c_fill/`
+      `/upload/f_auto,q_auto:eco,w_${w},h_${h},c_fill/`
     );
   }, []);
 
   const getImageUrl = useCallback((ilan: any) => {
-    if (!ilan) return "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
+    if (!ilan) return "https://placehold.co/400x180/1e3a5f/c9a84c?text=A-TAKASA";
     const checkArray = (arr: any) =>
       Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
     const img =
@@ -131,7 +132,7 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
       return ilan.medyalar;
     if (typeof ilan.images === "string" && ilan.images.length > 5)
       return ilan.images;
-    return "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
+    return "https://placehold.co/400x180/1e3a5f/c9a84c?text=A-TAKASA";
   }, []);
 
   const filtrelenmisIlanlar = useMemo(() => {
@@ -292,7 +293,7 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
       const pozitif = (ilan.degisimYuzdesi || 0) >= 0;
       const optimizedSrc = videoVar
         ? ilkMedya
-        : optimizeCloudinary(ilkMedya, 520, 220);
+        : optimizeCloudinary(ilkMedya, 400, 180);
 
       const handleShare = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -345,8 +346,8 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
                     src={ilkMedya.replace(/\.(mp4|webm|mov)$/i, ".jpg")}
                     className="thumb-img"
                     alt="Video Kapak"
-                    width={520}
-                    height={220}
+                    width={400}
+                    height={180}
                     loading="lazy"
                     decoding="async"
                   />
@@ -371,14 +372,14 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
                 loading={index < 4 ? "eager" : "lazy"}
                 fetchPriority={index === 0 ? "high" : index < 3 ? "auto" : "low"}
                 decoding={index < 4 ? "sync" : "async"}
-                width={520}
-                height={220}
+                width={400}
+                height={180}
                 className="card-img"
                 alt={ilan.baslik || "Ürün"}
                 itemProp="image"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    "https://placehold.co/520x220/1e3a5f/c9a84c?text=A-TAKASA";
+                    "https://placehold.co/400x180/1e3a5f/c9a84c?text=A-TAKASA";
                 }}
               />
             )}
