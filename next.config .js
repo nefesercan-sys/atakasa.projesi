@@ -1,4 +1,4 @@
-/** @type {import('next').NextConfig} */
+** @type {import('next').NextConfig} */
 const nextConfig = {
   compress: true,
   poweredByHeader: false,
@@ -48,12 +48,21 @@ const nextConfig = {
 
   async redirects() {
     return [
-      { source: "/index", destination: "/", permanent: true },
-      { source: "/home", destination: "/", permanent: true },
+      {
+        source: "/index",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/home",
+        destination: "/",
+        permanent: true,
+      },
     ];
   },
 
   experimental: {
+    optimizeCss: true,
     optimizePackageImports: ["lucide-react"],
   },
 };
