@@ -4,9 +4,42 @@
 import { connectMongoDB } from "@/lib/mongodb";
 import Varlik from "@/models/Varlik";
 import BorsaClient from "./BorsaClient";
+import { headers } from "next/headers";
 
 // 30 saniyede bir yeniden oluştur
 export const revalidate = 30;
+
+export async function generateMetadata() {
+  // İlk görseli çek, <head>'e preload olarak ekle
+  try {
+    await connectMongoDB();
+    const ilk = await Varlik.findOne({})
+      .sort({ createdAt: -1 })
+      .select("resimler baslik")
+      .lean() as any;
+
+    const gorsel = ilk?.resimler?.[0] || null;
+
+    return {
+      title: "Borsa Vitrini | A-TAKASA",
+      description: "Türkiye'nin en büyük takas ve ikinci el borsa vitrini.",
+      openGraph: {
+        title: "Borsa Vitrini | A-TAKASA",
+        images: gorsel ? [{ url: gorsel }] : [],
+      },
+      // Next.js bu link'i <head>'e preload olarak ekler
+      other: gorsel
+        ? {
+            "link-preload-image": gorsel,
+          }
+        : {},
+    };
+  } catch {
+    return {
+      title: "Borsa Vitrini | A-TAKASA",
+    };
+  }
+}
 
 async function getIlanlar() {
   try {
@@ -17,7 +50,7 @@ async function getIlanlar() {
       .select("baslik fiyat eskiFiyat kategori sehir resimler aciklama createdAt")
       .lean();
 
-    return ilanlar.map((ilan: any) => {
+    return (ilanlar as any[]).map((ilan) => {
       let degisimYuzdesi = 0;
       if (ilan.eskiFiyat && ilan.fiyat !== ilan.eskiFiyat) {
         degisimYuzdesi = ((ilan.fiyat - ilan.eskiFiyat) / ilan.eskiFiyat) * 100;
@@ -38,23 +71,26 @@ async function getIlanlar() {
 
 export default async function BorsaPage() {
   const ilanlar = await getIlanlar();
-
-  // İlk görseli bul (LCP preload için)
-  const ilkGorsel = ilanlar[0]?.resimler?.[0] || null;
+  const ilkGorsel: string | null = ilanlar[0]?.resimler?.[0] ?? null;
 
   return (
     <>
-      {/* LCP görselini tarayıcıya önceden bildir */}
+      {/*
+        Next.js App Router'da <head> içine preload eklemek için
+        doğrudan JSX'te <link> kullanılır — Next.js bunu <head>'e taşır.
+        fetchPriority="high" LCP görselini öncelikli yükler.
+      */}
       {ilkGorsel && (
         <link
           rel="preload"
           as="image"
           href={ilkGorsel}
-          // @ts-ignore
-          fetchpriority="high"
+          // @ts-ignore — fetchPriority Next.js 14'te desteklenir
+          fetchPriority="high"
+          imageSrcSet={`${ilkGorsel} 1x`}
         />
       )}
-      <BorsaClient ilkIlanlar={ilanlar} />
+      <BorsaClient ilkIlanlar={ilanlar} ilkGorsel={ilkGorsel} />
     </>
   );
 }
