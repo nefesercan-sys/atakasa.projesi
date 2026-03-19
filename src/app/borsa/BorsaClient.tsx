@@ -59,7 +59,13 @@ export default function BorsaClient({ ilkIlanlar, ilkGorsel }: Props) {
   }, []);
 
   const getImageUrl = useCallback((ilan: Ilan): string | null => {
-    return ilan.resimler?.[0] || null;
+    const url = ilan.resimler?.[0] || null;
+    if (!url) return null;
+    // Cloudinary URL'ini 96x96, otomatik format ve kalite ile optimize et
+    if (url.includes("res.cloudinary.com") && url.includes("/image/upload/")) {
+      return url.replace("/image/upload/", "/image/upload/w_96,h_96,c_fill,f_auto,q_auto/");
+    }
+    return url;
   }, []);
 
   const filtrelenmis = useMemo(() => {
