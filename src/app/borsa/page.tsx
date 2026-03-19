@@ -4,13 +4,10 @@
 import { connectMongoDB } from "@/lib/mongodb";
 import Varlik from "@/models/Varlik";
 import BorsaClient from "./BorsaClient";
-import { headers } from "next/headers";
 
-// 30 saniyede bir yeniden oluştur
 export const revalidate = 30;
 
 export async function generateMetadata() {
-  // İlk görseli çek, <head>'e preload olarak ekle
   try {
     await connectMongoDB();
     const ilk = await Varlik.findOne({})
@@ -27,17 +24,9 @@ export async function generateMetadata() {
         title: "Borsa Vitrini | A-TAKASA",
         images: gorsel ? [{ url: gorsel }] : [],
       },
-      // Next.js bu link'i <head>'e preload olarak ekler
-      other: gorsel
-        ? {
-            "link-preload-image": gorsel,
-          }
-        : {},
     };
   } catch {
-    return {
-      title: "Borsa Vitrini | A-TAKASA",
-    };
+    return { title: "Borsa Vitrini | A-TAKASA" };
   }
 }
 
@@ -74,23 +63,6 @@ export default async function BorsaPage() {
   const ilkGorsel: string | null = ilanlar[0]?.resimler?.[0] ?? null;
 
   return (
-    <>
-      {/*
-        Next.js App Router'da <head> içine preload eklemek için
-        doğrudan JSX'te <link> kullanılır — Next.js bunu <head>'e taşır.
-        fetchPriority="high" LCP görselini öncelikli yükler.
-      */}
-      {ilkGorsel && (
-        <link
-          rel="preload"
-          as="image"
-          href={ilkGorsel}
-          // @ts-ignore — fetchPriority Next.js 14'te desteklenir
-          fetchPriority="high"
-          imageSrcSet={`${ilkGorsel} 1x`}
-        />
-      )}
-      <BorsaClient ilkIlanlar={ilanlar} ilkGorsel={ilkGorsel} />
-    </>
+    <BorsaClient ilkIlanlar={ilanlar} ilkGorsel={ilkGorsel} />
   );
 }
