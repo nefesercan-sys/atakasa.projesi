@@ -1,23 +1,19 @@
-import type { Metadata } from "next";
-import { DM_Sans, Playfair_Display } from "next/font/google";
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import SessionProvider from "@/components/SessionProvider";
 import { Analytics } from "@vercel/analytics/react";
 import BottomNav from "@/components/BottomNav";
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const dSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "700", "800"],
   variable: "--font-dm-sans",
-  display: "swap",
-  preload: true,
+  display: "swap",   // ← FOIT önler, LCP'yi hızlandırır
 });
 
 const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
-  weight: ["600", "700"],
+  weight: ["700", "800"],
   variable: "--font-playfair",
   display: "swap",
   preload: true,
@@ -26,39 +22,38 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   metadataBase: new URL("https://atakasa.com"),
   title: {
-    default: "A-TAKASA — İster Sat, İster Takas Et | Güvenli İkinci El Platform",
+    default: "A-TAKASA – İlan Ver, İster Et | Güvenli İkinci El Platformu",
     template: "%s | A-TAKASA",
   },
   description:
-    "Türkiye'nin en güvenli takas ve ikinci el satış platformu. Sıfır ve ikinci el her ürün — elektronik, araç, emlak, mobilya. Hemen ilan ver, hemen kazan.",
+    "Türkiye'nin en güvenli takas ve ikinci el satış platformu. İster ve ikinci el her ürün – elektronik, araç, emlak, mobilya. 'Takas', 'ikinci el telefon', 'araç takası', 'emlak takas', 'sıfır ürünler satış', 'hafıza tam set', 'ilan ver', 'hızlı satış'.",
   keywords: [
     "takas", "ikinci el", "satış", "barter", "güvenli takas",
-    "ikinci el telefon", "araç takas", "emlak takas", "iPhone takas",
-    "MacBook satış", "sıfır ürün sat", "takas platformu Türkiye",
-    "atakasa", "ilan ver", "hızlı satış",
+    "ikinci el telefon", "araç takas", "emlak takas",
+    "MacBook takas", "ilan ver", "hızlı satış",
   ],
   authors: [{ name: "A-TAKASA", url: "https://atakasa.com" }],
   creator: "A-TAKASA",
   publisher: "A-TAKASA",
   openGraph: {
-    title: "A-TAKASA — İster Sat, İster Takas Et",
+    title: "A-TAKASA – İlan Ver, İster Et",
     description: "Türkiye'nin en güvenli takas ve ikinci el satış platformu. Hemen ilan ver, hemen kazan.",
     url: "https://atakasa.com",
     siteName: "A-TAKASA",
-    locale: "tr_TR",
-    type: "website",
     images: [
       {
         url: "https://atakasa.com/og-default.jpg",
         width: 1200,
         height: 630,
-        alt: "A-TAKASA — İster Sat, İster Takas Et",
+        alt: "A-TAKASA – İlan Ver, İster Et",
       },
     ],
+    locale: "tr_TR",
+    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "A-TAKASA — İster Sat, İster Takas Et",
+    title: "A-TAKASA – İlan Ver, İster Et",
     description: "Türkiye'nin en güvenli takas ve ikinci el satış platformu.",
     images: ["https://atakasa.com/og-default.jpg"],
     site: "@atakasa",
@@ -76,17 +71,16 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://atakasa.com",
     languages: {
-      "tr":        "https://atakasa.com",
-      "tr-DE":     "https://atakasa.de",
-      "en":        "https://atakasa.com/en",
+      "tr": "https://atakasa.com",
+      "tr-DE": "https://atakasa.de",
+      "tr-NL": "https://atakasa.nl",
       "x-default": "https://atakasa.com",
     },
   },
   verification: {
     google: "BURAYA_GOOGLE_SEARCH_CONSOLE_KODUNUZU_YAZIN",
-    yandex: "2987c5a9db76f0f2",
     other: {
-      "msvalidate.01": "EE22134B7D1B55A44BA700154371D5C3",
+      "msvalidate.01": "BURAYA_BING_KODUNUZU_YAZIN",
     },
   },
   manifest: "/manifest.json",
@@ -94,9 +88,9 @@ export const metadata: Metadata = {
 
 const organizationSchema = {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": "Organizasyon",
+  "Şiryet": "Organizasyon",
   name: "A-TAKASA",
-  url: "https://atakasa.com",
   logo: "https://atakasa.com/logo.png",
   description: "Türkiye'nin en güvenli takas ve ikinci el satış platformu.",
   sameAs: [
@@ -111,12 +105,12 @@ const websiteSchema = {
   "@type": "WebSite",
   name: "A-TAKASA",
   url: "https://atakasa.com",
-  description: "İster sat, ister takas et — hemen ilan ver, hemen kazan.",
+  description: "İlan ver, ister et - hemen ilan ver, hemen kazan.",
   potentialAction: {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: "https://atakasa.com/kesfet?q={search_term_string}",
+      urlTemplate: "https://atakasa.com/ara?q={search_term_string}",
     },
     "query-input": "required name=search_term_string",
   },
@@ -126,7 +120,7 @@ const marketplaceSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
   name: "A-TAKASA Vitrin",
-  description: "Türkiye genelinde satılık ve takaslanabilir ürünler",
+  description: "Türkiye'nin en günlüde satılık ve takaslanalabilir ürünler.",
   url: "https://atakasa.com",
 };
 
@@ -138,29 +132,25 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="tr" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
+    <html lang="tr" className={`${dSans.variable} ${playfairDisplay.variable}`}>
       <head>
-        {/* Bing */}
-        <meta name="msvalidate.01" content="EE22134B7D1B55A44BA700154371D5C3" />
-
-        {/* Yandex */}
-        <meta name="yandex-verification" content="2987c5a9db76f0f2" />
-
-        {/* Hreflang */}
-        <link rel="alternate" hrefLang="tr"        href="https://atakasa.com" />
-        <link rel="alternate" hrefLang="tr-DE"     href="https://atakasa.de" />
-        <link rel="alternate" hrefLang="en"        href="https://atakasa.com/en" />
-        <link rel="alternate" hrefLang="x-default" href="https://atakasa.com" />
-
-        {/* Preconnect — LCP için kritik */}
+        {/* DNS Prefetch & Preconnect — LCP için kritik */}
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+
+        {/* Hreflang */}
+        <link rel="alternate" hrefLang="tr" href="https://atakasa.com" />
+        <link rel="alternate" hrefLang="tr-DE" content="yes" href="https://atakasa.de" />
+        <link rel="alternate" hrefLang="tr-NL" href="https://atakasa.nl" />
+        <link rel="alternate" hrefLang="x-default" href="https://atakasa.com" />
+
+        {/* Viewport */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
         {/* PWA */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#0f2540" />
+        <meta name="theme-color" content="#0f172a" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
