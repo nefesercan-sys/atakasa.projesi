@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp, TrendingDown, Activity, Search,
-  RefreshCw, SlidersHorizontal, ArrowUpDown,
+  RefreshCw, SlidersHorizontal,
 } from "lucide-react";
 
 export default function BorsaTahtasi() {
@@ -19,34 +19,40 @@ export default function BorsaTahtasi() {
 
   const kategoriler = ["Tümü", "Elektronik", "Araç", "Emlak", "Mobilya", "Giyim", "Diğer"];
 
-  const veriCek = async (sessiz = false) => {
+  const veriCek = useCallback(async (sessiz = false) => {
     if (!sessiz) setLoading(true);
     else setYenileniyor(true);
     try {
-      const res = await fetch("/api/varliklar?limit=100");
+      const res = await fetch("/api/varliklar?limit=100", {
+        next: { revalidate: 30 },
+      } as any);
       const data = await res.json();
       const liste = Array.isArray(data) ? data : data.data || data.ilanlar || data.varliklar || [];
       setIlanlar(liste);
-      setSonGuncelleme(new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      setSonGuncelleme(
+        new Date().toLocaleTimeString("tr-TR", {
+          hour: "2-digit", minute: "2-digit", second: "2-digit",
+        })
+      );
     } catch (err) {
       console.error("Veri çekme hatası:", err);
     } finally {
       setLoading(false);
       setYenileniyor(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     veriCek();
     const interval = setInterval(() => veriCek(true), 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [veriCek]);
 
-  const getImageUrl = (ilan: any) => {
+  const getImageUrl = useCallback((ilan: any): string | null => {
     if (!ilan) return null;
     const check = (arr: any) => Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
     return check(ilan.resimler) || check(ilan.medyalar) || check(ilan.images) || null;
-  };
+  }, []);
 
   const filtrelenmis = useMemo(() => {
     let liste = [...ilanlar];
@@ -76,7 +82,6 @@ export default function BorsaTahtasi() {
     return liste;
   }, [ilanlar, arama, aktifKategori, siralama]);
 
-  // Özet istatistikler
   const istatistik = useMemo(() => {
     const pozitif = ilanlar.filter(i => (i.degisimYuzdesi || 0) > 0).length;
     const negatif = ilanlar.filter(i => (i.degisimYuzdesi || 0) < 0).length;
@@ -167,7 +172,6 @@ export default function BorsaTahtasi() {
           display: "flex", alignItems: "center", gap: 10,
           background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: 12, padding: "10px 14px", marginBottom: 12,
-          transition: "border-color 0.2s",
         }}>
           <Search size={15} style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
           <input
@@ -249,7 +253,6 @@ export default function BorsaTahtasi() {
       {/* LİSTE */}
       <div style={{ padding: "4px 8px" }}>
         {loading ? (
-          // Skeleton
           Array.from({ length: 8 }).map((_, i) => (
             <div key={i} style={{
               display: "grid", gridTemplateColumns: "1fr 100px 80px",
@@ -279,6 +282,8 @@ export default function BorsaTahtasi() {
             const fiyat = Number(ilan.fiyat || 0);
             const degisim = Number(ilan.degisimYuzdesi || 0);
             const pozitif = degisim >= 0;
+            // İlk 6 görsel öncelikli yüklensin (LCP için kritik)
+            const oncelikli = index < 6;
 
             return (
               <div
@@ -295,23 +300,25 @@ export default function BorsaTahtasi() {
               >
                 {/* Sol: Görsel + Bilgi */}
                 <div style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 0 }}>
-                  {/* Görsel */}
+                  {/* Görsel — next/image ile optimize */}
                   <div style={{
                     width: 48, height: 48, borderRadius: 10, overflow: "hidden",
                     background: "rgba(255,255,255,0.07)", flexShrink: 0,
                     border: "1px solid rgba(255,255,255,0.06)",
+                    position: "relative",
                   }}>
                     {gorsel ? (
-                      <img
+                      <Image
                         src={gorsel}
-                        alt={ilan.baslik || ""}
-                        loading={index < 3 ? "eager" : "lazy"}
-                        fetchPriority={index === 0 ? "high" : "auto"}
-                        decoding={index < 3 ? "sync" : "async"}
-                        width={48}
-                        height={48}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        alt={ilan.baslik || "Varlık görseli"}
+                        fill
+                        sizes="48px"
+                        priority={oncelikli}
+                        style={{ objectFit: "cover" }}
+                        onError={(e) => {
+                          const parent = (e.target as HTMLImageElement).parentElement;
+                          if (parent) parent.style.display = "none";
+                        }}
                       />
                     ) : (
                       <div style={{
