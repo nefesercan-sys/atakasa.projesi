@@ -1,5 +1,5 @@
-//** @type {import('next').NextConfig} */
-const nextConfig = {* @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig} */
+const nextConfig = /** @type {import('next').NextConfig} */ ({
   compress: true,
   poweredByHeader: false,
 
@@ -7,10 +7,10 @@ const nextConfig = {* @type {import('next').NextConfig} */
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 31536000,
     deviceSizes: [360, 414, 768, 1080, 1280, 1920],
-    imageSizes: [64, 128, 256, 384],
+    imageSizes: [48, 96, 128, 256, 384],
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
-      { protocol: "https", hostname: "placehold.co" },
+      { protocol: "https", hostname: "placeholder.co" },
     ],
   },
 
@@ -26,13 +26,13 @@ const nextConfig = {* @type {import('next').NextConfig} */
         ],
       },
       {
-        source: "/(.*)\\.(jpg|jpeg|png|gif|webp|avif|svg|ico)",
+        source: "/(.*)\\.(?:jpg|jpeg|png|gif|webp|avif|svg|ico)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
       {
-        source: "/(.*)\\.(js|css|woff|woff2|ttf|otf)",
+        source: "/(.*)\\.(?:js|css|woff|woff2|ttf|otf)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
@@ -65,6 +65,6 @@ const nextConfig = {* @type {import('next').NextConfig} */
     optimizeCss: true,
     optimizePackageImports: ["lucide-react"],
   },
-};
+});
 
 module.exports = nextConfig;
