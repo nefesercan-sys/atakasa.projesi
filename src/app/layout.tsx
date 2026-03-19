@@ -2,6 +2,9 @@ import { authOptions } from "@/lib/authOptions";
 import SessionProvider from "@/components/SessionProvider";
 import { Analytics } from "@vercel/analytics/react";
 import BottomNav from "@/components/BottomNav";
+import { DM_Sans, Playfair_Display } from "next/font/google";
+import { getServerSession } from "next-auth";
+import type { Metadata } from "next";
 import "./globals.css";
 
 const dSans = DM_Sans({
