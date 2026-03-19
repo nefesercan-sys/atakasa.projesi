@@ -12,6 +12,8 @@ const nextConfig = /** @type {import('next').NextConfig} */ ({
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "placeholder.co" },
     ],
+    // Cloudinary kendi optimizasyonunu yapıyor, double optimize etme
+    dangerouslyAllowSVG: false,
   },
 
   async headers() {
