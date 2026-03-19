@@ -1,0 +1,24 @@
+{
+  "crons": [
+    {
+      "path": "/api/evrim/uret",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/evrim/mutasyon",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/evrim/sentez",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/evrim/rapor",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/evrim/puan",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
