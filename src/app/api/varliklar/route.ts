@@ -8,11 +8,11 @@ export async function GET(req: Request) {
   try {
     await connectMongoDB();
 
-    const { searchParams } = new URL(req.url);
+    const searchParams = new URL(req.url).searchParams;
     const id = searchParams.get("id");
     const kategori = searchParams.get("kategori") || searchParams.get("sektor");
-    const limit = parseInt(searchParams.get("limit") || "20"); // ← default 20
-    const skip = parseInt(searchParams.get("skip") || "0");   // ← skip desteği
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const skip = parseInt(searchParams.get("skip") || "0");
 
     let query: any = {};
     if (id) {
@@ -21,29 +21,31 @@ export async function GET(req: Request) {
       query.kategori = kategori;
     }
 
+    // Sadece gerekli alanları çek (LCP için resimler dahil)
     const ilanlar = await Varlik.find(query)
       .sort({ createdAt: -1 })
-      .skip(skip)                // ← progressive loading için
+      .skip(skip)
       .limit(id ? 1 : limit)
-      .select("baslik fiyat eskiFiyat kategori sehir resimler aciklama takasIstegi satici createdAt")
-      .lean();
+      .select("baslik fiyat eskiFiyat kategori sehir resimler aciklama takasSlistegi satici createdAt")
+      .lean(); // <-- plain JS object, mongoose overhead yok
 
-    const borsaVeriliIlanlar = ilanlar.map((ilan: any) => {
+    const borsaVarlıkları = ilanlar.map((ilan: any) => {
       let degisimYuzdesi = 0;
-      if (ilan.eskiFiyat > 0 && ilan.fiyat !== ilan.eskiFiyat) {
+      if (ilan.eskiFiyat && ilan.fiyat !== ilan.eskiFiyat) {
         degisimYuzdesi = ((ilan.fiyat - ilan.eskiFiyat) / ilan.eskiFiyat) * 100;
       }
       return {
         ...ilan,
         _id: ilan._id.toString(),
-        degisimYuzdesi: Number(degisimYuzdesi.toFixed(1)),
+        degisimYuzdesi: Number(degisimYuzdesi.toFixed(3)),
         borsaDurumu: degisimYuzdesi < 0 ? "DÜŞÜŞ" : degisimYuzdesi > 0 ? "YÜKSELİŞ" : "STABİL",
       };
     });
 
-    return NextResponse.json(borsaVeriliIlanlar, {
+    return NextResponse.json(borsaVarlıkları, {
       status: 200,
       headers: {
+        // 30 sn cache, arka planda 60 sn'de yenile
         "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
       },
     });
@@ -75,6 +77,7 @@ export async function PUT(req: Request) {
     await mevcutVarlik.save();
     return NextResponse.json({ message: "Güncellendi" }, { status: 200 });
   } catch (error) {
+    console.error("PUT Hatası:", error);
     return NextResponse.json({ error: "Hata" }, { status: 500 });
   }
 }
