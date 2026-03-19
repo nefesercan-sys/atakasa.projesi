@@ -25,9 +25,10 @@ interface Ilan {
 
 interface Props {
   ilkIlanlar: Ilan[];
+  ilkGorsel?: string | null;
 }
 
-export default function BorsaClient({ ilkIlanlar }: Props) {
+export default function BorsaClient({ ilkIlanlar, ilkGorsel }: Props) {
   const router = useRouter();
   const [arama, setArama] = useState("");
   const [ilanlar, setIlanlar] = useState<Ilan[]>(ilkIlanlar);
@@ -301,6 +302,8 @@ export default function BorsaClient({ ilkIlanlar }: Props) {
                         fill
                         sizes="48px"
                         priority={oncelikli}
+                        // İlk görsel ise fetchPriority high — LCP için kritik
+                        {...(gorsel === ilkGorsel ? { fetchPriority: "high" } : {})}
                         style={{ objectFit: "cover" }}
                         onError={(e) => {
                           const parent = (e.target as HTMLImageElement).parentElement;
