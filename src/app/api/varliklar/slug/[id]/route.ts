@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectToDatabase();
+    await connectMongoDB(); //
     const varlik = await Varlik
       .findById(params.id)
       .select("slug")
