@@ -25,3 +25,4 @@ export async function GET(
     return NextResponse.json({ error: "Geçersiz ID" }, { status: 400 });
   }
 }
+ 
