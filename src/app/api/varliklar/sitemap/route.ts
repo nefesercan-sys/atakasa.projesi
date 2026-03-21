@@ -1,6 +1,6 @@
 // Sitemap için hafif endpoint — sadece slug + tarih döner
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectMongoDB } from "@/lib/mongodb";
 import Varlik from "@/models/Varlik";
 
 export const dynamic = "force-dynamic";
