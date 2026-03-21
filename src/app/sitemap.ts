@@ -1,4 +1,3 @@
-src/app/sitemap.ts dosyasını güncelle:
 import { MetadataRoute } from "next";
 
 export const dynamic = "force-dynamic";
