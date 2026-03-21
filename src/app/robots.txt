@@ -13,6 +13,9 @@ Disallow: /giris
 Disallow: /_next/
 Disallow: /sepet
 
+# Eski UUID URL'lerini engelle
+Disallow: /varlik/*[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*
+
 User-agent: Googlebot
 Allow: /
 Crawl-delay: 1
