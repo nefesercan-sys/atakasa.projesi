@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await connectToDatabase();
+    await connectMongoDB(); // ✅ düzeltildi
 
     const varliklar = await Varlik
       .find(
