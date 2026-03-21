@@ -26,3 +26,6 @@ export async function connectMongoDB() {
   cached.conn = await cached.promise;
   return cached.conn;
 }
+
+// ✅ Alias — eski import'ları kırmamak için
+export const connectToDatabase = connectMongoDB;
