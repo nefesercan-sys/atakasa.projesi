@@ -12,3 +12,4 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/sitemap-ilanlar.xml`,  lastModified: new Date() },
   ];
 }
+ 
