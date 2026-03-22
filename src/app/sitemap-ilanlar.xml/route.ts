@@ -5,22 +5,29 @@ const BASE = "https://atakasa.com";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const now = new Date().toISOString();
   let urls: string[] = [];
 
   try {
-    const res = await fetch(`${BASE}/api/varliklar/sitemap`);
-    if (res.ok) {
-      const liste = await res.json();
-      const now = new Date().toISOString();
+    const res = await fetch(`${BASE}/api/varliklar`, {
+      next: { revalidate: 3600 },
+    });
 
-      urls = (Array.isArray(liste) ? liste : [])
+    if (res.ok) {
+      const data = await res.json();
+      const liste = Array.isArray(data) ? data : [];
+
+      urls = liste
         .filter((v: any) => v.slug)
-        .map((v: any) => `  <url>
-    <loc>${BASE}/varlik/${v.slug}</loc>
-    <lastmod>${new Date(v.updatedAt || v.createdAt || now).toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>`);
+        .flatMap((v: any) => {
+          const loc = `${BASE}/varlik/${v.slug}`;
+          const mod = new Date(v.updatedAt || v.createdAt || now).toISOString();
+          return [
+            `  <url><loc>${loc}</loc><lastmod>${mod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
+            `  <url><loc>${loc}/takas</loc><lastmod>${mod}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+            `  <url><loc>${loc}/satin-al</loc><lastmod>${mod}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+          ];
+        });
     }
   } catch {}
 
