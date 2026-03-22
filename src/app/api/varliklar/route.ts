@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../lib/mongodb";
-import Varlik from "../../../models/Varlik";
+import { connectMongoDB } from "@/lib/mongodb";
+import Varlik from "@/models/Varlik";
 
 export const dynamic = "force-dynamic";
 
@@ -10,24 +10,25 @@ export async function GET(req: Request) {
 
     const searchParams = new URL(req.url).searchParams;
     const id = searchParams.get("id");
+    const slug = searchParams.get("slug");
     const kategori = searchParams.get("kategori") || searchParams.get("sektor");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = parseInt(searchParams.get("skip") || "0");
 
     let query: any = {};
-    if (id) {
+    if (slug) {
+      query.slug = slug;
+    } else if (id) {
       query._id = id;
     } else if (kategori) {
       query.kategori = kategori;
     }
 
-    // Sadece gerekli alanları çek (LCP için resimler dahil)
     const ilanlar = await Varlik.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(id ? 1 : limit)
-      .select("baslik fiyat eskiFiyat kategori sehir resimler aciklama takasSlistegi satici createdAt")
-      .lean(); // <-- plain JS object, mongoose overhead yok
+      .limit(slug || id ? 1 : limit)
+      .lean();
 
     const borsaVarlıkları = ilanlar.map((ilan: any) => {
       let degisimYuzdesi = 0;
@@ -45,7 +46,6 @@ export async function GET(req: Request) {
     return NextResponse.json(borsaVarlıkları, {
       status: 200,
       headers: {
-        // 30 sn cache, arka planda 60 sn'de yenile
         "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
       },
     });
