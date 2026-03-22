@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongodb";
-import User from "@/models/User";
 import Varlik from "@/models/Varlik";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +10,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const resolvedParams = await params; 
     const id = resolvedParams.id;
 
-    void User; // User modelini Mongoose'a register et
-
-    const varlik = await Varlik.findById(id).populate("satici", "email name");
+    const varlik = await Varlik.findById(id).lean();
     if (!varlik) {
       return NextResponse.json({ error: "İlan bulunamadı." }, { status: 404 });
     }
@@ -29,7 +26,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await connectMongoDB();
     const resolvedParams = await params;
     const id = resolvedParams.id;
-    void User;
     const silinenVarlik = await Varlik.findByIdAndDelete(id);
     if (!silinenVarlik) {
       return NextResponse.json({ error: "İlan bulunamadı." }, { status: 404 });
