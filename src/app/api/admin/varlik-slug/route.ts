@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../../lib/mongodb";
-import Varlik from "../../../../models/Varlik";
+import { connectMongoDB } from "@/lib/mongodb";
+import Varlik from "@/models/Varlik";
 
 function slugify(text: string): string {
   return text
