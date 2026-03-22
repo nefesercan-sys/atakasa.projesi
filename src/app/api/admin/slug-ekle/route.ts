@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongodb";
-import mongoose from "mongoose";
+import Varlik from "@/models/Varlik";
 
 function slugify(text: string): string {
   return text
@@ -21,23 +21,21 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   await connectMongoDB();
-  const db = mongoose.connection.db;
-  if (!db) return NextResponse.json({ error: "DB bağlantısı yok" }, { status: 500 });
 
-  const ilanlar = await db.collection("varliklar").find({
+  const ilanlar = await Varlik.find({
     $or: [
       { slug: { $exists: false } },
       { slug: null },
       { slug: "" }
     ]
-  }).toArray();
+  }).lean();
 
   let guncellenen = 0;
 
-  for (const ilan of ilanlar) {
+  for (const ilan of ilanlar as any[]) {
     const base = slugify(ilan.baslik || "ilan");
     const slug = `${base}-${ilan._id.toString().slice(-6)}`;
-    await db.collection("varliklar").updateOne(
+    await Varlik.updateOne(
       { _id: ilan._id },
       { $set: { slug } }
     );
