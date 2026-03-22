@@ -1,24 +1,22 @@
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { connectMongoDB } from "@/lib/mongodb";
-import mongoose from "mongoose";
-import { ObjectId } from "mongodb";
 
 const BASE = "https://www.atakasa.com";
 
 async function getBySlug(slug: string) {
-  await connectMongoDB();
-  const db = mongoose.connection.db;
-  if (!db) return null;
-  return db.collection("varliklar").findOne({ slug });
+  try {
+    const res = await fetch(`${BASE}/api/varliklar?slug=${slug}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) ? data[0] || null : data;
+  } catch { return null; }
 }
 
 async function getById(id: string) {
   try {
-    await connectMongoDB();
-    const db = mongoose.connection.db;
-    if (!db) return null;
-    return db.collection("varliklar").findOne({ _id: new ObjectId(id) });
+    const res = await fetch(`${BASE}/api/varliklar/${id}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json();
   } catch { return null; }
 }
 
@@ -97,7 +95,6 @@ export default async function VarlikSayfasi({
         <span>{ilan.baslik}</span>
       </nav>
 
-      {/* Görsel */}
       {resim && (
         <img
           src={resim}
@@ -139,7 +136,6 @@ export default async function VarlikSayfasi({
         </div>
       )}
 
-      {/* CTA */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <a href={`/varlik/${ilan.slug || ilan._id}/takas`}
           style={{ background: "#6c63ff", color: "#fff", padding: "12px 24px", borderRadius: 12, fontWeight: 700, textDecoration: "none" }}>
