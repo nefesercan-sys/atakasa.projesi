@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../../lib/mongodb";
-import Varlik from "../../../../models/Varlik";
-import User from "../../../../models/User"; // 🚨 İŞTE EKSİK OLAN SİBER ANAHTAR!
+import { connectMongoDB } from "@/lib/mongodb";
+import Varlik from "@/models/Varlik";
+import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +9,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   try {
     await connectMongoDB();
     
-    // 🚨 Next.js güvenlik kilidi: params'ı her ihtimale karşı çözümlüyoruz
     const resolvedParams = await params; 
     const id = resolvedParams.id;
 
-    // User modelini yukarıda import ettiğimiz için populate artık asla çökmeyecek!
     const varlik = await Varlik.findById(id).populate("satici", "email name");
 
     if (!varlik) {
