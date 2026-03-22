@@ -46,4 +46,5 @@ export async function GET() {
     mesaj: `${guncellenen} ilana slug eklendi ✅`,
     toplam: guncellenen,
   });
-}
+}  
+
