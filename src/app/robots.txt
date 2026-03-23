@@ -2,19 +2,30 @@ User-agent: *
 Allow: /
 Allow: /varlik/
 Allow: /kategori/
+Allow: /sehir/
 Allow: /kesfet
+Allow: /takas
 Allow: /ilan-ver
+Allow: /kayit
+Allow: /rehber
 Allow: /sss
 Allow: /hakkimizda
+Allow: /sozlesme
+Allow: /premium
 
 Disallow: /api/
 Disallow: /panel/
 Disallow: /giris
 Disallow: /_next/
 Disallow: /sepet
+Disallow: /mesajlar
+Disallow: /sifremi-unuttum
+Disallow: /sifre-sifirla
+Disallow: /sifre-yenile
+Disallow: /admin/
 
 # Eski UUID URL'lerini engelle
-Disallow: /varlik/*[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*
+Disallow: /varlik/*[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]
 
 User-agent: Googlebot
 Allow: /
@@ -28,6 +39,7 @@ User-agent: Yandex
 Allow: /
 Crawl-delay: 2
 
+# AI botlarını engelle (içerik koruması)
 User-agent: GPTBot
 Disallow: /
 
@@ -37,4 +49,14 @@ Disallow: /
 User-agent: anthropic-ai
 Disallow: /
 
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+# Sitemap referansları
 Sitemap: https://atakasa.com/sitemap.xml
+Sitemap: https://atakasa.com/sitemap-ilanlar.xml
+Sitemap: https://atakasa.com/sitemap-statik.xml
+Sitemap: https://atakasa.com/sitemap-sehir.xml
