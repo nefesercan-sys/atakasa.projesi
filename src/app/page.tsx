@@ -9,7 +9,7 @@ export default async function Home() {
     const ilanlar = await Varlik.find({})
       .sort({ createdAt: -1 })
       .limit(20)
-      .select("baslik fiyat eskiFiyat kategori sehir resimler aciklama takasIstegi satici createdAt")
+      .select("baslik fiyat eskiFiyat kategori sehir resimler aciklama takasIstegi satici createdAt slug") // ✅ slug eklendi
       .lean();
 
     const borsaVeriliIlanlar = ilanlar.map((ilan: any) => {
