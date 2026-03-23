@@ -2,144 +2,606 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
+  <!-- ════════════════════════════════════════════ -->
+  <!-- ANA SAYFALAR -->
+  <!-- ════════════════════════════════════════════ -->
+
   <url>
     <loc>https://atakasa.com/</loc>
-    <lastmod>2026-03-18</lastmod>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
     <loc>https://atakasa.com/kesfet</loc>
-    <lastmod>2026-03-18</lastmod>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>hourly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/takas</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
   </url>
 
   <url>
     <loc>https://atakasa.com/ilan-ver</loc>
-    <lastmod>2026-03-18</lastmod>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kayit</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/giris</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/premium</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/rehber</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sozlesme</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- ELEKTRONİK KATEGORİLERİ -->
+  <!-- ════════════════════════════════════════════ -->
+
+  <url>
+    <loc>https://atakasa.com/kategori/Elektronik</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Elektronik%20-%20Telefon</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Elektronik%20-%20Bilgisayar</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Elektronik%20-%20Tablet</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Elektronik%20-%20TV%20%26%20Monit%C3%B6r</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://atakasa.com/kategori/takas</loc>
-    <lastmod>2026-03-18</lastmod>
+    <loc>https://atakasa.com/kategori/Elektronik%20-%20Oyun%20Konsolu</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Elektronik%20-%20Kamera</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- ARAÇ KATEGORİLERİ -->
+  <!-- ════════════════════════════════════════════ -->
+
+  <url>
+    <loc>https://atakasa.com/kategori/Ara%C3%A7</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Ara%C3%A7%20-%20Otomobil</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Ara%C3%A7%20-%20Motosiklet</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Ara%C3%A7%20-%20SUV%20%26%20Crossover</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Ara%C3%A7%20-%20Ticari%20Ara%C3%A7</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- EMLAK KATEGORİLERİ -->
+  <!-- ════════════════════════════════════════════ -->
+
+  <url>
+    <loc>https://atakasa.com/kategori/Emlak</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Emlak%20-%20Sat%C4%B1l%C4%B1k%20Konut</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Emlak%20-%20Kiralık%20Konut</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Emlak%20-%20Arsa%20%26%20Tarla</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Emlak%20-%20Villa</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.78</priority>
+  </url>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- DİĞER KATEGORİLER -->
+  <!-- ════════════════════════════════════════════ -->
+
+  <url>
+    <loc>https://atakasa.com/kategori/Mobilya</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Oyun%2FKonsol</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Antika%20Eserler</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.78</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Tekstil</loc>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://atakasa.com/kategori/ikinci-el</loc>
-    <lastmod>2026-03-18</lastmod>
+    <loc>https://atakasa.com/kategori/Kitap</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Kozmetik</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Petshop</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.72</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Makine</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/El%20Sanatlar%C4%B1</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.72</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Do%C4%9Fal%20%C3%9Cr%C3%BCnler</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/Oyuncak</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/K%C4%B1rtasiye</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/2.%20El</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/kategori/S%C4%B1f%C4%B1r%20%C3%9Cr%C3%BCnler</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- ŞEHİR SAYFALARI -->
+  <!-- ════════════════════════════════════════════ -->
+
+  <url>
+    <loc>https://atakasa.com/sehir/istanbul</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.92</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/ankara</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/izmir</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/bursa</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/antalya</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/adana</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.78</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/konya</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.78</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/gaziantep</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.76</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/kayseri</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/eskisehir</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/mersin</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.73</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/diyarbakir</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.72</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/samsun</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.72</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/trabzon</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/kocaeli</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.72</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/malatya</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/denizli</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/sakarya</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/balikesir</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/manisa</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.63</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/hatay</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.63</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/tekirdag</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.63</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/mugla</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.63</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/aydin</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.62</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/canakkale</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/edirne</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/rize</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.58</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/van</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.58</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/erzurum</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.57</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/kahramanmaras</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.57</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/sivas</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.55</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/ordu</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.55</priority>
+  </url>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- ŞEHİR + KATEGORİ KOMBİNASYONLARI (Long-tail SEO) -->
+  <!-- ════════════════════════════════════════════ -->
+
+  <url>
+    <loc>https://atakasa.com/sehir/istanbul?kategori=Elektronik</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/istanbul?kategori=Ara%C3%A7</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/istanbul?kategori=Emlak</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/ankara?kategori=Elektronik</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/ankara?kategori=Ara%C3%A7</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/ankara?kategori=Emlak</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>https://atakasa.com/sehir/izmir?kategori=Elektronik</loc>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://atakasa.com/kategori/urun-satis</loc>
-    <lastmod>2026-03-18</lastmod>
+    <loc>https://atakasa.com/sehir/izmir?kategori=Emlak</loc>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://atakasa.com/kategori/elektronik</loc>
-    <lastmod>2026-03-18</lastmod>
+    <loc>https://atakasa.com/sehir/bursa?kategori=Ara%C3%A7</loc>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <priority>0.78</priority>
   </url>
 
   <url>
-    <loc>https://atakasa.com/kategori/moda</loc>
-    <lastmod>2026-03-18</lastmod>
+    <loc>https://atakasa.com/sehir/antalya?kategori=Emlak</loc>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/kiralama</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/hizmet</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/antika</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/sanat</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/petshop</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/kitap</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/oyuncak</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/egitim</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/bagis</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/rezervasyon</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/bakim</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-
-  <url>
-    <loc>https://atakasa.com/kategori/dogal</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.78</priority>
   </url>
 
 </urlset>
