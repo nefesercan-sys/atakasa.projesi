@@ -52,9 +52,6 @@ Disallow: /
 User-agent: Google-Extended
 Disallow: /
 
-User-agent: FacebookBot
-Disallow: /
-
 # Sitemap referansları
 Sitemap: https://atakasa.com/sitemap.xml
 Sitemap: https://atakasa.com/sitemap-ilanlar.xml
