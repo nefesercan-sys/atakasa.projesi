@@ -123,7 +123,6 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
     []
   );
 
-  // ✅ Mobil için optimize edildi: q_auto:eco + küçük boyut
   const optimizeCloudinary = useCallback((url: string, w = 400, h = 180) => {
     if (!url || !url.includes("res.cloudinary.com")) return url;
     return url.replace(
@@ -306,13 +305,15 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
       const ilkMedya = getImageUrl(ilan);
       const videoVar = isVideo(ilkMedya);
       const pozitif = (ilan.degisimYuzdesi || 0) >= 0;
-      const optimizedSrc = videoVar
-        ? ilkMedya
-        : optimizeCloudinary(ilkMedya, 400, 180);
+      const optimizedSrc = videoVar ? ilkMedya : optimizeCloudinary(ilkMedya, 400, 180);
+
+      // ✅ slug varsa slug, yoksa _id ile link oluştur
+      const ilanUrl = `/varlik/${ilan.slug || ilan._id}`;
 
       const handleShare = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        const shareUrl = `${window.location.origin}/varlik/${ilan._id}`;
+        // ✅ Düzeltildi: _id yerine ilanUrl kullanılıyor
+        const shareUrl = `${window.location.origin}${ilanUrl}`;
         if (navigator.share) {
           try {
             await navigator.share({
@@ -350,7 +351,8 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
                 setVideoModalUrl(ilkMedya);
                 setVideoModalBaslik(ilan.baslik || "");
               } else {
-                router.push(`/varlik/${ilan._id}`);
+                // ✅ Düzeltildi
+                router.push(ilanUrl);
               }
             }}
           >
@@ -403,9 +405,10 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
 
           <div className="card-body">
             <span className="category-label">{ilan.kategori || "Genel"}</span>
+            {/* ✅ Düzeltildi */}
             <h3
               className="card-title"
-              onClick={() => router.push(`/varlik/${ilan._id}`)}
+              onClick={() => router.push(ilanUrl)}
             >
               {ilan.baslik}
             </h3>
@@ -428,7 +431,8 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
                 <button onClick={handleShare} className="btn-icon" title="Paylaş" aria-label="İlanı paylaş">
                   <Share2 size={15} />
                 </button>
-                <button onClick={() => router.push(`/varlik/${ilan._id}`)} className="btn-outline flex-1">
+                {/* ✅ Düzeltildi */}
+                <button onClick={() => router.push(ilanUrl)} className="btn-outline flex-1">
                   İncele
                 </button>
                 <button onClick={() => handleSepeteEkle(ilan)} className="btn-cart" aria-label="Sepete ekle">
@@ -603,9 +607,7 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
         )}
       </nav>
 
-      {/* ══════════════════════════════════════════ */}
-      {/* HERO BÖLÜMÜ — NAV ile CAT-STRIP arasında */}
-      {/* ══════════════════════════════════════════ */}
+      {/* HERO */}
       <section style={{
         background: "linear-gradient(135deg, #0f2347 0%, #1e3a5f 50%, #0f2347 100%)",
         padding: "40px 24px",
@@ -727,7 +729,6 @@ export default function HomeClient({ initialIlanlar }: { initialIlanlar: any[] }
           </div>
         </div>
       </section>
-      {/* ══════════════════════════════════════════ */}
 
       {/* KATEGORİ STRIP */}
       <div className="cat-strip" role="navigation" aria-label="Kategori filtresi">
