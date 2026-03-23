@@ -12,7 +12,6 @@ const nextConfig = /** @type {import('next').NextConfig} */ ({
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "placeholder.co" },
     ],
-    // Cloudinary kendi optimizasyonunu yapıyor, double optimize etme
     dangerouslyAllowSVG: false,
   },
 
@@ -28,14 +27,12 @@ const nextConfig = /** @type {import('next').NextConfig} */ ({
         ],
       },
       {
-        // ✅ Düzeltildi: (?:jpg|...) → (jpg|...) — Vercel (?:) non-capturing group desteklemiyor
         source: "/(.*)\\.(jpg|jpeg|png|gif|webp|avif|svg|ico)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
       {
-        // ✅ Düzeltildi: (?:js|...) → (js|...) — Vercel (?:) non-capturing group desteklemiyor
         source: "/(.*)\\.(js|css|woff|woff2|ttf|otf)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
@@ -66,7 +63,7 @@ const nextConfig = /** @type {import('next').NextConfig} */ ({
   },
 
   experimental: {
-    optimizeCss: true,
+    // ✅ optimizeCss kaldırıldı — 'critters' paketi olmadan build patlatıyor
     optimizePackageImports: ["lucide-react"],
   },
 });
