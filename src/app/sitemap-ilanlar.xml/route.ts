@@ -1,55 +1,82 @@
-export const dynamic = "force-static";
+import { NextResponse } from "next/server";
+import { connectMongoDB } from "@/lib/mongodb";
+import Varlik from "@/models/Varlik";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const BASE = "https://www.atakasa.com";
+  try {
+    await connectMongoDB();
 
-  const staticPages = [
-    { loc: "/", priority: "1.0", changefreq: "daily" },
-    { loc: "/kesfet", priority: "0.9", changefreq: "daily" },
-    { loc: "/takas", priority: "0.9", changefreq: "daily" },
-    { loc: "/ilan-ver", priority: "0.9", changefreq: "weekly" },
-    { loc: "/kayit", priority: "0.8", changefreq: "monthly" },
-    { loc: "/giris", priority: "0.7", changefreq: "monthly" },
-    { loc: "/rehber", priority: "0.7", changefreq: "weekly" },
-    { loc: "/premium", priority: "0.7", changefreq: "monthly" },
-    { loc: "/sozlesme", priority: "0.5", changefreq: "monthly" },
-    { loc: "/sepet", priority: "0.5", changefreq: "monthly" },
-    // Kategori sayfaları
-    { loc: "/kategori/Elektronik", priority: "0.9", changefreq: "daily" },
-    { loc: "/kategori/Arac", priority: "0.9", changefreq: "daily" },
-    { loc: "/kategori/Emlak", priority: "0.9", changefreq: "daily" },
-    { loc: "/kategori/Mobilya", priority: "0.8", changefreq: "daily" },
-    { loc: "/kategori/Oyun-Konsol", priority: "0.8", changefreq: "daily" },
-    { loc: "/kategori/Antika-Eserler", priority: "0.8", changefreq: "weekly" },
-    { loc: "/kategori/Elektronik/Telefon", priority: "0.9", changefreq: "daily" },
-    { loc: "/kategori/Elektronik/Bilgisayar", priority: "0.8", changefreq: "daily" },
-    // Şehir sayfaları
-    { loc: "/sehir/istanbul", priority: "0.9", changefreq: "daily" },
-    { loc: "/sehir/ankara", priority: "0.9", changefreq: "daily" },
-    { loc: "/sehir/izmir", priority: "0.8", changefreq: "daily" },
-    { loc: "/sehir/bursa", priority: "0.7", changefreq: "daily" },
-    { loc: "/sehir/antalya", priority: "0.7", changefreq: "daily" },
-  ];
+    const BASE = "https://www.atakasa.com";
 
-  const today = new Date().toISOString().split("T")[0];
+    const ilanlar = await Varlik.find({})
+      .sort({ updatedAt: -1 })
+      .select("slug _id updatedAt createdAt baslik kategori sehir")
+      .lean()
+      .limit(50000); // Google max 50K URL per sitemap
 
-  const urls = staticPages.map(p => `
-  <url>
-    <loc>${BASE}${p.loc}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>${p.changefreq}</changefreq>
-    <priority>${p.priority}</priority>
-  </url>`).join("");
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+    if (!ilanlar || ilanlar.length === 0) {
+      // Boş ama geçerli XML dön — hata verme
+      const emptyXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls}
+</urlset>`;
+      return new NextResponse(emptyXml, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/xml; charset=utf-8",
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+        },
+      });
+    }
+
+    const urls = ilanlar.map((ilan: any) => {
+      const slug = ilan.slug || ilan._id.toString();
+      const lastmod = new Date(ilan.updatedAt || ilan.createdAt || Date.now())
+        .toISOString()
+        .split("T")[0];
+
+      // Önceliği kategoriye göre belirle
+      const yuksekOncelikli = ["Elektronik", "Araç", "Emlak", "Mobilya"];
+      const kategori = ilan.kategori || "";
+      const priority = yuksekOncelikli.some(k => kategori.includes(k)) ? "0.8" : "0.7";
+
+      return `  <url>
+    <loc>${BASE}/varlik/${slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>${priority}</priority>
+  </url>`;
+    });
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${urls.join("\n")}
 </urlset>`;
 
-  return new Response(xml, {
-    headers: {
-      "Content-Type": "application/xml",
-      "Cache-Control": "public, s-maxage=86400",
-    },
-  });
+    return new NextResponse(xml, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+      },
+    });
+
+  } catch (err) {
+    console.error("sitemap-ilanlar hatası:", err);
+
+    // Hata durumunda da geçerli boş XML dön — Google'da "hata" görünmesin
+    const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</urlset>`;
+
+    return new NextResponse(fallbackXml, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
 }
