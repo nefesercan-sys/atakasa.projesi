@@ -28,13 +28,15 @@ const nextConfig = /** @type {import('next').NextConfig} */ ({
         ],
       },
       {
-        source: "/(.*)\\.(?:jpg|jpeg|png|gif|webp|avif|svg|ico)",
+        // ✅ Düzeltildi: (?:jpg|...) → (jpg|...) — Vercel (?:) non-capturing group desteklemiyor
+        source: "/(.*)\\.(jpg|jpeg|png|gif|webp|avif|svg|ico)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
       {
-        source: "/(.*)\\.(?:js|css|woff|woff2|ttf|otf)",
+        // ✅ Düzeltildi: (?:js|...) → (js|...) — Vercel (?:) non-capturing group desteklemiyor
+        source: "/(.*)\\.(js|css|woff|woff2|ttf|otf)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
