@@ -1,45 +1,55 @@
-import { NextResponse } from "next/server";
-
-const BASE = "https://atakasa.com";
-
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
 export async function GET() {
-  const now = new Date().toISOString();
-  let urls: string[] = [];
+  const BASE = "https://www.atakasa.com";
 
-  try {
-    const res = await fetch(`${BASE}/api/varliklar`, {
-      next: { revalidate: 3600 },
-    });
+  const staticPages = [
+    { loc: "/", priority: "1.0", changefreq: "daily" },
+    { loc: "/kesfet", priority: "0.9", changefreq: "daily" },
+    { loc: "/takas", priority: "0.9", changefreq: "daily" },
+    { loc: "/ilan-ver", priority: "0.9", changefreq: "weekly" },
+    { loc: "/kayit", priority: "0.8", changefreq: "monthly" },
+    { loc: "/giris", priority: "0.7", changefreq: "monthly" },
+    { loc: "/rehber", priority: "0.7", changefreq: "weekly" },
+    { loc: "/premium", priority: "0.7", changefreq: "monthly" },
+    { loc: "/sozlesme", priority: "0.5", changefreq: "monthly" },
+    { loc: "/sepet", priority: "0.5", changefreq: "monthly" },
+    // Kategori sayfaları
+    { loc: "/kategori/Elektronik", priority: "0.9", changefreq: "daily" },
+    { loc: "/kategori/Arac", priority: "0.9", changefreq: "daily" },
+    { loc: "/kategori/Emlak", priority: "0.9", changefreq: "daily" },
+    { loc: "/kategori/Mobilya", priority: "0.8", changefreq: "daily" },
+    { loc: "/kategori/Oyun-Konsol", priority: "0.8", changefreq: "daily" },
+    { loc: "/kategori/Antika-Eserler", priority: "0.8", changefreq: "weekly" },
+    { loc: "/kategori/Elektronik/Telefon", priority: "0.9", changefreq: "daily" },
+    { loc: "/kategori/Elektronik/Bilgisayar", priority: "0.8", changefreq: "daily" },
+    // Şehir sayfaları
+    { loc: "/sehir/istanbul", priority: "0.9", changefreq: "daily" },
+    { loc: "/sehir/ankara", priority: "0.9", changefreq: "daily" },
+    { loc: "/sehir/izmir", priority: "0.8", changefreq: "daily" },
+    { loc: "/sehir/bursa", priority: "0.7", changefreq: "daily" },
+    { loc: "/sehir/antalya", priority: "0.7", changefreq: "daily" },
+  ];
 
-    if (res.ok) {
-      const data = await res.json();
-      const liste = Array.isArray(data) ? data : [];
+  const today = new Date().toISOString().split("T")[0];
 
-      urls = liste
-        .filter((v: any) => v.slug)
-        .flatMap((v: any) => {
-          const loc = `${BASE}/varlik/${v.slug}`;
-          const mod = new Date(v.updatedAt || v.createdAt || now).toISOString();
-          return [
-            `  <url><loc>${loc}</loc><lastmod>${mod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
-            `  <url><loc>${loc}/takas</loc><lastmod>${mod}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
-            `  <url><loc>${loc}/satin-al</loc><lastmod>${mod}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
-          ];
-        });
-    }
-  } catch {}
+  const urls = staticPages.map(p => `
+  <url>
+    <loc>${BASE}${p.loc}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+  </url>`).join("");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.join("\n")}
+${urls}
 </urlset>`;
 
-  return new NextResponse(xml, {
+  return new Response(xml, {
     headers: {
       "Content-Type": "application/xml",
-      "Cache-Control": "public, s-maxage=3600",
+      "Cache-Control": "public, s-maxage=86400",
     },
   });
 }
