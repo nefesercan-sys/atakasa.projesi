@@ -1,49 +1,103 @@
+// src/app/api/varlik-ekle/route.ts
+// Yeni ilan eklendiğinde IndexNow ile Bing/Google'a anında bildirim gönderir
+
 import { NextResponse } from "next/server";
-import { connectMongoDB } from "../../../lib/mongodb";
-import Varlik from "../../../models/Varlik";
-import User from "../../../models/User";
-import { getServerSession } from "next-auth/next";
+import { connectMongoDB } from "@/lib/mongodb";
+import Varlik from "@/models/Varlik";
+import { indexNowIlan } from "@/lib/indexNow";
+
+export const dynamic = "force-dynamic";
+
+// Türkçe karakterleri slug'a çevir
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s")
+    .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
 
 export async function POST(req: Request) {
   try {
-    // 🛡️ KRİTİK DEĞİŞİKLİK: authOptions bağımlılığını kaldırdık, 
-    // getServerSession() parametresiz de session'ı yakalayabilir.
-    const session = await getServerSession(); 
-    
-    if (!session) {
-      return NextResponse.json({ message: "SİBER ENGEL: Önce giriş yapmalısın." }, { status: 401 });
-    }
-
-    const { baslik, fiyat, kategori, ulke, sehir, ilce, aciklama, resimler } = await req.json();
-
     await connectMongoDB();
+    const data = await req.json();
 
-    // Kullanıcıyı email üzerinden MongoDB'deki gerçek ID'si ile buluyoruz
-    const user = await User.findOne({ email: session.user?.email?.toLowerCase() });
-    
-    if (!user) {
-      return NextResponse.json({ message: "Kullanıcı kaydı bulunamadı." }, { status: 404 });
+    // Zorunlu alan kontrolü
+    if (!data.baslik || !data.baslik.trim()) {
+      return NextResponse.json({ error: "Başlık zorunludur." }, { status: 400 });
+    }
+    if (!data.kategori) {
+      return NextResponse.json({ error: "Kategori zorunludur." }, { status: 400 });
+    }
+    if (!data.sehir) {
+      return NextResponse.json({ error: "Şehir zorunludur." }, { status: 400 });
+    }
+    if (!data.sellerEmail && !data.saticiEmail) {
+      return NextResponse.json({ error: "Satıcı bilgisi eksik." }, { status: 400 });
     }
 
-    // Artık resimler dizisinde Cloudinary'den gelen uzun video/resim linkleri var
-    const yeniVarlik = await Varlik.create({
-      baslik,
-      fiyat: Number(fiyat),
-      kategori,
-      ulke: ulke || "Türkiye",
-      sehir,
-      ilce,
-      aciklama,
-      resimler, 
-      satici: user._id // Mail adresi değil, veritabanı ID'sini mühürlüyoruz
+    // Unique slug oluştur
+    const baseSlug = slugify(data.baslik);
+    const timestamp = Date.now().toString(36); // kısa timestamp
+    const slug = `${baseSlug}-${timestamp}`;
+
+    // İlanı kaydet
+    const yeniIlan = await Varlik.create({
+      baslik:       data.baslik.trim(),
+      fiyat:        Number(data.fiyat) || 0,
+      eskiFiyat:    Number(data.fiyat) || 0,
+      kategori:     data.kategori,
+      sektor:       data.sektor || data.kategori,
+      altKategori:  data.altKategori || "",
+      ulke:         data.ulke || "Türkiye",
+      sehir:        data.sehir,
+      ilce:         data.ilce || "",
+      mahalle:      data.mahalle || "",
+      aciklama:     data.aciklama || "",
+      takasIstegi:  !!data.takasIstegi,
+      resimler:     Array.isArray(data.resimler) ? data.resimler : [],
+      ozelAlanlar:  data.ozelAlanlar || {},
+      slug,
+      satici:       data.satici || data.sellerEmail,
+      sellerEmail:  data.sellerEmail || data.satici,
+      saticiEmail:  data.saticiEmail || data.sellerEmail,
+      durum:        "aktif",
+      createdAt:    new Date(),
+      updatedAt:    new Date(),
     });
 
-    return NextResponse.json({ message: "Varlık mühürlendi.", id: yeniVarlik._id }, { status: 201 });
+    // ✅ IndexNow — Bing ve Google'a anında bildirim
+    // await beklemeden arka planda çalıştır (kullanıcıyı yavaşlatma)
+    indexNowIlan(slug).catch(err => console.error("IndexNow hatası:", err));
+
+    return NextResponse.json(
+      {
+        message: "İlan yayınlandı!",
+        id: yeniIlan._id.toString(),
+        slug: yeniIlan.slug,
+      },
+      { status: 201 }
+    );
+
   } catch (error: any) {
-    console.error("İlan ekleme hatası:", error);
-    return NextResponse.json({ 
-      message: "Sistem Hatası: Varlık yüklenemedi.", 
-      error: error.message 
-    }, { status: 500 });
+    console.error("varlik-ekle hatası:", error);
+
+    // MongoDB duplicate key hatası
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { error: "Bu ilan zaten mevcut." },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "İlan eklenemedi. Tekrar deneyin." },
+      { status: 500 }
+    );
   }
 }
