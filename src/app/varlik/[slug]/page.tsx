@@ -14,9 +14,11 @@ async function getBySlug(slug: string) {
 
 async function getById(id: string) {
   try {
-    const res = await fetch(`${BASE}/api/varliklar/${id}`, { cache: "no-store" });
+    // ✅ Düzeltildi: /api/varliklar/${id} → /api/varliklar?id=${id}
+    const res = await fetch(`${BASE}/api/varliklar?id=${id}`, { cache: "no-store" });
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data[0] || null : data;
   } catch { return null; }
 }
 
@@ -25,6 +27,7 @@ export async function generateMetadata({
 }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const ilan = await getBySlug(slug);
+
   if (!ilan) return { title: "İlan Bulunamadı | Atakasa" };
 
   const sehir = ilan.sehir || "";
@@ -56,19 +59,25 @@ export default async function VarlikSayfasi({
   const isObjectId = /^[0-9a-f]{24}$/i.test(slug);
   if (isObjectId) {
     const ilan = await getById(slug);
+    if (!ilan) notFound();
+    // ✅ slug varsa redirect et, yoksa _id ile devam et
     if (ilan?.slug) redirect(`/varlik/${ilan.slug}`);
-    notFound();
+    // slug yoksa _id ile sayfayı göster (fallback)
+    return renderIlan(ilan);
   }
 
   const ilan = await getBySlug(slug);
   if (!ilan) notFound();
 
+  return renderIlan(ilan);
+}
+
+function renderIlan(ilan: any) {
   const sehir = ilan.sehir || "";
   const resim = ilan.resimler?.[0] || "";
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
-
       <script type="application/ld+json" dangerouslySetInnerHTML={{
         __html: JSON.stringify({
           "@context": "https://schema.org",
@@ -146,7 +155,6 @@ export default async function VarlikSayfasi({
           🛒 Satın Al
         </a>
       </div>
-
     </main>
   );
 }
