@@ -1,0 +1,26 @@
+{
+  "name": "A-Takasa — Takas & Satış Platformu",
+  "short_name": "A-Takasa",
+  "description": "Türkiye'nin en güvenli takas ve satış platformu. Ücretsiz ilan ver, hemen kazan!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f2540",
+  "theme_color": "#0f2540",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "tr",
+  "categories": ["shopping", "marketplace"],
+  "icons": [
+    { "src": "/icons/icon-72x72.png",   "sizes": "72x72",   "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icons/icon-96x96.png",   "sizes": "96x96",   "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icons/icon-128x128.png", "sizes": "128x128", "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icons/icon-144x144.png", "sizes": "144x144", "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }
+  ],
+  "shortcuts": [
+    { "name": "İlan Ver",  "url": "/ilan-ver", "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }] },
+    { "name": "Keşfet",    "url": "/kesfet",   "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }] },
+    { "name": "Takas Yap", "url": "/takas",    "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }] }
+  ]
+}
