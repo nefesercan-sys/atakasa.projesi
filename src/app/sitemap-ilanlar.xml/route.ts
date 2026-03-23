@@ -1,195 +1,65 @@
-import { authOptions } from "@/lib/authOptions";
-import SessionProvider from "@/components/SessionProvider";
-import { Analytics } from "@vercel/analytics/react";
-import BottomNav from "@/components/BottomNav";
-import { DM_Sans, Playfair_Display } from "next/font/google";
-import { getServerSession } from "next-auth";
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
+import { NextResponse } from "next/server";
+import { connectMongoDB } from "@/lib/mongodb";
+import Varlik from "@/models/Varlik";
 
-const dSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "700", "800"],
-  variable: "--font-dm-sans",
-  display: "swap",
-});
+export const dynamic = "force-dynamic";
 
-const playfairDisplay = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["700", "800"],
-  variable: "--font-playfair",
-  display: "swap",
-  preload: true,
-});
+export async function GET() {
+  try {
+    await connectMongoDB();
 
-// ─── VIEWPORT — metadata'dan ayrı tanımlanmalı (Next.js 14+) ─────────────────
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-  viewportFit: "cover",
-  themeColor: "#0f2540",
-};
+    const BASE = "https://www.atakasa.com";
 
-const BASE = "https://www.atakasa.com";
+    const ilanlar = await Varlik.find({})
+      .sort({ updatedAt: -1 })
+      .select("slug _id updatedAt createdAt kategori")
+      .lean()
+      .limit(50000);
 
-// ─── METADATA ────────────────────────────────────────────────────────────────
-export const metadata: Metadata = {
-  metadataBase: new URL(BASE),
+    if (!ilanlar || ilanlar.length === 0) {
+      return new NextResponse(
+        `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`,
+        { status: 200, headers: { "Content-Type": "application/xml; charset=utf-8" } }
+      );
+    }
 
-  title: {
-    default: "A-Takasa — Ücretsiz İlan Ver, Takas Yap, Hemen Kazan",
-    template: "%s | A-Takasa",
-  },
+    const yuksekOncelikli = ["Elektronik", "Araç", "Emlak", "Mobilya"];
 
-  description:
-    "A-Takasa: Türkiye'nin en güvenli takas ve ikinci el satış platformu. Ücretsiz ilan ver, ürününü takas et ya da sat. Elektronik, araç, emlak, mobilya ve 15+ kategoride binlerce ilan. %100 alıcı & satıcı koruması.",
+    const urls = ilanlar.map((ilan: any) => {
+      const slug = ilan.slug || ilan._id.toString();
+      const lastmod = new Date(ilan.updatedAt || ilan.createdAt || Date.now())
+        .toISOString().split("T")[0];
+      const kategori = ilan.kategori || "";
+      const priority = yuksekOncelikli.some(k => kategori.includes(k)) ? "0.8" : "0.7";
+      return `  <url>
+    <loc>${BASE}/varlik/${slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>${priority}</priority>
+  </url>`;
+    });
 
-  keywords: [
-    "takas sitesi", "ücretsiz ilan ver", "ikinci el satış",
-    "takas platformu Türkiye", "güvenli takas", "ikinci el takas",
-    "ücretsiz üye ol", "ürün takas et", "satılık ikinci el",
-    "takas yap Türkiye", "atakasa", "elektronik takas",
-    "araç takas", "emlak ilanı", "mobilya satış",
-    "telefon takas", "laptop satılık", "ikinci el elektronik",
-    "İstanbul takas", "Ankara ikinci el", "İzmir satılık",
-    "MacBook takas", "iPhone satılık", "güvenli ödeme",
-  ],
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.join("\n")}
+</urlset>`;
 
-  authors: [{ name: "A-Takasa", url: BASE }],
-  creator: "A-Takasa",
-  publisher: "A-Takasa",
-  category: "shopping",
-
-  // ✅ Canonical + hreflang
-  alternates: {
-    canonical: BASE,
-    languages: {
-      "tr":        BASE,
-      "tr-DE":     "https://atakasa.de",
-      "tr-NL":     "https://atakasa.nl",
-      "x-default": BASE,
-    },
-  },
-
-  openGraph: {
-    title: "A-Takasa — Ücretsiz İlan Ver, Takas Yap, Hemen Kazan",
-    description:
-      "Türkiye'nin en güvenli takas & satış platformu. Ücretsiz ilan ver, istediğini al ya da sat. %100 alıcı & satıcı koruması.",
-    url: BASE,
-    siteName: "A-Takasa",
-    locale: "tr_TR",
-    type: "website",
-    images: [
-      {
-        url: `${BASE}/og-default.jpg`,
-        width: 1200,
-        height: 630,
-        alt: "A-Takasa — Türkiye'nin En Güvenli Takas & Satış Platformu",
+    return new NextResponse(xml, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
       },
-    ],
-  },
+    });
 
-  twitter: {
-    card: "summary_large_image",
-    title: "A-Takasa — Ücretsiz İlan Ver, Takas Yap",
-    description:
-      "Türkiye'nin en güvenli takas & satış platformu. Ücretsiz ilan ver, hemen kazan.",
-    site: "@atakasa",
-    creator: "@atakasa",
-    images: [`${BASE}/og-default.jpg`],
-  },
-
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
-    },
-  },
-
-  manifest: "/manifest.json",
-
-  icons: {
-    icon: [{ url: "/favicon.ico", sizes: "any" }],
-    apple: [{ url: "/apple-icon.png" }],
-  },
-
-  // ✅ Google Search Console kodunu .env'e ekle:
-  // NEXT_PUBLIC_GOOGLE_VERIFICATION=buraya_kod
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION || "",
-    other: {
-      "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION || "",
-    },
-  },
-};
-
-// ─── SCHEMA.ORG JSON-LD ───────────────────────────────────────────────────────
-
-// ✅ Düzeltildi: "@type": "Organizasyon" → "Organization"
-// ✅ Düzeltildi: Gereksiz "Şiryet" alanı kaldırıldı
-const organizationSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "@id": `${BASE}/#organization`,
-  name: "A-Takasa",
-  alternateName: ["Atakasa", "A-TAKASA"],
-  url: BASE,
-  logo: {
-    "@type": "ImageObject",
-    url: `${BASE}/og-default.jpg`,
-    width: 1200,
-    height: 630,
-  },
-  description:
-    "Türkiye'nin en güvenli takas ve ikinci el satış platformu. Ücretsiz ilan ver, ürününü takas et ya da sat.",
-  areaServed: "TR",
-  contactPoint: {
-    "@type": "ContactPoint",
-    contactType: "customer service",
-    availableLanguage: "Turkish",
-    areaServed: "TR",
-  },
-  address: {
-    "@type": "PostalAddress",
-    addressCountry: "TR",
-  },
-  sameAs: [
-    "https://twitter.com/atakasa",
-    "https://instagram.com/atakasa",
-    "https://facebook.com/atakasa",
-  ],
-};
-
-// ✅ SearchAction URL düzeltildi: /ara → /kesfet (mevcut route)
-const websiteSchema = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "@id": `${BASE}/#website`,
-  name: "A-Takasa",
-  url: BASE,
-  description:
-    "Türkiye'nin en güvenli takas ve ikinci el satış platformu. Ücretsiz ilan ver, takas et, hemen kazan.",
-  inLanguage: "tr-TR",
-  potentialAction: {
-    "@type": "SearchAction",
-    target: {
-      "@type": "EntryPoint",
-      // ✅ /ara yerine gerçek route: /kesfet?q=
-      urlTemplate: `${BASE}/kesfet?q={search_term_string}`,
-    },
-    "query-input": "required name=search_term_string",
-  },
-};
-
-// ✅ marketplaceSchema düzeltildi — ItemList yerine daha uygun tip
-const marketplaceSchema = {
+  } catch (err) {
+    console.error("sitemap-ilanlar hatası:", err);
+    return new NextResponse(
+      `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`,
+      { status: 200, headers: { "Content-Type": "application/xml; charset=utf-8" } }
+    );
+  }
+}
   "@context": "https://schema.org",
   "@type": "WebPage",
   "@id": `${BASE}/#webpage`,
