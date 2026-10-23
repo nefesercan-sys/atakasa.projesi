@@ -1,26 +1,25 @@
-import { NextResponse } from "next/server";
-// TAM İSABET: 3 Adım Geri
-import { connectMongoDB } from "../../../lib/mongodb";
-import User from "../../../models/User";
 import bcrypt from "bcryptjs";
+import { connectMongoDB } from "@/lib/mongodb";
+import User from "@/models/User";
+import { hata, tamam } from "@/lib/yanit";
+import { hizSiniri, istemciIp } from "@/lib/ratelimit";
+
+const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function POST(req: Request) {
-  try {
-    const { name, email, password } = await req.json();
-    
-    await connectMongoDB();
-    
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return NextResponse.json({ message: "SİBER HATA: Bu e-posta ağda zaten mevcut." }, { status: 400 });
-    }
-    
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    await User.create({ name, email, password: hashedPassword });
-    
-    return NextResponse.json({ message: "Siber kimlik başarıyla oluşturuldu." }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ message: "Sistem Hatası: Kayıt yapılamadı." }, { status: 500 });
-  }
+  if (!hizSiniri(`kayit:${istemciIp(req)}`, 6, 60 * 60_000)) return hata("Çok fazla deneme. Bir süre sonra tekrar deneyin.", 429);
+  const b = await req.json().catch(() => null);
+  const name = String(b?.name || "").trim();
+  const email = String(b?.email || "").trim().toLowerCase();
+  const password = String(b?.password || "");
+  const telefon = String(b?.telefon || "").replace(/[^\d+]/g, "").slice(0, 16);
+
+  if (name.length < 2 || name.length > 60) return hata("Adınızı yazın (2-60 karakter).");
+  if (!EPOSTA.test(email) || email.length > 120) return hata("Geçerli bir e-posta yazın.");
+  if (password.length < 8 || password.length > 100) return hata("Şifre en az 8 karakter olmalı.");
+
+  await connectMongoDB();
+  if (await User.exists({ email })) return hata("Bu e-posta ile zaten üyelik var. Giriş yapabilirsiniz.", 409);
+  await User.create({ name, email, telefon: telefon || undefined, password: await bcrypt.hash(password, 10) });
+  return tamam({ mesaj: "Üyelik oluşturuldu." }, 201);
 }

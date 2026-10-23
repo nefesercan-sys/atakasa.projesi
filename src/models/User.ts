@@ -1,22 +1,17 @@
-import mongoose, { Schema, models } from "mongoose";
+import mongoose, { Schema, models, model } from "mongoose";
 
 const userSchema = new Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String },
-    role: { type: String, default: "Pro Broker" },
-    image: { type: String },
-    toplamHacim: { type: Number, default: 0 },
-    basariliIslem: { type: Number, default: 0 },
-    
-    // ⚡ ŞİFRE SIFIRLAMA PROTOKOLÜ İÇİN EKLENEN YENİ ALANLAR ⚡
-    resetPasswordToken: { type: String, required: false },
-    resetPasswordExpire: { type: Date, required: false }
+    name: { type: String, required: true, trim: true, maxlength: 60 },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String, select: false },
+    telefon: { type: String, trim: true, maxlength: 20 },
+    sehir: { type: String, trim: true, maxlength: 40 },
+    tamamlananTakas: { type: Number, default: 0 },
+    resetTokenHash: { type: String, select: false },
+    resetTokenBitis: { type: Date, select: false },
   },
-  { timestamps: true } // Ne zaman kayıt olduğunu otomatik tutar
+  { timestamps: true }
 );
 
-const User = models.User || mongoose.model("User", userSchema);
-export default User;
- 
+export default (models.User as mongoose.Model<mongoose.InferSchemaType<typeof userSchema>>) || model("User", userSchema);

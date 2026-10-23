@@ -1,31 +1,20 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+type Cache = { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
+const g = global as unknown as { _mongoose?: Cache };
+const cached: Cache = g._mongoose || (g._mongoose = { conn: null, promise: null });
 
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI environment variable is not defined");
-}
-
-let cached = (global as any).mongoose;
-
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
-
+/** İlk kullanımda bağlanır (import sırasında hata fırlatmaz → build bozulmaz). */
 export async function connectMongoDB() {
-  if (cached.conn) {
-    return cached.conn;
+  if (cached.conn) return cached.conn;
+  const uri = process.env.MONGODB_URI;
+  if (!uri) throw new Error("MONGODB_URI tanımlı değil");
+  if (!cached.promise) cached.promise = mongoose.connect(uri, { bufferCommands: false });
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
   }
-
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => {
-      return mongoose;
-    });
-  }
-
-  cached.conn = await cached.promise;
   return cached.conn;
 }
-
-// ✅ Alias — eski import'ları kırmamak için
-export const connectToDatabase = connectMongoDB;

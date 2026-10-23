@@ -1,13 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    // Bu kodlar, sistemin nerede olursa olsun tasarım kodlarını okumasını sağlar
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        marka: { DEFAULT: "#0f9d6b", koyu: "#0b7a53", acik: "#e7f7f0" },
+      },
+    },
   },
   plugins: [],
 };

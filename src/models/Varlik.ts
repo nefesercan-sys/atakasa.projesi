@@ -1,48 +1,29 @@
-import mongoose, { Schema, models } from "mongoose";
+import mongoose, { Schema, models, model } from "mongoose";
 
+// Koleksiyon adı/modeli eski sürümle aynı kalır ("varliks"): mevcut ilanlar kaybolmaz.
 const varlikSchema = new Schema(
   {
-    baslik:   { type: String, required: true },
-    fiyat:    { type: Number, required: true },
-
-    eskiFiyat:            { type: Number, default: 0 },
-    fiyatGuncellemeTarihi:{ type: Date, default: Date.now },
-
+    baslik: { type: String, required: true, trim: true, maxlength: 100 },
+    aciklama: { type: String, trim: true, maxlength: 2000, default: "" },
     kategori: { type: String, required: true },
-    ulke:     { type: String, required: true },
-    sehir:    { type: String, required: true },
-    ilce:     { type: String, required: true },
-    aciklama: { type: String },
-    takasIstegi: { type: String },
+    sehir: { type: String, required: true },
+    ilce: { type: String, trim: true, maxlength: 40, default: "" },
+    // "Karşılığında ne istiyorum?" (serbest metin)
+    takasIstegi: { type: String, trim: true, maxlength: 300, default: "" },
+    // Cloudinary adresleri (fotoğraf ve video aynı listede; video adresi /video/upload/ içerir)
     resimler: [{ type: String }],
-    satici:   { type: Schema.Types.ObjectId, ref: "User", required: true },
-    aktif:    { type: Boolean, default: true },
-
-    // ─── YENİ: SEO Slug ───────────────────────────────────
-    slug: {
-      type: String,
-      unique: true,
-      sparse: true,   // mevcut kayıtları etkilemez
-      index: true,
-      trim: true,
-    },
-
-    goruntulenmeSayisi:    { type: Number, default: 0 },
-    takasTeklifSayisi:     { type: Number, default: 0 },
-    begeniSayisi:          { type: Number, default: 0 },
+    satici: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    // aktif | takasta (teklif kabul edildi, bekliyor) | takas_oldu | pasif | silindi
+    durum: { type: String, default: "aktif", index: true },
+    slug: { type: String, unique: true, sparse: true, index: true },
+    goruntulenme: { type: Number, default: 0 },
+    teklifSayisi: { type: Number, default: 0 },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Hızlandırıcı index'ler
-varlikSchema.index({ createdAt: -1 });
-varlikSchema.index({ kategori: 1, createdAt: -1 });
-varlikSchema.index({ satici: 1, createdAt: -1 });
-varlikSchema.index({ sehir: 1, createdAt: -1 });
-varlikSchema.index({ sehir: 1, kategori: 1, createdAt: -1 });
-varlikSchema.index({ aktif: 1, createdAt: -1 });
+varlikSchema.index({ durum: 1, createdAt: -1 });
+varlikSchema.index({ kategori: 1, durum: 1, createdAt: -1 });
+varlikSchema.index({ sehir: 1, durum: 1, createdAt: -1 });
 
-const Varlik = models.Varlik || mongoose.model("Varlik", varlikSchema);
-export default Varlik;
+export default (models.Varlik as mongoose.Model<mongoose.InferSchemaType<typeof varlikSchema>>) || model("Varlik", varlikSchema);
