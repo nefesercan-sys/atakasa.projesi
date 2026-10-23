@@ -10,7 +10,7 @@ type P = { params: { kategori: string } };
 export function generateMetadata({ params }: P): Metadata {
   const k = kategoriBul(params.kategori);
   if (!k) return {};
-  return { title: `${k.ad} Takas İlanları`, description: `${k.ad} kategorisinde ücretsiz takas ilanları. İhtiyacın olmayanı ver, istediğinle takas et.`, alternates: { canonical: `/kategori/${k.slug}` } };
+  return { title: `${k.ad} Takas İlanları`, description: `${k.ad} kategorisinde ücretsiz takas ilanları. İhtiyacın olmayanı ver, istediğinle takas et.`, keywords: [`${k.ad} takas`, `ikinci el ${k.ad.toLowerCase()}`, `${k.ad} takas ilanları`, `ücretsiz ${k.ad.toLowerCase()} takası`], alternates: { canonical: `/kategori/${k.slug}` } };
 }
 
 export default async function Page({ params }: P) {

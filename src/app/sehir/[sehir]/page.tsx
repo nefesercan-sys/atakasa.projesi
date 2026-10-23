@@ -10,7 +10,7 @@ type P = { params: { sehir: string } };
 export function generateMetadata({ params }: P): Metadata {
   const il = ilBul(params.sehir);
   if (!il) return {};
-  return { title: `${il} Takas İlanları`, description: `${il} ücretsiz eşya takas ilanları. Eşyanı ilan et, ${il}'daki üyelerle takas et.`, alternates: { canonical: `/sehir/${params.sehir}` } };
+  return { title: `${il} Takas İlanları`, description: `${il} ücretsiz eşya takas ilanları. Eşyanı ilan et, ${il}'daki üyelerle takas et.`, keywords: [`${il} takas`, `${il} eşya takası`, `${il} ücretsiz takas`, `${il} takas ilanları`], alternates: { canonical: `/sehir/${params.sehir}` } };
 }
 
 export default async function Page({ params }: P) {

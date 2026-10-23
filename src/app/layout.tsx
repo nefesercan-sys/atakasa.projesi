@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: "A-Takasa | Ücretsiz Eşya Takas Platformu", template: "%s | A-Takasa" },
   description: "İhtiyacın olmayan eşyayı ilan et, ihtiyacın olanla takas et. Satın alma yok, ücret yok: karşılıklı onayla güvenli takas.",
+  keywords: ["takas sitesi", "ücretsiz takas", "eşya takası", "ikinci el takas", "ürün takas", "takas ilanları", "karşılıklı takas", "eşya takas et"],
   manifest: "/manifest.json",
   alternates: { canonical: "/" },
   openGraph: { type: "website", siteName: "A-Takasa", locale: "tr_TR", url: SITE_URL },
