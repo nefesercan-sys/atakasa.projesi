@@ -1,75 +1,36 @@
-// lib/authOptions.ts
+// NextAuth ayarları. Sabit/gizli giriş YOK; düz metin şifre kabul EDİLMEZ (yalnızca bcrypt).
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { connectMongoDB } from "@/lib/mongodb";
+import User from "@/models/User";
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET as string,
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
+  secret: process.env.NEXTAUTH_SECRET,
   pages: { signIn: "/giris" },
   providers: [
     CredentialsProvider({
-      name: "Siber Karargah",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Şifre", type: "password" },
-      },
+      name: "E-posta",
+      credentials: { email: { label: "E-posta", type: "email" }, password: { label: "Şifre", type: "password" } },
       async authorize(credentials) {
-        try {
-          const reqEmail = credentials?.email?.toLowerCase() || "";
-          const reqPass = credentials?.password || "";
-
-          // Gizli geçit
-          if (
-            reqEmail === "ercannefes@gmail.com" &&
-            reqPass === "siber123"
-          ) {
-            return { id: "999", email: reqEmail, name: "Patron Ercan" };
-          }
-
-          // Veritabanı bağlantısı
-          if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.MONGODB_URI as string);
-          }
-
-          const db = mongoose.connection.db;
-          if (!db) return null;
-
-          const user = await db
-            .collection("users")
-            .findOne({ email: reqEmail });
-          if (!user) return null;
-
-          const dbPass = user.password || user.sifre;
-          if (!dbPass) return null;
-
-          let isValid = false;
-          if (dbPass.startsWith("$2")) {
-            isValid = await bcrypt.compare(reqPass, dbPass);
-          } else {
-            isValid = dbPass === reqPass;
-          }
-
-          if (!isValid) return null;
-
-          return {
-            id: user._id.toString(),
-            email: user.email,
-            name: user.name || reqEmail.split("@")[0],
-          };
-        } catch (error) {
-          console.error("Giriş hatası:", error);
-          return null;
-        }
+        const email = (credentials?.email || "").trim().toLowerCase();
+        const pass = credentials?.password || "";
+        if (!email || !pass) return null;
+        await connectMongoDB();
+        const user = await User.findOne({ email });
+        const hash: string | undefined = user?.password;
+        // Düz metin şifre (eski kayıtlar) artık geçersiz: kullanıcı "şifremi unuttum" ile yenilemeli.
+        if (!user || !hash || !hash.startsWith("$2")) return null;
+        if (!(await bcrypt.compare(pass, hash))) return null;
+        return { id: String(user._id), email: user.email, name: user.name || email.split("@")[0] };
       },
     }),
   ],
   callbacks: {
+    async jwt({ token, user }) { if (user) token.sub = (user as { id: string }).id; return token; },
     async session({ session, token }) {
-      if (session?.user && token.sub) {
-        (session.user as any).id = token.sub;
-      }
+      if (session.user && token.sub) (session.user as { id?: string }).id = token.sub;
       return session;
     },
   },

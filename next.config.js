@@ -50,7 +50,7 @@ const nextConfig = /** @type {import('next').NextConfig} */ ({
               // Video/medya
               "media-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com",
               // API çağrıları
-              "connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://*.atakasa.com wss://*.atakasa.com",
+              "connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com",
               // Frame: hiçbir şeyi embed etme
               "frame-src 'none'",
               // Frame ancestors: başka siteler seni embed edemesin
@@ -110,28 +110,20 @@ const nextConfig = /** @type {import('next').NextConfig} */ ({
 
   async redirects() {
     return [
-      // www olmayan → www yönlendir (canonical)
-      {
-        source: "/(.*)",
-        has: [{ type: "host", value: "atakasa.com" }],
-        destination: "https://www.atakasa.com/:path*",
-        permanent: true,
-      },
-      // /index → /
+      // atakasa.com -> www (canonical)
+      { source: "/:path*", has: [{ type: "host", value: "atakasa.com" }], destination: "https://www.atakasa.com/:path*", permanent: true },
+      // Kaldırılan eski bölümler -> ilan listesi (eski SEO adresleri boş kalmasın)
+      { source: "/takas/:sehir/:kategori", destination: "/ilanlar?sehir=:sehir&kategori=:kategori", permanent: true },
+      { source: "/sehir/:sehir/:kategori", destination: "/ilanlar?sehir=:sehir&kategori=:kategori", permanent: true },
+      { source: "/sehir/:sehir", destination: "/ilanlar?sehir=:sehir", permanent: true },
+      { source: "/kategori/:kategori", destination: "/ilanlar?kategori=:kategori", permanent: true },
+      { source: "/kategori", destination: "/ilanlar", permanent: true },
+      { source: "/(urun|urun-ekle|products|varlik|kesfet|borsa|sepet|premium|trades|takas-baslat|takas-teklif|emanet-kasa|rehber)", destination: "/ilanlar", permanent: true },
+      { source: "/(urun|rehber)/:id", destination: "/ilanlar", permanent: true },
+      { source: "/panel/ilanlarim/:path*", destination: "/panel", permanent: false },
+      { source: "/panel/siparisler", destination: "/panel", permanent: false },
       { source: "/index", destination: "/", permanent: true },
-      // /home → /
       { source: "/home", destination: "/", permanent: true },
-      // Eski kategori URL'leri → yeni format
-      { source: "/kategori/takas", destination: "/takas", permanent: true },
-      { source: "/kategori/ikinci-el", destination: "/kategori/2. El", permanent: true },
-      { source: "/kategori/elektronik", destination: "/kategori/Elektronik", permanent: true },
-      { source: "/kategori/moda", destination: "/kategori/Tekstil", permanent: true },
-      { source: "/kategori/antika", destination: "/kategori/Antika Eserler", permanent: true },
-      { source: "/kategori/petshop", destination: "/kategori/Petshop", permanent: true },
-      { source: "/kategori/kitap", destination: "/kategori/Kitap", permanent: true },
-      { source: "/kategori/oyuncak", destination: "/kategori/Oyuncak", permanent: true },
-      { source: "/kategori/dogal", destination: "/kategori/Doğal Ürünler", permanent: true },
-      { source: "/kategori/kozmetik", destination: "/kategori/Kozmetik", permanent: true },
     ];
   },
 
