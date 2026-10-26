@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
+import { REHBER } from "@/lib/rehber";
 import { KATEGORILER } from "@/lib/kategoriler";
 import { ILLER, slugla } from "@/lib/iller";
 import { connectMongoDB } from "@/lib/mongodb";
@@ -12,6 +13,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE_URL, changeFrequency: "daily", priority: 1 },
     { url: `${SITE_URL}/nasil-calisir`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/kayit`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${SITE_URL}/takas-rehberi`, changeFrequency: "weekly" as const, priority: 0.7 },
+    ...REHBER.map((r) => ({ url: `${SITE_URL}/takas-rehberi/${r.slug}`, changeFrequency: "monthly" as const, priority: 0.7 })),
     ...KATEGORILER.map((k) => ({ url: `${SITE_URL}/kategori/${k.slug}`, changeFrequency: "daily" as const, priority: 0.7 })),
     ...ILLER.map((i) => ({ url: `${SITE_URL}/sehir/${slugla(i)}`, changeFrequency: "daily" as const, priority: 0.5 })),
   ];

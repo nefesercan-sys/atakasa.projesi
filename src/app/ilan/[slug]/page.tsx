@@ -9,6 +9,8 @@ import { kategoriBul } from "@/lib/kategoriler";
 import { slugla } from "@/lib/iller";
 import { onizleme, videoMu } from "@/lib/medya";
 import TeklifFormu from "@/components/TeklifFormu";
+import JsonLd from "@/components/JsonLd";
+import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 type P = { params: { slug: string } };
@@ -23,7 +25,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   if (!i) return { title: "İlan bulunamadı", robots: { index: false } };
   const d = (i.aciklama || `${i.sehir} ${i.baslik} takas ilanı.`).slice(0, 150);
   return {
-    title: `${i.baslik} - Takas | ${i.sehir}`.slice(0, 60),
+    title: `${i.baslik} Takas | ${i.sehir}`.slice(0, 60),
     description: d,
     alternates: { canonical: `/ilan/${i.slug}` },
     openGraph: { images: i.resimler?.[0] ? [onizleme(i.resimler[0], 1000)] : [] },
@@ -46,6 +48,11 @@ export default async function Page({ params }: P) {
 
   return (
     <article className="grid gap-6 md:grid-cols-2">
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Ana sayfa", item: SITE_URL },
+        ...(kat ? [{ "@type": "ListItem", position: 2, name: `${kat.ad} takas`, item: `${SITE_URL}/kategori/${kat.slug}` }] : []),
+        { "@type": "ListItem", position: kat ? 3 : 2, name: i.baslik, item: `${SITE_URL}/ilan/${i.slug}` },
+      ] }} />
       <div className="space-y-2">
         {i.resimler.map((u, k) =>
           videoMu(u) ? (

@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
+import Sss from "@/components/Sss";
+import { GENEL_SSS } from "@/lib/sss";
 export const metadata: Metadata = { title: "Nasıl Çalışır?", description: "A-Takasa'da ilan ver, teklif al, karşılıklı onayla takas et. Tamamen ücretsiz, satış yok.", alternates: { canonical: "/nasil-calisir" } };
 
 const ADIM = [
@@ -13,6 +16,7 @@ const ADIM = [
 export default function Page() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "HowTo", name: "A-Takasa'da eşya takası nasıl yapılır?", inLanguage: "tr", step: ADIM.map(([b, a]) => ({ "@type": "HowToStep", name: b.replace(/^\d+\.\s*/, ""), text: a })) }} />
       <h1 className="text-2xl font-bold">Nasıl çalışır?</h1>
       {ADIM.map(([b, a]) => (
         <div key={b} className="kart p-4"><h2 className="font-semibold text-marka-koyu">{b}</h2><p className="text-gray-700">{a}</p></div>
@@ -21,6 +25,7 @@ export default function Page() {
         <b>Güvenlik:</b> Eşyaları kalabalık, güvenli bir yerde teslim alın; ürünü görmeden ve kontrol etmeden onay vermeyin. A-Takasa şimdilik tamamen ücretsizdir ve para transferi yapılmaz.
       </div>
       <Link href="/ilan-ver" className="btn">Hemen ilan ver</Link>
+      <Sss oge={GENEL_SSS} />
     </div>
   );
 }

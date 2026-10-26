@@ -1,0 +1,19 @@
+# A-Takasa (atakasa.com)
+
+> A-Takasa, Türkiye'de ücretsiz eşya takas sitesidir. Kullanıcılar ihtiyaç fazlası eşyalarını (telefon, araba, ev, saat, çakmak, mobilya, giyim, elektronik vb.) ilan eder ve karşılığında istedikleri başka bir eşyayla takas eder. Satış ve para transferi yoktur; takas, iki tarafın karşılıklı onayıyla yüz yüze tamamlanır. Üyelik, ilan ve teklif ücretsizdir.
+
+## Önemli sayfalar
+- [Ana sayfa](https://atakasa.com/)
+- [Nasıl çalışır?](https://atakasa.com/nasil-calisir)
+- [Takas rehberi](https://atakasa.com/takas-rehberi)
+- [Telefon takası](https://atakasa.com/takas-rehberi/telefon-takasi)
+- [Araba takası](https://atakasa.com/takas-rehberi/araba-takasi)
+- [Ev takası](https://atakasa.com/takas-rehberi/ev-takasi)
+- [Saat takası](https://atakasa.com/takas-rehberi/saat-takasi)
+- [Çakmak ve koleksiyon takası](https://atakasa.com/takas-rehberi/cakmak-koleksiyon-takasi)
+- [Mobilya takası](https://atakasa.com/takas-rehberi/mobilya-takasi)
+- [Güvenli takas](https://atakasa.com/takas-rehberi/guvenli-takas)
+
+## Notlar
+- Araç ve taşınmaz devri A-Takasa üzerinden yapılmaz; noter, trafik veya tapu gibi resmî kanallarda taraflarca yapılır.
+- İlanlar kategori (/kategori/<ad>) ve şehir (/sehir/<il>) sayfalarında listelenir.
