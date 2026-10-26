@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   alternates: { canonical: "/" },
   applicationName: "A-Takasa",
-  openGraph: { type: "website", siteName: "A-Takasa", locale: "tr_TR", url: SITE_URL, title: "A-Takasa | Ücretsiz Takas Sitesi", description: "İhtiyacın olmayan eşyayı ilan et, istediğinle takas et. Telefon, araba, ev, saat, mobilya ve daha fazlası." },
-  twitter: { card: "summary", title: "A-Takasa | Ücretsiz Takas Sitesi", description: "İhtiyacın olmayan eşyayı ilan et, istediğinle takas et." },
+  openGraph: { type: "website", siteName: "A-Takasa", locale: "tr_TR", url: SITE_URL, images: [{ url: "/og.png", width: 1200, height: 630, alt: "A-Takasa - Ücretsiz Takas Sitesi" }], title: "A-Takasa | Ücretsiz Takas Sitesi", description: "İhtiyacın olmayan eşyayı ilan et, istediğinle takas et. Telefon, araba, ev, saat, mobilya ve daha fazlası." },
+  twitter: { card: "summary_large_image", images: ["/og.png"], title: "A-Takasa | Ücretsiz Takas Sitesi", description: "İhtiyacın olmayan eşyayı ilan et, istediğinle takas et." },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0f9d6b" };

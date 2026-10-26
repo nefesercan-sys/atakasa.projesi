@@ -10,6 +10,7 @@ import { slugla } from "@/lib/iller";
 import { onizleme, videoMu } from "@/lib/medya";
 import TeklifFormu from "@/components/TeklifFormu";
 import JsonLd from "@/components/JsonLd";
+import IlanKart from "@/components/IlanKart";
 import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,9 @@ export default async function Page({ params }: P) {
     ? (await Varlik.find({ satici: o.id, durum: "aktif" }).select("baslik").lean()).map((x) => ({ _id: String(x._id), baslik: x.baslik }))
     : [];
   const kat = kategoriBul(i.kategori);
+  const benzer = i.durum === "aktif"
+    ? JSON.parse(JSON.stringify(await Varlik.find({ durum: "aktif", kategori: i.kategori, _id: { $ne: i._id } }).sort({ createdAt: -1 }).limit(4).select("baslik slug sehir resimler takasIstegi").lean()))
+    : [];
 
   return (
     <article className="grid gap-6 md:grid-cols-2">
@@ -83,6 +87,12 @@ export default async function Page({ params }: P) {
           <div className="kart p-4"><TeklifFormu hedefId={String(i._id)} benimIlanlar={benim} girisli={!!o} /></div>
         )}
       </div>
+      {benzer.length > 0 && (
+        <section className="md:col-span-2">
+          <h2 className="mb-3 text-lg font-bold">Benzer takas ilanları</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{benzer.map((x: { _id: string; baslik: string; sehir: string; slug: string; resimler: string[]; takasIstegi?: string }) => <IlanKart key={x._id} i={x} />)}</div>
+        </section>
+      )}
     </article>
   );
 }

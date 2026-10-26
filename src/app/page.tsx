@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { KATEGORILER } from "@/lib/kategoriler";
-import { sonIlanlar } from "@/lib/ilanlar";
+import { sonIlanlar, istatistik } from "@/lib/ilanlar";
 import IlanKart from "@/components/IlanKart";
 import Sss from "@/components/Sss";
 import JsonLd from "@/components/JsonLd";
@@ -13,22 +13,44 @@ const POPULER_ILLER = ["İstanbul", "Ankara", "İzmir", "Antalya", "Bursa", "Ada
 export const revalidate = 60;
 
 export default async function Home() {
-  const ilanlar = await sonIlanlar();
+  const [ilanlar, st] = await Promise.all([sonIlanlar(), istatistik()]);
+  const sayac = [["Üye", st.uye], ["Aktif ilan", st.ilan], ["Tamamlanan takas", st.takas]].filter(([, n]) => (n as number) >= 10);
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl bg-gradient-to-br from-marka to-marka-koyu p-8 text-white">
-        <h1 className="text-3xl font-extrabold sm:text-4xl">İhtiyacın olmayanı ver, ihtiyacın olanı al.</h1>
-        <p className="mt-2 max-w-xl text-white/90">Satın alma yok, ücret yok. Eşyanın fotoğrafını ekle, karşılığında istediğini yaz; teklifler gelsin, karşılıklı onayla takas gerçekleşsin.</p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Link href="/ilan-ver" className="rounded-lg bg-white px-5 py-2.5 font-bold text-marka-koyu">+ Ücretsiz İlan Ver</Link>
-          <Link href="/nasil-calisir" className="rounded-lg border border-white/60 px-5 py-2.5 font-semibold">Nasıl çalışır?</Link>
+      <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-marka to-marka-koyu p-6 text-white sm:p-10">
+        <div className="grid items-center gap-6 md:grid-cols-2">
+          <div>
+            <p className="mb-2 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">100% ücretsiz · satış yok · karşılıklı onay</p>
+            <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">İhtiyacın olmayanı ver, ihtiyacın olanı al.</h1>
+            <p className="mt-3 max-w-xl text-white/90">Eşyanın fotoğrafını veya videosunu ekle, karşılığında ne istediğini yaz. Teklifler gelsin, iki taraf onaylayınca takas tamam.</p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link href="/ilan-ver" className="rounded-lg bg-white px-5 py-3 font-bold text-marka-koyu shadow">+ Ücretsiz İlan Ver</Link>
+              <Link href="/nasil-calisir" className="rounded-lg border border-white/60 px-5 py-3 font-semibold">Nasıl çalışır?</Link>
+            </div>
+            {sayac.length > 0 && (
+              <dl className="mt-6 flex gap-6">
+                {sayac.map(([ad, n]) => (<div key={ad as string}><dt className="text-xs text-white/80">{ad}</dt><dd className="text-2xl font-extrabold">{n}</dd></div>))}
+              </dl>
+            )}
+          </div>
+          <div className="hidden items-center justify-center gap-3 md:flex" aria-hidden="true">
+            <div className="rotate-[-6deg] rounded-2xl bg-white p-6 text-center text-gray-800 shadow-xl"><div className="text-6xl">📱</div><p className="mt-2 text-sm font-semibold">Telefon</p></div>
+            <div className="text-4xl">🔁</div>
+            <div className="rotate-[6deg] rounded-2xl bg-white p-6 text-center text-gray-800 shadow-xl"><div className="text-6xl">🚴</div><p className="mt-2 text-sm font-semibold">Bisiklet</p></div>
+          </div>
         </div>
       </section>
 
-      <section className="flex gap-2 overflow-x-auto pb-1">
-        {KATEGORILER.map((k) => (
-          <Link key={k.slug} href={`/kategori/${k.slug}`} className="kart shrink-0 px-4 py-2 text-sm hover:bg-marka-acik">{k.emoji} {k.ad}</Link>
-        ))}
+      <section>
+        <h2 className="mb-3 text-xl font-bold">Kategoriler</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {KATEGORILER.map((k) => (
+            <Link key={k.slug} href={`/kategori/${k.slug}`} className="kart flex items-center gap-3 p-3 transition hover:border-marka hover:bg-marka-acik">
+              <span className="text-3xl" aria-hidden="true">{k.emoji}</span>
+              <span className="text-sm font-semibold leading-tight">{k.ad}</span>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section>
@@ -36,7 +58,7 @@ export default async function Home() {
         {ilanlar.length ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{ilanlar.map((i) => <IlanKart key={i._id} i={i} />)}</div>
         ) : (
-          <div className="kart p-8 text-center text-gray-600">Henüz ilan yok. <Link href="/ilan-ver" className="font-semibold text-marka underline">İlk ilanı sen ver!</Link></div>
+          <div className="kart space-y-3 p-8 text-center"><p className="text-4xl" aria-hidden="true">📦</p><p className="font-semibold">Vitrin yeni açıldı, ilk ilanlar yolda.</p><p className="text-sm text-gray-600">Evde kullanmadığın bir eşya varsa ilan ver; karşılığında ihtiyacın olanı yaz.</p><Link href="/ilan-ver" className="btn">İlk ilanı sen ver</Link></div>
         )}
       </section>
 
