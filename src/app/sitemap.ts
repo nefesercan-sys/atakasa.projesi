@@ -5,6 +5,7 @@ import { KATEGORILER } from "@/lib/kategoriler";
 import { ILLER, slugla } from "@/lib/iller";
 import { connectMongoDB } from "@/lib/mongodb";
 import Varlik from "@/models/Varlik";
+import { SP_LANGS, spPath } from "@/lib/sineklik-panjur";
 
 export const revalidate = 3600;
 
@@ -15,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/kayit`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/takas-rehberi`, changeFrequency: "weekly" as const, priority: 0.7 },
     ...REHBER.map((r) => ({ url: `${SITE_URL}/takas-rehberi/${r.slug}`, changeFrequency: "monthly" as const, priority: 0.7 })),
+    ...SP_LANGS.map((l: string) => ({ url: `${SITE_URL}${spPath(l)}`, changeFrequency: "monthly" as const, priority: 0.6 })),
     ...KATEGORILER.map((k) => ({ url: `${SITE_URL}/kategori/${k.slug}`, changeFrequency: "daily" as const, priority: 0.7 })),
     ...ILLER.map((i) => ({ url: `${SITE_URL}/sehir/${slugla(i)}`, changeFrequency: "daily" as const, priority: 0.5 })),
   ];
