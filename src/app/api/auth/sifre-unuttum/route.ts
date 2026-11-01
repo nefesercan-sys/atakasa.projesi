@@ -8,7 +8,7 @@ import { SITE_URL } from "@/lib/site";
 
 // Hesap var/yok bilgisi sızdırılmaz: her durumda aynı cevap döner.
 export async function POST(req: Request) {
-  if (!hizSiniri(`sifre:${istemciIp(req)}`, 5, 60 * 60_000)) return hata("Çok fazla deneme. Bir süre sonra tekrar deneyin.", 429);
+  if (!(await hizSiniri(`sifre:${istemciIp(req)}`, 5, 60 * 60_000))) return hata("Çok fazla deneme. Bir süre sonra tekrar deneyin.", 429);
   const b = await req.json().catch(() => null);
   const email = String(b?.email || "").trim().toLowerCase();
   const cevap = { mesaj: "Bu e-posta ile bir hesap varsa, şifre sıfırlama bağlantısı gönderildi." };

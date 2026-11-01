@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const o = await oturumAl();
   if (!o) return hata("İlan vermek için giriş yapın.", 401);
-  if (!hizSiniri(`ilan:${o.id}`, 20, 60 * 60_000)) return hata("Saatte en fazla 20 ilan verebilirsiniz.", 429);
+  if (!(await hizSiniri(`ilan:${o.id}`, 20, 60 * 60_000))) return hata("Saatte en fazla 20 ilan verebilirsiniz.", 429);
 
   const b = await req.json().catch(() => null);
   const baslik = String(b?.baslik || "").trim();

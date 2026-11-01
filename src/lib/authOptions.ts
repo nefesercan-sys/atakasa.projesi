@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { connectMongoDB } from "@/lib/mongodb";
 import User from "@/models/User";
-import { hizSiniri } from "@/lib/ratelimit";
+import { hizSiniri, istemciIp } from "@/lib/ratelimit";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
@@ -16,12 +16,14 @@ export const authOptions: NextAuthOptions = {
         email: { label: "E-posta", type: "email" },
         password: { label: "Şifre", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         const email = (credentials?.email || "").trim().toLowerCase();
         const sifre = credentials?.password || "";
         if (!email || !sifre) return null;
-        // Aynı e-postaya art arda deneme: dakikada en fazla 8
-        if (!hizSiniri(`giris:${email}`, 8, 60_000)) return null;
+        // Deneme sınırı IP başına (e-posta+IP: başkası kurbanın hesabını kilitleyemez; yalnız IP: toplu deneme kesilir)
+        const ip = istemciIp(req as { headers?: Record<string, string | string[] | undefined> });
+        if (!(await hizSiniri(`giris:${email}:${ip}`, 8, 10 * 60_000))) return null;
+        if (!(await hizSiniri(`giris-ip:${ip}`, 40, 10 * 60_000))) return null;
 
         await connectMongoDB();
         const user = await User.findOne({ email }).select("+password").lean<{ _id: unknown; email: string; name: string; password?: string }>();

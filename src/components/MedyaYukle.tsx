@@ -17,17 +17,14 @@ export default function MedyaYukle({ deger, onDegis }: { deger: string[]; onDegi
     const yeni: string[] = [];
     try {
       const imza = await fetch("/api/upload/imza", { method: "POST" }).then((r) => (r.ok ? r.json() : null));
+      if (!imza) { setHata("Yükleme şu an kullanılamıyor. Giriş yaptığınızdan emin olun veya daha sonra deneyin."); setYukleniyor(false); return; }
       for (const d of secilen) {
         if (!/^(image|video)\//.test(d.type)) { setHata("Yalnızca fotoğraf veya video yükleyin."); continue; }
         if (d.size > MAX_MB * 1024 * 1024) { setHata(`Dosya en fazla ${MAX_MB} MB olabilir.`); continue; }
         const f = new FormData();
         f.append("file", d);
-        if (imza) {
-          f.append("api_key", imza.apiKey); f.append("timestamp", String(imza.timestamp));
-          f.append("folder", imza.folder); f.append("signature", imza.signature);
-        } else {
-          f.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "atakasa_unsigned");
-        }
+        f.append("api_key", imza.apiKey); f.append("timestamp", String(imza.timestamp));
+        f.append("folder", imza.folder); f.append("allowed_formats", imza.allowed_formats); f.append("signature", imza.signature);
         const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_ADI}/auto/upload`, { method: "POST", body: f });
         const j = await r.json();
         if (j.secure_url) yeni.push(j.secure_url);
