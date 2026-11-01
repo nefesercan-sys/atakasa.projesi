@@ -6,7 +6,7 @@ import { tamam, hata } from "@/lib/yanit";
 import { hizSiniri, istemciIp } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
-  if (!hizSiniri(`sifreyenile:${istemciIp(req)}`, 10, 60 * 60_000)) return hata("Çok fazla deneme.", 429);
+  if (!(await hizSiniri(`sifreyenile:${istemciIp(req)}`, 10, 60 * 60_000))) return hata("Çok fazla deneme.", 429);
   const b = await req.json().catch(() => null);
   const token = String(b?.token || "");
   const yeni = String(b?.yeniSifre || "");

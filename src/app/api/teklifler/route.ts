@@ -48,7 +48,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const o = await oturumAl();
   if (!o) return hata("Teklif için giriş yapın.", 401);
-  if (!hizSiniri(`teklif:${o.id}`, 30, 60 * 60_000)) return hata("Saatlik teklif sınırına ulaştınız.", 429);
+  if (!(await hizSiniri(`teklif:${o.id}`, 30, 60 * 60_000))) return hata("Saatlik teklif sınırına ulaştınız.", 429);
 
   const b = await req.json().catch(() => null);
   const hedefId = String(b?.hedefIlan || "");

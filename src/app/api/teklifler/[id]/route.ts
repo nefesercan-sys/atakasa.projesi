@@ -28,22 +28,39 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const s = gecis({ durum: t.durum as TeklifDurum, gonderenOnay: t.gonderenOnay, aliciOnay: t.aliciOnay }, islem, rol);
   if (!s.ok) return hata(s.hata, 409);
 
-  // Kabulde iki ilan da hâlâ aktif olmalı; "aktif → takasta" geçişi koşullu (yarış durumuna karşı).
+  // Teklif belgesini ATOMİK olarak "sahiplen": yalnızca okuduğumuz durumdayken yeni duruma geçer.
+  // Aynı anda gelen ikinci istek (çift tıklama, iki tarafın eşzamanlı onayı) bu koşulu sağlayamaz → 409.
+  const onceki = { _id: t._id, durum: t.durum, gonderenOnay: t.gonderenOnay, aliciOnay: t.aliciOnay };
+  const yeniAlanlar = { durum: s.yeni.durum, gonderenOnay: s.yeni.gonderenOnay, aliciOnay: s.yeni.aliciOnay };
+  const CAKISMA = "Teklif başka bir işlemle güncellendi; sayfayı yenileyip tekrar deneyin.";
+
   if (islem === "kabul") {
+    // Kabulde iki ilan da hâlâ aktif olmalı; "aktif → takasta" geçişi koşullu (yarış durumuna karşı).
     const a = await Varlik.updateOne({ _id: t.hedefIlan, durum: "aktif" }, { durum: "takasta" });
     if (a.modifiedCount !== 1) return hata("İlanınız artık aktif değil.", 409);
     const c = await Varlik.updateOne({ _id: t.teklifIlan, durum: "aktif" }, { durum: "takasta" });
     if (c.modifiedCount !== 1) {
       await Varlik.updateOne({ _id: t.hedefIlan, durum: "takasta" }, { durum: "aktif" });
-      await Teklif.updateOne({ _id: t._id }, { durum: "iptal" });
+      await Teklif.updateOne({ _id: t._id, durum: "bekliyor" }, { durum: "iptal" });
       return hata("Teklif edilen ilan artık uygun değil; teklif iptal edildi.", 409);
     }
-  } else if (s.ilanlar === "aktif") {
-    // İptal: yalnızca hâlâ "takasta" olan ilanları geri aç (silinen/pasif olanlara dokunma).
-    await Varlik.updateMany({ _id: { $in: [t.hedefIlan, t.teklifIlan] }, durum: "takasta" }, { durum: "aktif" });
-  } else if (s.ilanlar === "takas_oldu") {
-    await Varlik.updateMany({ _id: { $in: [t.hedefIlan, t.teklifIlan] } }, { durum: "takas_oldu" });
-    await User.updateMany({ _id: { $in: [t.gonderen, t.alici] } }, { $inc: { tamamlananTakas: 1 } });
+    const k = await Teklif.findOneAndUpdate(onceki, yeniAlanlar, { new: true });
+    if (!k) {
+      // Teklif başka bir istek tarafından değiştirildi: bu isteğin takasa aldığı ilanları geri aç.
+      await Varlik.updateMany({ _id: { $in: [t.hedefIlan, t.teklifIlan] }, durum: "takasta" }, { durum: "aktif" });
+      return hata(CAKISMA, 409);
+    }
+  } else {
+    const k = await Teklif.findOneAndUpdate(onceki, yeniAlanlar, { new: true });
+    if (!k) return hata(CAKISMA, 409);
+    // Buradan sonrası yalnızca geçişi KAZANAN istekte çalışır (sayaç çift artmaz).
+    if (s.ilanlar === "aktif") {
+      // İptal: yalnızca hâlâ "takasta" olan ilanları geri aç (silinen/pasif olanlara dokunma).
+      await Varlik.updateMany({ _id: { $in: [t.hedefIlan, t.teklifIlan] }, durum: "takasta" }, { durum: "aktif" });
+    } else if (s.ilanlar === "takas_oldu") {
+      await Varlik.updateMany({ _id: { $in: [t.hedefIlan, t.teklifIlan] } }, { durum: "takas_oldu" });
+      await User.updateMany({ _id: { $in: [t.gonderen, t.alici] } }, { $inc: { tamamlananTakas: 1 } });
+    }
   }
 
   if (s.digerTeklifleriIptalEt) {
@@ -53,9 +70,5 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     );
   }
 
-  t.durum = s.yeni.durum;
-  t.gonderenOnay = s.yeni.gonderenOnay;
-  t.aliciOnay = s.yeni.aliciOnay;
-  await t.save();
-  return tamam({ durum: t.durum, gonderenOnay: t.gonderenOnay, aliciOnay: t.aliciOnay });
+  return tamam({ durum: s.yeni.durum, gonderenOnay: s.yeni.gonderenOnay, aliciOnay: s.yeni.aliciOnay });
 }
