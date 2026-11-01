@@ -106,7 +106,7 @@ export default function SineklikPanjur({ params }) {
   );
 
   return (
-    <div dir={isRtl(lang) ? "rtl" : "ltr"} className="fixed inset-0 z-[100] overflow-y-auto bg-[#030712] text-slate-200 pt-28 pb-28 px-4 md:px-8">
+    <div dir={isRtl(lang) ? "rtl" : "ltr"} lang={lang} className="min-h-screen bg-[#030712] text-slate-200 pt-28 pb-28 px-4 md:px-8">
       <header className="fixed top-0 inset-x-0 z-50 bg-[#030712]/90 backdrop-blur border-b border-white/10">
         <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between gap-4 flex-wrap">
           <Link href={spPath(lang)} aria-label={`${SP_BRAND} — ${x.tagline}`}>
@@ -121,13 +121,9 @@ export default function SineklikPanjur({ params }) {
           </nav>
         </div>
       </header>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
 
       <article className="max-w-3xl mx-auto">
-        <p className="text-sm mb-6">
-          <Link href="/" className="text-[#00f260] hover:underline">{c.home}</Link>
-        </p>
-
         <div className="relative rounded-3xl overflow-hidden mb-10 border border-white/10">
           <Image src={IMAGES[HERO_INDEX]} alt={x.imgs[HERO_INDEX]} width={IMG_W} height={IMG_H} priority sizes="(max-width: 768px) 100vw, 768px" className="w-full h-72 md:h-96 object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-[#030712]/60 to-transparent" />
@@ -138,7 +134,7 @@ export default function SineklikPanjur({ params }) {
         </div>
         <p className="text-lg text-slate-300 mb-6">{c.lead}</p>
         <div className="flex flex-wrap gap-3 mb-10">
-          <a href={wa} rel="noopener" className="px-5 py-3 rounded-xl bg-[#1fa855] text-white font-bold">{c.wa}</a>
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="px-5 py-3 rounded-xl bg-[#1fa855] text-white font-bold">{c.wa}</a>
           <a href={`tel:${SP_PHONE_TEL}`} className="px-5 py-3 rounded-xl border border-white/20 text-white font-bold">
             {c.call}: <bdi>{SP_PHONE_DISPLAY}</bdi>
           </a>
@@ -247,7 +243,7 @@ export default function SineklikPanjur({ params }) {
           <h2 className="text-2xl font-bold text-white mb-2">{c.ctaH}</h2>
           <p className="text-slate-300 mb-4">{c.ctaText}</p>
           <div className="flex flex-wrap gap-3">
-            <a href={wa} rel="noopener" className="px-5 py-3 rounded-xl bg-[#1fa855] text-white font-bold">{c.wa}</a>
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="px-5 py-3 rounded-xl bg-[#1fa855] text-white font-bold">{c.wa}</a>
             <a href={`tel:${SP_PHONE_TEL}`} className="px-5 py-3 rounded-xl border border-white/20 text-white font-bold"><bdi>{SP_PHONE_DISPLAY}</bdi></a>
           </div>
         </section>
@@ -266,7 +262,7 @@ export default function SineklikPanjur({ params }) {
         © {new Date().getFullYear()} {SP_BRAND} · {SP_CITY} · <bdi>{SP_PHONE_DISPLAY}</bdi>
       </footer>
 
-      <a href={wa} rel="noopener" aria-label={c.wa} className="fixed bottom-4 end-4 z-50 px-4 py-3 rounded-full bg-[#1fa855] text-white font-black shadow-lg">WhatsApp</a>
+      <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={c.wa} className="fixed bottom-4 end-4 z-50 px-4 py-3 rounded-full bg-[#1fa855] text-white font-black shadow-lg">WhatsApp</a>
     </div>
   );
 }

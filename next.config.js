@@ -44,6 +44,7 @@ const nextConfig = {
 
   async redirects() {
     return [
+      { source: "/sineklik-panjur", destination: "/sineklik-panjur/tr", permanent: true },
       // Eski sürümden kalan adresler → yeni sayfalar (arama motorlarındaki linkler kırılmasın)
       { source: "/varlik/:slug", destination: "/ilan/:slug", permanent: true },
       { source: "/varlik", destination: "/", permanent: true },
