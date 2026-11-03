@@ -133,6 +133,54 @@ export const REHBER: RehberKonu[] = [
       { s: "Takas sırasında para göndermem gerekir mi?", c: "Hayır. A-Takasa'da ödeme alınmaz; ön ödeme veya havale isteyen kişilere karşı dikkatli olun." },
     ],
   },
+  {
+    slug: "bilgisayar-takasi",
+    baslik: "Bilgisayar ve Laptop Takası Nasıl Yapılır?",
+    ozet: "Laptop, masaüstü bilgisayar ve bileşen takasında ilan hazırlama, test listesi ve güvenli buluşma önerileri.",
+    kategori: "elektronik",
+    anahtar: ["bilgisayar takası", "laptop takas", "ikinci el laptop takas", "bilgisayar takas et", "ekran kartı takas"],
+    bolumler: [
+      { h: "İlanını hazırla", p: ["Marka, model, işlemci, bellek, depolama türü ve kapasitesi, ekran kartı ve yaşı gibi bilgileri yaz. Ekran, klavye ve portların net fotoğraflarını ekle. Şarj aleti, kutu veya fatura varsa belirt. Karşılığında ne istediğini açıkça yaz."] },
+      { h: "Teslim almadan önce test et", p: ["Cihazı açıp ekranda ölü piksel, klavye ve dokunmatik alan, kamera, hoparlör, Wi-Fi ve USB girişlerini dene. Pil ömrünü ve şarj durumunu kontrol et; mümkünse bir süre yük altında çalıştır.", "Kişisel verilerin silindiğinden ve hesap kilitlerinin (cihaz hesabı, BIOS parolası) kaldırıldığından emin ol."] },
+      { h: "Güvenli buluşma", p: [ORTAK_GUVENLIK] },
+    ],
+    sss: [
+      { s: "Laptop takasında nelere bakmalıyım?", c: "Ekran, klavye, pil, bağlantı noktaları ve performansı test edin; kişisel verilerin silindiğini ve hesap kilidi olmadığını kontrol edin. Mümkünse cihazın faturasını veya belgesini isteyin." },
+      { s: "Bilgisayar parçalarını ayrı ayrı takas edebilir miyim?", c: "Evet. Ekran kartı, bellek, depolama gibi parçalar için de ilan verebilir, karşılığında istediğiniz eşyayı yazabilirsiniz." },
+    ],
+  },
+  {
+    slug: "oyun-konsolu-takasi",
+    baslik: "Oyun Konsolu ve Oyun Takası Nasıl Yapılır?",
+    ozet: "Konsol, kol ve oyun takasında ilan hazırlama, hesap ve garanti kontrolü ve güvenli buluşma ipuçları.",
+    kategori: "oyun-konsol",
+    anahtar: ["oyun konsolu takası", "playstation takas", "konsol takas", "oyun takas", "pc oyun takas"],
+    bolumler: [
+      { h: "İlanda neleri yazmalı?", p: ["Konsolun modelini, depolama kapasitesini, yanındaki kol ve oyunları ve genel durumunu yaz. Gövde ve kolların fotoğraflarını ekle. Dijital oyunlar hesaba bağlıysa bunu belirt."] },
+      { h: "Teslimden önce kontrol", p: ["Konsolu açıp bir oyun çalıştır; disk okuyucuyu, kolun tuş ve analoglarını, HDMI ve şarj girişlerini dene. Konsolun hesabının sıfırlandığından ve çıkış yapıldığından emin ol.", "Dijital oyun ve hesap devrinin ilgili platformun kullanım koşullarına uygun olup olmadığını önceden öğren."] },
+      { h: "Güvenli buluşma", p: [ORTAK_GUVENLIK] },
+    ],
+    sss: [
+      { s: "Konsol takasında hesaplar nasıl devredilir?", c: "Kişisel hesabınızı paylaşmak yerine konsolu hesabınızdan çıkarıp fabrika ayarlarına döndürmeniz önerilir. Dijital oyun devri platformun kurallarına bağlıdır." },
+      { s: "Oyun diskini tek başına takas edebilir miyim?", c: "Evet. Disk oyunlar ve kollar için de ücretsiz ilan verebilir, karşılığında istediğinizi yazabilirsiniz." },
+    ],
+  },
+  {
+    slug: "bebek-esyalari-takasi",
+    baslik: "Bebek ve Çocuk Eşyaları Takası Nasıl Yapılır?",
+    ozet: "Bebek arabası, oto koltuğu, giysi ve oyuncak takasında ilan hazırlama ve güvenlik kontrol listesi.",
+    kategori: "bebek-cocuk",
+    anahtar: ["bebek eşyası takası", "bebek arabası takas", "çocuk eşyası takas", "oto koltuğu takas", "oyuncak takas"],
+    bolumler: [
+      { h: "İlanını hazırla", p: ["Ürünün türünü, markasını, yaşını ve kaç kişi tarafından kullanıldığını yaz. Genel durumu ve varsa kusurları dürüstçe belirt; ön ve yan fotoğraflar ekle."] },
+      { h: "Güvenlik kontrolü", p: ["Oto koltuğu, bebek arabası ve beşik gibi ürünlerde kırık, çatlak, gevşek bağlantı ve eksik parça olup olmadığına bakın. Ürünün kaza geçirip geçirmediğini ve kullanım kılavuzunun bulunup bulunmadığını sorun.", "Oyuncaklarda küçük parçaların sağlamlığını ve temizliğini kontrol edin."] },
+      { h: "Güvenli buluşma", p: [ORTAK_GUVENLIK] },
+    ],
+    sss: [
+      { s: "İkinci el oto koltuğu takas edilir mi?", c: "Takas edilebilir, ancak ürünün kaza geçirmemiş olduğundan ve parçalarının eksiksiz olduğundan emin olunmalıdır. Kuşkunuz varsa ürünü almamanız daha güvenlidir." },
+      { s: "Çocuk giysilerini toplu takas edebilir miyim?", c: "Evet. Beden ve mevsime göre gruplayıp tek ilanda verebilir, karşılığında istediğiniz eşyayı yazabilirsiniz." },
+    ],
+  },
 ];
 
 export const rehberBul = (slug?: string) => REHBER.find((r) => r.slug === slug);

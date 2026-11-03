@@ -12,13 +12,16 @@ import IlanKart from "@/components/IlanKart";
 export const revalidate = 120;
 type P = { params: { kategori: string } };
 
-export function generateMetadata({ params }: P): Metadata {
+export async function generateMetadata({ params }: P): Promise<Metadata> {
   const k = kategoriBul(params.kategori);
   if (!k) return {};
+  const bos = (await sonIlanlar({ kategori: k.slug }, 1)).length === 0;
   return {
     title: `${k.ad} Takas İlanları`,
     description: k.tanim,
     keywords: [...k.anahtar, `${k.ad} takas`, `ücretsiz ${k.ad.toLowerCase()} takası`],
+    // İlan yoksa ince sayfa: arama sonuçlarına girmesin (ilan gelince otomatik indexlenir).
+    robots: bos ? { index: false, follow: true } : undefined,
     alternates: { canonical: `/kategori/${k.slug}` },
     openGraph: { title: `${k.ad} Takas İlanları | A-Takasa`, description: k.tanim, url: `${SITE_URL}/kategori/${k.slug}` },
   };
