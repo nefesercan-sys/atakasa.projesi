@@ -12,14 +12,17 @@ import Sss from "@/components/Sss";
 export const revalidate = 120;
 type P = { params: { sehir: string } };
 
-export function generateMetadata({ params }: P): Metadata {
+export async function generateMetadata({ params }: P): Promise<Metadata> {
   const il = ilBul(params.sehir);
   if (!il) return {};
+  const bos = (await sonIlanlar({ sehir: il }, 1)).length === 0;
   const d = `${il} ücretsiz takas ilanları: telefon, araba, ev, saat, mobilya ve her türlü eşya. Eşyanı ilan et, ${il}'daki üyelerle takas et.`;
   return {
     title: `${il} Takas İlanları`,
     description: d,
     keywords: [`${il} takas`, `${il} eşya takası`, `${il} ücretsiz takas`, `${il} telefon takas`, `${il} araba takas`, `${il} ev takas`, `${il} mobilya takas`, `${il} takas ilanları`],
+    // İlan yoksa ince sayfa: arama sonuçlarına girmesin (ilan gelince otomatik indexlenir).
+    robots: bos ? { index: false, follow: true } : undefined,
     alternates: { canonical: `/sehir/${params.sehir}` },
     openGraph: { title: `${il} Takas İlanları | A-Takasa`, description: d, url: `${SITE_URL}/sehir/${params.sehir}` },
   };
