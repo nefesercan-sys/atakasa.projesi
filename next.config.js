@@ -5,7 +5,7 @@ const nextConfig = {
 
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com" }],
+    remotePatterns: [],
     dangerouslyAllowSVG: false,
   },
 
@@ -26,9 +26,9 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
-              "img-src 'self' data: blob: https://res.cloudinary.com",
-              "media-src 'self' blob: https://res.cloudinary.com",
-              "connect-src 'self' https://api.cloudinary.com https://vitals.vercel-insights.com",
+              "img-src 'self' data: blob:",
+              "media-src 'self' blob:",
+              "connect-src 'self' https://vitals.vercel-insights.com",
               "frame-src 'none'",
               "frame-ancestors 'none'",
               "form-action 'self'",
@@ -43,23 +43,20 @@ const nextConfig = {
   },
 
   async redirects() {
+    // Site yalnızca Likya Home sineklik ve panjur sayfalarından oluşur.
+    // "/" kalıcı olarak Türkçe sayfaya yönlenir; aynı içerik iki adreste yayımlanmaz (tek canonical: /sineklik-panjur/<dil>).
+    const ana = "/sineklik-panjur/tr";
     return [
-      { source: "/sineklik-panjur", destination: "/sineklik-panjur/tr", permanent: true },
-      // Eski sürümden kalan adresler → yeni sayfalar (arama motorlarındaki linkler kırılmasın)
-      { source: "/varlik/:slug", destination: "/ilan/:slug", permanent: true },
-      { source: "/varlik", destination: "/", permanent: true },
-      { source: "/kesfet", destination: "/", permanent: true },
-      { source: "/takas", destination: "/", permanent: true },
-      { source: "/urun/:path*", destination: "/", permanent: false },
-      { source: "/urun-ekle", destination: "/ilan-ver", permanent: true },
-      { source: "/takas-baslat", destination: "/ilan-ver", permanent: false },
-      { source: "/takas-teklif", destination: "/panel", permanent: false },
-      { source: "/trades", destination: "/panel", permanent: false },
-      { source: "/sepet", destination: "/", permanent: false },
-      { source: "/borsa", destination: "/", permanent: true },
-      { source: "/premium", destination: "/", permanent: true },
-      { source: "/emanet-kasa", destination: "/nasil-calisir", permanent: true },
-      { source: "/mesajlar", destination: "/panel", permanent: false },
+      { source: "/", destination: ana, permanent: true },
+      { source: "/sineklik-panjur", destination: ana, permanent: true },
+      // Kaldırılan takas/ilan/üyelik adresleri (arama motorlarındaki ve dış bağlantılardaki eski adresler kırılmasın)
+      ...[
+        "/ilan", "/ilan/:path*", "/kategori", "/kategori/:path*", "/sehir", "/sehir/:path*",
+        "/takas-rehberi", "/takas-rehberi/:path*", "/varlik", "/varlik/:path*", "/kesfet", "/takas",
+        "/urun", "/urun/:path*", "/urun-ekle", "/takas-baslat", "/takas-teklif", "/trades", "/sepet", "/borsa",
+        "/premium", "/emanet-kasa", "/mesajlar", "/giris", "/kayit", "/panel", "/sifre-sifirla", "/sifremi-unuttum",
+        "/ilan-ver", "/nasil-calisir",
+      ].map((source) => ({ source, destination: ana, permanent: true })),
     ];
   },
 };
