@@ -15,16 +15,15 @@ export async function sonIlanlar(filtre: Record<string, string> = {}, limit = 24
 }
 
 /** Ana sayfa sayaçları. Sayılar küçükken gösterilmez (boş site görünümünü önlemek için). */
-export async function istatistik(): Promise<{ uye: number; ilan: number; takas: number }> {
+export async function istatistik(): Promise<{ ilan: number; takas: number }> {
   try {
     await connectMongoDB();
-    const [uye, ilan, takas] = await Promise.all([
-      (await import("@/models/User")).default.countDocuments(),
+    const [ilan, takas] = await Promise.all([
       Varlik.countDocuments({ durum: "aktif" }),
       (await import("@/models/Teklif")).default.countDocuments({ durum: "tamamlandi" }),
     ]);
-    return { uye, ilan, takas };
+    return { ilan, takas };
   } catch {
-    return { uye: 0, ilan: 0, takas: 0 };
+    return { ilan: 0, takas: 0 };
   }
 }

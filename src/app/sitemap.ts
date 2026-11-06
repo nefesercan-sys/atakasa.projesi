@@ -12,8 +12,6 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const sabit: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: "daily", priority: 1 },
-    { url: `${SITE_URL}/nasil-calisir`, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${SITE_URL}/kayit`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/takas-rehberi`, changeFrequency: "weekly" as const, priority: 0.7 },
     ...REHBER.map((r) => ({ url: `${SITE_URL}/takas-rehberi/${r.slug}`, changeFrequency: "monthly" as const, priority: 0.7 })),
     ...SP_LANGS.map((l: string) => ({ url: `${SITE_URL}${spPath(l)}`, changeFrequency: "monthly" as const, priority: 0.6 })),

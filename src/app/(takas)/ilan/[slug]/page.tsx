@@ -3,12 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connectMongoDB } from "@/lib/mongodb";
 import Varlik from "@/models/Varlik";
-import User from "@/models/User";
-import { oturumAl } from "@/lib/oturum";
 import { kategoriBul } from "@/lib/kategoriler";
 import { slugla } from "@/lib/iller";
 import { onizleme, videoMu } from "@/lib/medya";
-import TeklifFormu from "@/components/TeklifFormu";
 import JsonLd from "@/components/JsonLd";
 import IlanKart from "@/components/IlanKart";
 import { SITE_URL } from "@/lib/site";
@@ -37,14 +34,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
 export default async function Page({ params }: P) {
   const i = await getir(params.slug);
   if (!i) notFound();
-  const o = await oturumAl();
-  const sahip = !!o && String(i.satici) === o.id;
-  const satici = await User.findById(i.satici).select("name tamamlananTakas").lean();
-  if (!sahip) await Varlik.updateOne({ _id: i._id }, { $inc: { goruntulenme: 1 } });
-
-  const benim = o && !sahip && i.durum === "aktif"
-    ? (await Varlik.find({ satici: o.id, durum: "aktif" }).select("baslik").lean()).map((x) => ({ _id: String(x._id), baslik: x.baslik }))
-    : [];
+  await Varlik.updateOne({ _id: i._id }, { $inc: { goruntulenme: 1 } });
   const kat = kategoriBul(i.kategori);
   const benzer = i.durum === "aktif"
     ? JSON.parse(JSON.stringify(await Varlik.find({ durum: "aktif", kategori: i.kategori, _id: { $ne: i._id } }).sort({ createdAt: -1 }).limit(4).select("baslik slug sehir resimler takasIstegi").lean()))
@@ -77,14 +67,8 @@ export default async function Page({ params }: P) {
         </div>
         {i.aciklama && <p className="whitespace-pre-line text-gray-800">{i.aciklama}</p>}
         {i.takasIstegi && <div className="rounded-lg bg-marka-acik p-3 text-sm"><b>Karşılığında istiyor:</b> {i.takasIstegi}</div>}
-        <p className="text-sm text-gray-500">Üye: {satici?.name?.split(" ")[0] || "Üye"} · {satici?.tamamlananTakas || 0} tamamlanan takas</p>
-
-        {i.durum !== "aktif" ? (
+        {i.durum !== "aktif" && (
           <p className="kart p-4 text-center text-gray-600">{i.durum === "takas_oldu" ? "✅ Bu ürün takas edildi." : i.durum === "takasta" ? "⏳ Bu ürün için takas sürüyor." : "Bu ilan şu an yayında değil."}</p>
-        ) : sahip ? (
-          <Link href="/panel" className="btn-ikinci w-full">Bu senin ilanın · Panele git</Link>
-        ) : (
-          <div className="kart p-4"><TeklifFormu hedefId={String(i._id)} benimIlanlar={benim} girisli={!!o} /></div>
         )}
       </div>
       {benzer.length > 0 && (

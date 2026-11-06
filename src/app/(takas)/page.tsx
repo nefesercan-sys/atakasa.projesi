@@ -14,7 +14,7 @@ export const revalidate = 60;
 
 export default async function Home() {
   const [ilanlar, st] = await Promise.all([sonIlanlar(), istatistik()]);
-  const sayac = [["Üye", st.uye], ["Aktif ilan", st.ilan], ["Tamamlanan takas", st.takas]].filter(([, n]) => (n as number) >= 10);
+  const sayac = [["Aktif ilan", st.ilan], ["Tamamlanan takas", st.takas]].filter(([, n]) => (n as number) >= 10);
   return (
     <div className="space-y-8">
       <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-marka to-marka-koyu p-6 text-white sm:p-10">
@@ -24,8 +24,7 @@ export default async function Home() {
             <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">İhtiyacın olmayanı ver, ihtiyacın olanı al.</h1>
             <p className="mt-3 max-w-xl text-white/90">Eşyanın fotoğrafını veya videosunu ekle, karşılığında ne istediğini yaz. Teklifler gelsin, iki taraf onaylayınca takas tamam.</p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/ilan-ver" className="rounded-lg bg-white px-5 py-3 font-bold text-marka-koyu shadow">+ Ücretsiz İlan Ver</Link>
-              <Link href="/nasil-calisir" className="rounded-lg border border-white/60 px-5 py-3 font-semibold">Nasıl çalışır?</Link>
+              <Link href="/takas-rehberi" className="rounded-lg bg-white px-5 py-3 font-bold text-marka-koyu shadow">Takas rehberi</Link>
             </div>
             {sayac.length > 0 && (
               <dl className="mt-6 flex gap-6">
@@ -58,7 +57,7 @@ export default async function Home() {
         {ilanlar.length ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{ilanlar.map((i) => <IlanKart key={i._id} i={i} />)}</div>
         ) : (
-          <div className="kart space-y-3 p-8 text-center"><p className="text-4xl" aria-hidden="true">📦</p><p className="font-semibold">Vitrin yeni açıldı, ilk ilanlar yolda.</p><p className="text-sm text-gray-600">Evde kullanmadığın bir eşya varsa ilan ver; karşılığında ihtiyacın olanı yaz.</p><Link href="/ilan-ver" className="btn">İlk ilanı sen ver</Link></div>
+          <div className="kart space-y-3 p-8 text-center"><p className="text-4xl" aria-hidden="true">📦</p><p className="font-semibold">Vitrin yeni açıldı, ilk ilanlar yolda.</p></div>
         )}
       </section>
 

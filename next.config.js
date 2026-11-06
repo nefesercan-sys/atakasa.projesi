@@ -51,15 +51,17 @@ const nextConfig = {
       { source: "/kesfet", destination: "/", permanent: true },
       { source: "/takas", destination: "/", permanent: true },
       { source: "/urun/:path*", destination: "/", permanent: false },
-      { source: "/urun-ekle", destination: "/ilan-ver", permanent: true },
-      { source: "/takas-baslat", destination: "/ilan-ver", permanent: false },
-      { source: "/takas-teklif", destination: "/panel", permanent: false },
-      { source: "/trades", destination: "/panel", permanent: false },
+      { source: "/urun-ekle", destination: "/", permanent: true },
+      { source: "/takas-baslat", destination: "/", permanent: false },
+      { source: "/takas-teklif", destination: "/", permanent: false },
+      { source: "/trades", destination: "/", permanent: false },
       { source: "/sepet", destination: "/", permanent: false },
       { source: "/borsa", destination: "/", permanent: true },
       { source: "/premium", destination: "/", permanent: true },
-      { source: "/emanet-kasa", destination: "/nasil-calisir", permanent: true },
-      { source: "/mesajlar", destination: "/panel", permanent: false },
+      { source: "/emanet-kasa", destination: "/", permanent: true },
+      { source: "/mesajlar", destination: "/", permanent: false },
+      // Üyelik kaldırıldı: giriş/kayıt/panel/ilan verme adresleri ana sayfaya yönlenir.
+      ...["/giris", "/kayit", "/panel", "/sifre-sifirla", "/sifremi-unuttum", "/ilan-ver", "/nasil-calisir"].map((source) => ({ source, destination: "/", permanent: true })),
     ];
   },
 };

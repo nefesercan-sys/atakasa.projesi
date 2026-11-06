@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="mx-auto min-h-[70vh] max-w-6xl px-4 py-6">{children}</main>
         <footer className="mt-10 border-t bg-white py-6 text-center text-sm text-gray-500">
           <p>© {new Date().getFullYear()} A-Takasa · Para yok, sadece takas.</p>
-          <p className="mt-1 space-x-3"><Link href="/nasil-calisir" className="hover:underline">Nasıl çalışır?</Link><Link href="/takas-rehberi" className="hover:underline">Takas rehberi</Link><Link href="/kategori/telefon-tablet" className="hover:underline">Telefon takası</Link><Link href="/kategori/otomobil-vasita" className="hover:underline">Araba takası</Link><Link href="/kategori/emlak" className="hover:underline">Ev takası</Link></p>
+          <p className="mt-1 space-x-3"><Link href="/takas-rehberi" className="hover:underline">Takas rehberi</Link><Link href="/kategori/telefon-tablet" className="hover:underline">Telefon takası</Link><Link href="/kategori/otomobil-vasita" className="hover:underline">Araba takası</Link><Link href="/kategori/emlak" className="hover:underline">Ev takası</Link></p>
         </footer>
       </body>
     </html>

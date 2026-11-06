@@ -9,9 +9,5 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "tr",
-  "categories": ["shopping", "lifestyle"],
-  "shortcuts": [
-    { "name": "İlan Ver", "url": "/ilan-ver" },
-    { "name": "Takaslarım", "url": "/panel" }
-  ]
+  "categories": ["shopping", "lifestyle"]
 }

@@ -42,7 +42,6 @@ export default function Page({ params }: P) {
         </section>
       ))}
       <div className="kart flex flex-wrap items-center gap-3 p-4">
-        <Link href="/ilan-ver" className="btn">+ Ücretsiz ilan ver</Link>
         {k && <Link href={`/kategori/${k.slug}`} className="btn-ikinci">{k.emoji} {k.ad} ilanlarına bak</Link>}
       </div>
       <Sss oge={r.sss} />
