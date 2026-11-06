@@ -1,18 +1,8 @@
-# A-Takasa
+# Likya Home — Sineklik ve Panjur (atakasa.com)
 
-Ücretsiz, **yalnızca takas** platformu. İhtiyacın olmayan eşyayı fotoğraf/videoyla ilan et, başkasının ilanı için kendi ilanını öner; karşılıklı onayla takas tamamlanır. Satın alma ve ödeme yoktur.
+Antalya'da sineklik ve panjur imalatı/montajı için 10 dilli tanıtım sitesi. Üyelik, ilan, takas ve veritabanı yoktur.
 
-## Akış
-1. Üye ol → ilan ver (en az 1, en fazla 8 fotoğraf/video; Cloudinary)
-2. Başkasının ilanında "Takas teklif et" → kendi ilanlarından birini öner
-3. İlan sahibi kabul eder → iki ilan "takasta" olur, telefon/e-posta karşılıklı açılır
-4. Buluşup teslim sonrası **iki taraf da** "Takas gerçekleşti" der → tamamlandı
-Durum makinesi: `src/lib/teklif-akis.ts` (test: `npm run test:akis`).
-
-## Kurulum
-```bash
-cp .env.example .env.local   # değerleri doldur
-npm install
-npm run dev
-```
-Gerekli ortam değişkenleri `.env.example` içinde: `MONGODB_URI`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `ADMIN_EMAILS`, Cloudinary anahtarları, `EMAIL_USER/EMAIL_PASS` (şifre sıfırlama).
+- Sayfalar: `/sineklik-panjur/<dil>` (tr, en, de, ru, es, fr, pl, uk, nl, ar). `/` kalıcı olarak `/sineklik-panjur/tr` adresine yönlenir.
+- İçerik: `src/lib/sineklik-panjur.js` (metinler, telefon, WhatsApp), `src/lib/likya-home.js` (görseller).
+- Ortam değişkenleri (isteğe bağlı): `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SINEKLIK_URL`.
+- Geliştirme: `npm install && npm run dev`

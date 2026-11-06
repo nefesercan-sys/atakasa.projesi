@@ -1,13 +1,11 @@
 {
-  "name": "A-Takasa — Ücretsiz Takas",
-  "short_name": "A-Takasa",
-  "description": "İhtiyacın olmayan eşyayı ilan et, ihtiyacın olanla takas et. Tamamen ücretsiz.",
-  "start_url": "/",
+  "name": "Likya Home — Sineklik ve Panjur Antalya",
+  "short_name": "Likya Home",
+  "description": "Antalya'da sineklik ve panjur imalatı ve montajı.",
+  "start_url": "/sineklik-panjur/tr",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0f9d6b",
-  "orientation": "portrait-primary",
+  "background_color": "#030712",
+  "theme_color": "#030712",
   "scope": "/",
-  "lang": "tr",
-  "categories": ["shopping", "lifestyle"]
+  "lang": "tr"
 }

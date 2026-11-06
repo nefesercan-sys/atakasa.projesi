@@ -49,7 +49,7 @@ export default function SineklikPanjur({ params }) {
       inLanguage: lang,
       url,
       areaServed: { "@type": "City", name: SP_CITY },
-      provider: { "@type": "Organization", name: SP_BRAND, slogan: x.tagline, telephone: SP_PHONE_TEL, url: SP_BASE, logo: SP_BASE + "/likya-home/logo.svg" },
+      provider: { "@type": "LocalBusiness", "@id": SP_BASE + "/#likya-home", name: SP_BRAND, slogan: x.tagline, telephone: SP_PHONE_TEL, url: SP_BASE + spPath("tr"), logo: SP_BASE + "/likya-home/logo.svg", areaServed: { "@type": "City", name: SP_CITY } },
       image: IMAGES.map((i) => SP_BASE + i),
     },
     {
@@ -62,8 +62,7 @@ export default function SineklikPanjur({ params }) {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: c.home, item: SP_BASE },
-        { "@type": "ListItem", position: 2, name: c.h1, item: url },
+        { "@type": "ListItem", position: 1, name: c.h1, item: url },
       ],
     },
     {

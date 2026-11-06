@@ -1,28 +1,20 @@
 {
-  "name": "atakasa",
+  "name": "likya-home",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "test:akis": "node --experimental-strip-types tests/teklif-akis.test.mjs"
+    "start": "next start"
   },
   "dependencies": {
     "@vercel/analytics": "^1.2.2",
-    "bcryptjs": "^2.4.3",
-    "cloudinary": "^2.0.0",
-    "mongoose": "^8.2.0",
     "next": "^14.2.10",
-    "next-auth": "^4.24.7",
-    "nodemailer": "^6.9.11",
     "react": "^18",
     "react-dom": "^18"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
-    "@types/nodemailer": "^6.4.14",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.19",
