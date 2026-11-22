@@ -6,6 +6,7 @@ import SpIllustration from "@/components/sineklik/SpIllustration";
 import { spIsRtl as isRtl, SP_OG_LOCALE as OG_LOCALE } from "@/lib/sineklik-panjur";
 import { IMAGES, IMG_W, IMG_H, HERO_INDEX, EXTRA } from "@/lib/likya-home";
 import { BELGELER } from "@/lib/likya-belgeler";
+import { KONULAR, KUI, konuMetni } from "@/lib/likya-konular";
 import { COPY, SP_LANGS, SP_BASE, SP_BRAND, SP_CITY, SP_PHONE_DISPLAY, SP_PHONE_TEL, spPath, spWhatsapp } from "@/lib/sineklik-panjur";
 
 export const dynamicParams = false;
@@ -152,6 +153,23 @@ export default function SineklikPanjur({ params }) {
             </figure>
           ))}
         </section>
+
+        <nav aria-label={KUI[lang].urunler} className="mb-10 border border-white/10 rounded-2xl p-5 bg-white/[0.03]">
+          {[["urun", KUI[lang].urunler], ["bolge", KUI[lang].bolgeler]].map(([tur, baslik]) => (
+            <div key={tur} className="mb-4 last:mb-0">
+              <h2 className="text-lg font-bold text-white mb-2">{baslik}</h2>
+              <ul className="flex flex-wrap gap-2">
+                {KONULAR.filter((t) => t.tur === tur).map((t) => (
+                  <li key={t.id}>
+                    <Link href={`${spPath(lang)}/${t.id}`} className="inline-block px-3 py-2 rounded-xl border border-white/15 text-sm text-slate-200 hover:border-[#00f260] hover:text-white">
+                      {konuMetni(lang, t.id).kisa}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
 
         <section className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-3">{c.sinekH}</h2>
