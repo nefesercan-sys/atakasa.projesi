@@ -14,6 +14,22 @@ export const SP_WHATSAPP = "905413508113";
 export const spWhatsapp = (text) => `https://wa.me/${SP_WHATSAPP}?text=${encodeURIComponent(text)}`;
 export const spPath = (lang) => `/${SP_SLUG}/${lang}`;
 
+/** İşletme (LocalBusiness) şema düğümü: tüm sayfalarda aynı @id. Yalnızca doğrulanmış bilgiler; adres/saat sahibi verince eklenir. */
+export const spBusiness = () => ({
+  "@type": ["LocalBusiness", "HomeAndConstructionBusiness"],
+  "@id": SP_BASE + "/#likya-home",
+  name: SP_BRAND,
+  description: "Sineklik ve panjur imalatı ve montajı, Antalya. Insect screens and roller shutters: manufacturing and installation in Antalya.",
+  url: SP_BASE + spPath("tr"),
+  telephone: SP_PHONE_TEL,
+  logo: SP_BASE + "/likya-home/logo.svg",
+  image: SP_BASE + "/likya-home/likya-08.jpg",
+  areaServed: [{ "@type": "City", name: SP_CITY }, ...["Konyaaltı", "Muratpaşa", "Lara", "Kepez", "Döşemealtı", "Belek", "Side", "Kemer"].map((n) => ({ "@type": "Place", name: `${n}, ${SP_CITY}` }))],
+  contactPoint: { "@type": "ContactPoint", telephone: SP_PHONE_TEL, contactType: "customer service", areaServed: "TR" },
+  potentialAction: { "@type": "CommunicateAction", name: "WhatsApp", target: `https://wa.me/${SP_WHATSAPP}` },
+  sameAs: [`https://wa.me/${SP_WHATSAPP}`],
+});
+
 // Sineklik ve panjur sayfası: 10 dilde içerik.
 // Not: Bu dosyadaki ürün listeleri genel bilgidir; yapmadığınız bir ürün varsa ilgili satırı silin.
 // Fiyat bilerek yazılmamıştır: ölçü, sistem, tül ve profile göre değişir.
@@ -24,7 +40,7 @@ export const COPY = {
         lang: 'tr',
         dir: 'ltr',
         label: 'Türkçe',
-        metaTitle: "Likya Home | Sineklik ve Panjur Antalya",
+        metaTitle: "Sineklik ve Panjur Antalya · Plise, Motorlu | Likya Home",
         metaDesc: "Antalya'da plise, sürme, menteşeli ve sabit sineklik ile alüminyum, PVC ve motorlu panjur imalatı ve montajı. Fotoğraf ve ölçüyle WhatsApp'tan yazın.",
         keywords: [
             'Antalya sineklik',
@@ -113,7 +129,7 @@ export const COPY = {
         lang: 'en',
         dir: 'ltr',
         label: 'English',
-        metaTitle: "Likya Home | Insect Screens & Shutters Antalya",
+        metaTitle: "Insect Screens & Roller Shutters Antalya | Likya Home",
         metaDesc: 'Made-to-measure pleated, sliding, hinged and fixed insect screens plus aluminium, PVC and motorised roller shutters in Antalya. Send a photo on WhatsApp.',
         keywords: [
             'insect screens Antalya',
@@ -202,7 +218,7 @@ export const COPY = {
         lang: 'de',
         dir: 'ltr',
         label: 'Deutsch',
-        metaTitle: "Likya Home | Fliegengitter & Rollläden Antalya",
+        metaTitle: "Fliegengitter & Rollläden Antalya | Likya Home",
         metaDesc: 'Fliegengitter nach Maß (Plissee, Schiebe, Dreh, Fest) sowie Aluminium-, PVC- und Motor-Rollläden in Antalya. Foto per WhatsApp senden.',
         keywords: [
             'Fliegengitter Antalya',
@@ -291,7 +307,7 @@ export const COPY = {
         lang: 'ru',
         dir: 'ltr',
         label: 'Русский',
-        metaTitle: "Likya Home | Москитные сетки и рольставни",
+        metaTitle: "Москитные сетки и рольставни в Анталье | Likya Home",
         metaDesc: 'Москитные сетки (плиссе, раздвижные, рамочные, стационарные) и алюминиевые, ПВХ и моторизованные рольставни в Анталии. Фото и размеры в WhatsApp.',
         keywords: [
             'москитные сетки Анталия',
@@ -380,7 +396,7 @@ export const COPY = {
         lang: 'es',
         dir: 'ltr',
         label: 'Español',
-        metaTitle: "Likya Home | Mosquiteras y Persianas Antalya",
+        metaTitle: "Mosquiteras y persianas en Antalya | Likya Home",
         metaDesc: 'Mosquiteras plisadas, correderas, abatibles y fijas, y persianas de aluminio, PVC y motorizadas en Antalya. Envíe una foto por WhatsApp.',
         keywords: [
             'mosquiteras Antalya',
@@ -469,7 +485,7 @@ export const COPY = {
         lang: 'fr',
         dir: 'ltr',
         label: 'Français',
-        metaTitle: "Likya Home | Moustiquaires & Volets Antalya",
+        metaTitle: "Moustiquaires et volets roulants Antalya | Likya Home",
         metaDesc: 'Moustiquaires plissées, coulissantes, battantes et fixes, et volets roulants aluminium, PVC et motorisés à Antalya. Envoyez une photo sur WhatsApp.',
         keywords: [
             'moustiquaire Antalya',
@@ -558,7 +574,7 @@ export const COPY = {
         lang: 'pl',
         dir: 'ltr',
         label: 'Polski',
-        metaTitle: "Likya Home | Moskitiery i Rolety Antalya",
+        metaTitle: "Moskitiery i rolety Antalya | Likya Home",
         metaDesc: 'Moskitiery plisowane, przesuwne, ramowe i stałe oraz rolety aluminiowe, PVC i z napędem w Antalyi. Prześlij zdjęcie przez WhatsApp.',
         keywords: [
             'moskitiery Antalya',
@@ -647,7 +663,7 @@ export const COPY = {
         lang: 'uk',
         dir: 'ltr',
         label: 'Українська',
-        metaTitle: "Likya Home | Москітні сітки та ролети",
+        metaTitle: "Москітні сітки та ролети в Анталії | Likya Home",
         metaDesc: 'Москітні сітки (плісе, розсувні, рамкові, стаціонарні) та алюмінієві, ПВХ і моторизовані ролети в Анталії. Фото й розміри надсилайте у WhatsApp.',
         keywords: [
             'москітні сітки Анталія',
@@ -736,7 +752,7 @@ export const COPY = {
         lang: 'nl',
         dir: 'ltr',
         label: 'Nederlands',
-        metaTitle: "Likya Home | Horren en Rolluiken Antalya",
+        metaTitle: "Horren en rolluiken Antalya | Likya Home",
         metaDesc: 'Plissé-, schuif-, scharnier- en vaste horren plus aluminium, PVC en elektrische rolluiken in Antalya. Stuur een foto via WhatsApp.',
         keywords: [
             'horren Antalya',
@@ -825,7 +841,7 @@ export const COPY = {
         lang: 'ar',
         dir: 'rtl',
         label: 'العربية',
-        metaTitle: "Likya Home | شبك حشرات ورولات أنطاليا",
+        metaTitle: "شبك حشرات ورولات في أنطاليا | Likya Home",
         metaDesc: 'تصنيع وتركيب شبك حشرات (بليسيه، منزلق، مفصلي، ثابت) ورولات ألمنيوم وPVC وبمحرك في أنطاليا. أرسل صورة عبر واتساب.',
         keywords: [
             'شبك حشرات أنطاليا',
