@@ -7,7 +7,8 @@ import { spIsRtl as isRtl, SP_OG_LOCALE as OG_LOCALE } from "@/lib/sineklik-panj
 import { IMAGES, IMG_W, IMG_H, HERO_INDEX, EXTRA } from "@/lib/likya-home";
 import { BELGELER } from "@/lib/likya-belgeler";
 import { KONULAR, KUI, konuMetni } from "@/lib/likya-konular";
-import { COPY, SP_LANGS, SP_BASE, SP_BRAND, SP_CITY, SP_PHONE_DISPLAY, SP_PHONE_TEL, spPath, spWhatsapp } from "@/lib/sineklik-panjur";
+import { COPY, SP_LANGS, SP_BASE, SP_BRAND, SP_CITY, SP_PHONE_DISPLAY, SP_PHONE_TEL, spPath, spWhatsapp, spBusiness } from "@/lib/sineklik-panjur";
+import { lastMod } from "@/lib/lastmod";
 
 export const dynamicParams = false;
 
@@ -17,8 +18,8 @@ export function generateStaticParams() {
 
 const urlFor = (lang) => SP_BASE + spPath(lang);
 
-export function generateMetadata({ params }) {
-  const lang = params.lang;
+export async function generateMetadata({ params }) {
+  const { lang } = await params;
   if (!SP_LANGS.includes(lang)) return {};
   const c = COPY[lang];
   const languages = Object.fromEntries(SP_LANGS.map((l) => [l, urlFor(l)]));
@@ -32,8 +33,8 @@ export function generateMetadata({ params }) {
   };
 }
 
-export default function SineklikPanjur({ params }) {
-  const lang = params.lang;
+export default async function SineklikPanjur({ params }) {
+  const { lang } = await params;
   if (!SP_LANGS.includes(lang)) notFound();
   const c = COPY[lang];
   const x = EXTRA[lang];
@@ -50,7 +51,7 @@ export default function SineklikPanjur({ params }) {
       inLanguage: lang,
       url,
       areaServed: { "@type": "City", name: SP_CITY },
-      provider: { "@type": "LocalBusiness", "@id": SP_BASE + "/#likya-home", name: SP_BRAND, slogan: x.tagline, telephone: SP_PHONE_TEL, url: SP_BASE + spPath("tr"), logo: SP_BASE + "/likya-home/logo.svg", areaServed: { "@type": "City", name: SP_CITY } },
+      provider: spBusiness(lang),
       image: IMAGES.map((i) => SP_BASE + i),
     },
     {
@@ -71,6 +72,10 @@ export default function SineklikPanjur({ params }) {
       "@type": "WebPage",
       url,
       name: c.metaTitle,
+      inLanguage: lang,
+      isPartOf: { "@type": "WebSite", name: SP_BRAND, url: SP_BASE + spPath(lang) },
+      about: { "@id": SP_BASE + "/#likya-home" },
+      ...(lastMod(url) ? { dateModified: lastMod(url) } : {}),
       speakable: { "@type": "SpeakableSpecification", cssSelector: [".sp-answer"] },
     },
   ];

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 import { SP_LANGS, spPath } from "@/lib/sineklik-panjur";
 import { KONU_IDS } from "@/lib/likya-konular";
+import { lastMod } from "@/lib/lastmod";
 
 // Site yalnızca Likya Home sineklik ve panjur sayfalarından oluşur (10 dil ana sayfa + 8 ürün/bölge sayfası × 10 dil). "/" kalıcı olarak /sineklik-panjur/tr adresine yönlenir.
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -22,5 +23,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: alt((x: string) => `${spPath(x)}/${k}`),
     })),
   );
-  return [...ana, ...konular];
+  // Gerçek içerik tarihi (src/lib/lastmod.json); kaydı olmayan sayfada lastmod verilmez
+  return [...ana, ...konular].map((e) => { const d = lastMod(e.url); return d ? { ...e, lastModified: d } : e; });
 }

@@ -1,0 +1,25 @@
+# Production deploy başarılı olunca site haritasındaki adresler IndexNow ile Bing ve Yandex'e bildirilir
+# (Bing → ChatGPT arama ve Copilot). Anahtar gizli değildir: doğrulama dosyası public/880ab2b0f543464cbfc85aa78267fb13.txt olarak yayındadır.
+name: IndexNow
+on:
+  deployment_status:
+jobs:
+  ping:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    steps:
+      - name: IndexNow bildir
+        run: |
+          python3 - <<'PY'
+          import json, re, urllib.request
+          host = "atakasa.com"; key = "880ab2b0f543464cbfc85aa78267fb13"
+          xml = urllib.request.urlopen(f"https://{host}/sitemap.xml", timeout=60).read().decode()
+          urls = sorted(set(re.findall(r"<loc>([^<]+)</loc>", xml)))
+          body = json.dumps({"host": host, "key": key, "keyLocation": f"https://{host}/{key}.txt", "urlList": urls}).encode()
+          for ep in ["https://api.indexnow.org/indexnow", "https://www.bing.com/indexnow", "https://yandex.com/indexnow"]:
+              try:
+                  r = urllib.request.urlopen(urllib.request.Request(ep, data=body, headers={"Content-Type": "application/json; charset=utf-8"}), timeout=60)
+                  print(ep, r.status, len(urls), "adres")
+              except Exception as e:
+                  print(ep, "hata (kritik değil):", e)
+          PY

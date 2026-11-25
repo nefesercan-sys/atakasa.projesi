@@ -4,7 +4,12 @@ import LikyaLogo from "@/components/sineklik/LikyaLogo";
 import SpIllustration from "@/components/sineklik/SpIllustration";
 import { spIsRtl as isRtl, SP_OG_LOCALE as OG_LOCALE } from "@/lib/sineklik-panjur";
 import { IMAGES, IMG_W, IMG_H, HERO_INDEX, EXTRA } from "@/lib/likya-home";
-import { COPY, SP_LANGS, SP_BASE, SP_BRAND, SP_CITY, SP_PHONE_DISPLAY, SP_PHONE_TEL, spPath, spWhatsapp } from "@/lib/sineklik-panjur";
+import { COPY, SP_LANGS, SP_BASE, SP_BRAND, SP_CITY, SP_PHONE_DISPLAY, SP_PHONE_TEL, spPath, spWhatsapp, spBusiness } from "@/lib/sineklik-panjur";
+import { lastMod } from "@/lib/lastmod";
+import Image from "next/image";
+
+/** Başlık 60 karakteri aşarsa sondaki " | Likya Home" atılır (Google'da yarım görünmesin; marka og:site_name'de). */
+const fitTitle = (t) => (t.length > 60 ? t.replace(/\s*\|\s*Likya Home$/, "") : t);
 import { KONULAR, KONU_IDS, KUI, konuBul, konuMetni } from "@/lib/likya-konular";
 
 // Ürün ve bölge sayfaları: /sineklik-panjur/<dil>/<konu> — 10 dil × 8 konu, hepsi derleme anında üretilir.
@@ -17,22 +22,22 @@ export function generateStaticParams() {
 const konuPath = (lang, id) => `${spPath(lang)}/${id}`;
 const urlFor = (lang, id) => SP_BASE + konuPath(lang, id);
 
-export function generateMetadata({ params }) {
-  const { lang, konu } = params;
+export async function generateMetadata({ params }) {
+  const { lang, konu } = await params;
   const k = konuMetni(lang, konu);
   if (!SP_LANGS.includes(lang) || !k) return {};
   const languages = Object.fromEntries(SP_LANGS.map((l) => [l, urlFor(l, konu)]));
   languages["x-default"] = urlFor("tr", konu);
   return {
-    title: { absolute: k.title },
+    title: { absolute: fitTitle(k.title) },
     description: k.desc,
     alternates: { canonical: urlFor(lang, konu), languages },
-    openGraph: { title: k.title, description: k.desc, url: urlFor(lang, konu), type: "website", locale: OG_LOCALE?.[lang], siteName: SP_BRAND, images: [{ url: SP_BASE + IMAGES[HERO_INDEX], width: IMG_W, height: IMG_H }] },
+    openGraph: { title: fitTitle(k.title), description: k.desc, url: urlFor(lang, konu), type: "website", locale: OG_LOCALE?.[lang], siteName: SP_BRAND, images: [{ url: SP_BASE + IMAGES[konuBul(konu)?.foto ?? HERO_INDEX], width: IMG_W, height: IMG_H }] },
   };
 }
 
-export default function KonuSayfasi({ params }) {
-  const { lang, konu } = params;
+export default async function KonuSayfasi({ params }) {
+  const { lang, konu } = await params;
   const meta = konuBul(konu);
   const k = konuMetni(lang, konu);
   if (!SP_LANGS.includes(lang) || !meta || !k) notFound();
@@ -44,7 +49,7 @@ export default function KonuSayfasi({ params }) {
   const urun = meta.tur === "urun";
   const digerler = KONULAR.filter((t) => t.id !== konu);
 
-  const provider = { "@type": "LocalBusiness", "@id": SP_BASE + "/#likya-home", name: SP_BRAND, telephone: SP_PHONE_TEL, url: SP_BASE + spPath("tr"), logo: SP_BASE + "/likya-home/logo.svg" };
+  const provider = spBusiness(lang);
   const areaServed = urun ? { "@type": "City", name: SP_CITY } : meta.yer.map((y) => ({ "@type": "Place", name: `${y}, ${SP_CITY}` }));
 
   const jsonLd = [
@@ -58,6 +63,7 @@ export default function KonuSayfasi({ params }) {
       url,
       areaServed,
       provider,
+      ...(typeof meta.foto === "number" ? { image: SP_BASE + IMAGES[meta.foto] } : {}),
     },
     {
       "@context": "https://schema.org",
@@ -77,8 +83,11 @@ export default function KonuSayfasi({ params }) {
       "@context": "https://schema.org",
       "@type": "WebPage",
       url,
-      name: k.title,
+      name: fitTitle(k.title),
       inLanguage: lang,
+      isPartOf: { "@type": "WebSite", name: SP_BRAND, url: SP_BASE + spPath(lang) },
+      about: { "@id": SP_BASE + "/#likya-home" },
+      ...(lastMod(url) ? { dateModified: lastMod(url) } : {}),
       speakable: { "@type": "SpeakableSpecification", cssSelector: [".sp-answer"] },
     },
   ];
@@ -158,6 +167,15 @@ export default function KonuSayfasi({ params }) {
           <h2 className="text-xl font-bold text-white mb-2">{k.answerH}</h2>
           <p className="sp-answer text-slate-200 leading-relaxed">{k.answer}</p>
         </section>
+
+        {typeof meta.foto === "number" && (
+          <figure className="mb-10 rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03]">
+            <Image src={IMAGES[meta.foto]} alt={x.imgs[meta.foto]} width={IMG_W} height={IMG_H} sizes="(max-width: 768px) 100vw, 768px" className="w-full h-auto" />
+            <figcaption className="px-4 py-3 text-sm text-slate-300">
+              {x.imgs[meta.foto]} <span className="text-slate-500">· {x.note}</span>
+            </figcaption>
+          </figure>
+        )}
 
         <section className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-1">{urun ? ui.noktaUrun : ui.noktaBolge}</h2>

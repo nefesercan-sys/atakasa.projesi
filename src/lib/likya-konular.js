@@ -6,14 +6,14 @@
 // ============================================================
 
 export const KONULAR = [
-  { id: 'plise-sineklik', tur: 'urun', cizim: 'plise' },
-  { id: 'surme-sineklik', tur: 'urun', cizim: 'surme' },
-  { id: 'pencere-sinekligi', tur: 'urun', cizim: 'sabit' },
-  { id: 'motorlu-panjur', tur: 'urun', cizim: 'panjur' },
-  { id: 'konyaalti', tur: 'bolge', yer: ['Konyaaltı', 'Hurma', 'Liman', 'Sarısu', 'Uncalı', 'Gürsu', 'Arapsuyu', 'Altınkum'] },
-  { id: 'lara-muratpasa', tur: 'bolge', yer: ['Muratpaşa', 'Lara', 'Güzeloba', 'Şirinyalı', 'Fener', 'Meltem'] },
-  { id: 'kepez-dosemealti', tur: 'bolge', yer: ['Kepez', 'Varsak', 'Döşemealtı'] },
-  { id: 'belek-side-kemer', tur: 'bolge', yer: ['Belek', 'Side', 'Manavgat', 'Kemer', 'Beldibi', 'Göynük'] },
+  { id: 'plise-sineklik', tur: 'urun', cizim: 'plise', foto: 4 },
+  { id: 'surme-sineklik', tur: 'urun', cizim: 'surme', foto: 0 },
+  { id: 'pencere-sinekligi', tur: 'urun', cizim: 'sabit', foto: 6 },
+  { id: 'motorlu-panjur', tur: 'urun', cizim: 'panjur', foto: 1 },
+  { id: 'konyaalti', tur: 'bolge', foto: 7, yer: ['Konyaaltı', 'Hurma', 'Liman', 'Sarısu', 'Uncalı', 'Gürsu', 'Arapsuyu', 'Altınkum'] },
+  { id: 'lara-muratpasa', tur: 'bolge', foto: 5, yer: ['Muratpaşa', 'Lara', 'Güzeloba', 'Şirinyalı', 'Fener', 'Meltem'] },
+  { id: 'kepez-dosemealti', tur: 'bolge', foto: 2, yer: ['Kepez', 'Varsak', 'Döşemealtı'] },
+  { id: 'belek-side-kemer', tur: 'bolge', foto: 3, yer: ['Belek', 'Side', 'Manavgat', 'Kemer', 'Beldibi', 'Göynük'] },
 ];
 export const KONU_IDS = KONULAR.map((k) => k.id);
 export const konuBul = (id) => KONULAR.find((k) => k.id === id);
